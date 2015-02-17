@@ -42,6 +42,19 @@ class Probe:
       right = np.sum(self.seq[offset:] != other.seq[:-offset])
     return min(left, right)
 
+  """Returns a probe that is the reverse-complement of this
+  probe.
+
+  Using rc_map.get(b, b) ensures that this can process bases
+  like 'N'. It returns the base itself (e.g., 'N') if it is
+  not either 'A', 'T', 'C', or 'G'.
+  """
+  def reverse_complement(self):
+    rc_map = {'A':'T', 'T':'A', 'C':'G', 'G':'C'}
+    rc_seq = np.array([rc_map.get(b, b) for b in self.seq[::-1]],
+                dtype='S1')
+    return Probe(rc_seq)
+
   def __hash__(self):
     return self.hash
 

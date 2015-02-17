@@ -1,9 +1,18 @@
 """An abstract class representing a filter through which candidate
-probes are reduced.
+probes are processed.
+
+A filter may operate in the more traditional sense of reducing the
+input probes to a smaller number (i.e., only allowing certain probes
+to pass through); an example would be a filter the eliminates
+duplicates. A filter may also operate in the more computing sense
+of simply processing the input probes and returning the list of
+processed probes; the output/processed probes may be altered
+versions of the input or there may even be more output probes than
+input probes.
 
 All subclasses must implement a _filter(..) method that returns a
-list of probes filtered from the given input list. This saves the
-input probes in self.input_probes and the output probes in
+list of probes after processing from the given input list. This
+saves the input probes in self.input_probes and the output probes in
 self.output_probes.
 """
 
