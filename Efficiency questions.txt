@@ -1,3 +1,0 @@
-Efficiency questions: 
-
-1. The probes created to cover the whole genome. Is this really necessary? Right now a new probe is created every 50 bases. 
