@@ -1,5 +1,5 @@
 """Designs probes by generating a set of candidate probes and
-filtering these through a set of one or more given filters.
+passing these through a set of one or more given filters.
 """
 
 # Author: Hayden Metsky <hayden@mit.edu>
@@ -22,7 +22,7 @@ class ProbeDesigner:
   the provided filters.
 
   Stores the candidate probes in self.candidate_probes and the
-  probes that passed the filters in self.final_probes.
+  probes processed by the filters in self.final_probes.
   """
   def design(self):
     self.candidate_probes = candidate_probes.\
