@@ -20,6 +20,7 @@ class TestProbe(unittest.TestCase):
     self.d = probe.Probe.from_str('GATCGTCGCGGATC')
     self.e = probe.Probe.from_str('GGATTGTCGGGGAT')
     self.f = probe.Probe.from_str('GTCGCGGAACGGGG')
+    self.g = probe.Probe.from_str('GTCGCTGATCGATC')
 
   """Test that probe parses the string correctly.
   """
@@ -38,10 +39,16 @@ class TestProbe(unittest.TestCase):
   """Test mismatches_at_offset method.
   """
   def test_mismatches_at_offset(self):
-    self.assertEqual(self.a.mismatches_at_offset(self.d, 1), 0)
-    self.assertEqual(self.a.mismatches_at_offset(self.e, 2), 2)
+    self.assertEqual(self.a.mismatches_at_offset(self.d, -1), 0)
+    self.assertEqual(self.a.mismatches_at_offset(self.e, -2), 2)
     self.assertEqual(self.a.mismatches_at_offset(self.f, 3), 1)
     self.assertRaises(ValueError, self.a.mismatches_at_offset,
         self.c, 1)
     self.assertRaises(ValueError, self.a.mismatches_at_offset,
         self.b, 15)
+
+  """Test min_mismatches_within_shift method.
+  """
+  def test_min_mismatches_within_shift(self):
+    self.assertEqual(self.a.min_mismatches_within_shift(self.g, 5), 1)
+    self.assertEqual(self.a.min_mismatches_within_shift(self.g, 2), 8)
