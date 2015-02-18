@@ -24,23 +24,28 @@ class Probe:
   """Counts the number of mismatches between self and other after
   other is shifted by offset bp.
 
-  Specifically, returns the minimum of the number of mismatches
-  after shifting other to the left and to the right. The two
-  sequences must be the same length. offset must be less than the
-  length of the sequence.
+  offset can be negative (corresponding to other being shifted left)
+  or positive (corresponding to other being shifted right).
   """
   def mismatches_at_offset(self, other, offset):
     if len(self.seq) != len(other.seq):
       raise ValueError("Sequences must be of same length")
-    if offset < 0 or offset >= len(other.seq):
+    if abs(offset) >= len(other.seq):
       raise ValueError("Invalid offset value " + str(offset))
     if offset == 0:
-      left = np.sum(self.seq != other.seq)
-      right = left
+      return np.sum(self.seq != other.seq)
+    elif offset < 0:
+      return np.sum(self.seq[:offset] != other.seq[-offset:])
     else:
-      left = np.sum(self.seq[:-offset] != other.seq[offset:])
-      right = np.sum(self.seq[offset:] != other.seq[:-offset])
-    return min(left, right)
+      return np.sum(self.seq[offset:] != other.seq[:-offset])
+
+  """Counts the minimum number of mismatches between self and other
+  as other is shifted with an offset between -max_shift and
+  +max_shift relative to self.
+  """
+  def min_mismatches_within_shift(self, other, max_shift):
+    return min(self.mismatches_at_offset(other, offset) \
+                for offset in xrange(-max_shift, max_shift+1))
 
   """Returns a probe that is the reverse-complement of this
   probe.
