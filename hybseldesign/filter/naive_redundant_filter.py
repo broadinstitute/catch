@@ -18,8 +18,33 @@ from hybseldesign.filter.base_filter import BaseFilter
 
 class NaiveRedundantFilter(BaseFilter):
 
+  """are_redundant_fn is a function that takes as input two probes
+  and returns True iff the two are deemed redundant.
+  """
+  def __init__(self, are_redundant_fn=None):
+    if are_redundant_fn == None:
+      # Use the shift and mismatch count method by default, with
+      # parameters ensuring that two probes are deemed redundant
+      # iff they are identical (i.e., no shift with no mismatches
+      # between the two)
+      are_redundant_fn = redundant_shift_and_mismatch_count(
+                          shift=0, mismatch_thres=0)
+    self.are_redundant_fn = are_redundant_fn
+
   def _filter(self, input):
-    pass
+    probes_to_delete = set()
+    for i, probe_a in enumerate(input):
+      if probe_a in probes_to_delete:
+        continue
+      for j in xrange(i+1, len(input)):
+        probe_b = input[j]
+        if probe_b in probes_to_delete:
+          continue
+        if self.are_redundant_fn(probe_a, probe_b):
+          probes_to_delete.add(probe_b)
+
+    # Return all probes except those in probes_to_delete
+    return [p for p in input if p not in probes_to_delete]
 
 
 """Returns a function that determines whether two probes are
@@ -31,7 +56,7 @@ other. If the smallest number of mismatches encountered is
 is <= mismatch_thres, then are_redundant outputs True; otherwise
 it outputs False.
 """
-def are_redundant_based_on_shift_and_mismatch_count(shift=0,
+def redundant_shift_and_mismatch_count(shift=0,
     mismatch_thres=0):
   def are_redundant(probe_a, probe_b):
     mismatches = probe_a.min_mismatches_within_shift(probe_b, shift)
@@ -47,7 +72,7 @@ If the length of the longest common substring with at most
 'mismatches' mismatches is >= lcf_thres, then are_redundant outputs
 True; otherwise it outputs False.
 """
-def are_redundant_based_on_longest_common_substring(mismatches=0,
+def redundant_longest_common_substring(mismatches=0,
     lcf_thres=100):
   def are_redundant(probe_a, probe_b):
     lcf_length = probe_a.longest_common_substring_length(probe_b,
