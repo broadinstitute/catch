@@ -31,20 +31,34 @@ class NaiveRedundantFilter(BaseFilter):
                           shift=0, mismatch_thres=0)
     self.are_redundant_fn = are_redundant_fn
 
-  def _filter(self, input):
-    probes_to_delete = set()
-    for i, probe_a in enumerate(input):
-      if probe_a in probes_to_delete:
-        continue
-      for j in xrange(i+1, len(input)):
-        probe_b = input[j]
-        if probe_b in probes_to_delete:
-          continue
-        if self.are_redundant_fn(probe_a, probe_b):
-          probes_to_delete.add(probe_b)
+  """For each probe P, removes all subsequent probes that are redundant
+  to P, where redundancy is determined by self.are_redundant_fn.
 
-    # Return all probes except those in probes_to_delete
-    return [p for p in input if p not in probes_to_delete]
+  It is necessary to necessary to keep track of probes to delete
+  by their index (in probe_indices_to_delete) rather than by
+  storing the probe itself (e.g., in probes_to_delete). The reason
+  is that if there are two probes that are identical they will have
+  the same hash and be considered equal by __eq__; if only one is
+  intended to be deleted (i.e., the latter one in the list of input),
+  they will both be deleted accidentally.
+  """
+  def _filter(self, input):
+    probe_indices_to_delete = set()
+    for i in xrange(len(input)):
+      if i in probe_indices_to_delete:
+        continue
+      probe_a = input[i]
+      for j in xrange(i+1, len(input)):
+        if j in probe_indices_to_delete:
+          continue
+        probe_b = input[j]
+        if self.are_redundant_fn(probe_a, probe_b):
+          probe_indices_to_delete.add(j)
+
+    # Return all probes except those whose indices are in
+    # probe_indices_to_delete
+    return [p for i, p in enumerate(input) \
+              if i not in probe_indices_to_delete]
 
 
 """Returns a function that determines whether two probes are
