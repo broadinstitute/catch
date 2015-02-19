@@ -6,6 +6,8 @@ with them.
 
 import numpy as np
 
+from hybseldesign.utils import longest_common_substring
+
 
 """Immutable sequence representing a probe/bait.
 """
@@ -46,6 +48,13 @@ class Probe:
   def min_mismatches_within_shift(self, other, max_shift):
     return min(self.mismatches_at_offset(other, offset) \
                 for offset in xrange(-max_shift, max_shift+1))
+
+  """Returns the length of the longest common substring with at most
+  k mismatches between self and other.
+  """
+  def longest_common_substring_length(self, other, k):
+    l, _, _ = longest_common_substring.k_lcf(self.seq, other.seq, k)
+    return l
 
   """Returns a probe that is the reverse-complement of this
   probe.
