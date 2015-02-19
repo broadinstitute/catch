@@ -13,6 +13,15 @@ implementation.
 """
 class TestLongestCommonSubstringWithKMismatches(unittest.TestCase):
 
+  def test_different(self):
+    a = 'ABC'
+    b = 'DEF'
+    self.assertEqual(lcf.k_lcf(a,b,0), (0,0,0))
+    self.assertEqual(lcf.k_lcf(a,b,1), (1,0,2))
+    self.assertEqual(lcf.k_lcf(a,b,2), (2,0,1))
+    self.assertEqual(lcf.k_lcf(a,b,3), (3,0,0))
+    self.assertEqual(lcf.k_lcf(a,b,4), (3,0,0))
+
   def test_equal(self):
     a = 'ABCDEFGHIJ'
     b = 'ABCDEFGHIJ'
@@ -53,4 +62,11 @@ class TestLongestCommonSubstringWithKMismatches(unittest.TestCase):
     self.assertEqual(lcf.k_lcf(a,b,2), (12,1,7))
     self.assertEqual(lcf.k_lcf(a,b,3), (13,0,6))
     self.assertEqual(lcf.k_lcf(a,b,4), (15,1,7))
+    # flip above
+    a, b = b, a
+    self.assertEqual(lcf.k_lcf(a,b,0), (5,7,1))
+    self.assertEqual(lcf.k_lcf(a,b,1), (8,7,1))
+    self.assertEqual(lcf.k_lcf(a,b,2), (12,7,1))
+    self.assertEqual(lcf.k_lcf(a,b,3), (13,6,0))
+    self.assertEqual(lcf.k_lcf(a,b,4), (15,7,1))
 
