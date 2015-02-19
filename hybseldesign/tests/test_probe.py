@@ -54,3 +54,8 @@ class TestProbe(unittest.TestCase):
     self.assertEqual(self.g.min_mismatches_within_shift(self.a, 5), 1)
     self.assertEqual(self.a.min_mismatches_within_shift(self.g, 2), 8)
     self.assertEqual(self.g.min_mismatches_within_shift(self.a, 2), 8)
+    self.assertEqual(self.a.min_mismatches_within_shift(self.b, 0), 3)
+    self.assertEqual(self.b.min_mismatches_within_shift(self.a, 0), 3)
+    self.assertEqual(self.a.min_mismatches_within_shift(self.b, 2), 3)
+    self.assertEqual(self.b.min_mismatches_within_shift(self.a, 2), 3)
+
