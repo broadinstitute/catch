@@ -51,4 +51,6 @@ class TestProbe(unittest.TestCase):
   """
   def test_min_mismatches_within_shift(self):
     self.assertEqual(self.a.min_mismatches_within_shift(self.g, 5), 1)
+    self.assertEqual(self.g.min_mismatches_within_shift(self.a, 5), 1)
     self.assertEqual(self.a.min_mismatches_within_shift(self.g, 2), 8)
+    self.assertEqual(self.g.min_mismatches_within_shift(self.a, 2), 8)
