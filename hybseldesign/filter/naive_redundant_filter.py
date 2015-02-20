@@ -79,12 +79,45 @@ One probe is shifted between -shift and +shift relative to the
 other. If the smallest number of mismatches encountered is
 is <= mismatch_thres, then are_redundant outputs True; otherwise
 it outputs False.
+
+When the quick option is set to True, the function returned
+determines redundancy in a way that directly looks at the mismatch
+threshold in an attempt to reduce the number of comparisons; it
+may be faster in some cases. However, it is less tested.
 """
 def redundant_shift_and_mismatch_count(shift=0,
-    mismatch_thres=0):
-  def are_redundant(probe_a, probe_b):
-    mismatches = probe_a.min_mismatches_within_shift(probe_b, shift)
-    return mismatches <= mismatch_thres
+    mismatch_thres=0, quick=True):
+  if quick:
+    def are_redundant(probe_a, probe_b):
+      probe_a_len = len(probe_a.seq)
+      probe_b_len = len(probe_b.seq)
+      for s in xrange(-shift, shift+1):
+        mismatches = 0
+        if s < 0:
+          probe_a_idx = 0
+          probe_b_idx = -s
+        else:
+          probe_a_idx = s
+          probe_b_idx = 0
+        while probe_a_idx < probe_a_len and \
+            probe_b_idx < probe_b_len:
+          # Step through the probes, and stop comparing for this
+          # shift if there are too many mismatches
+          if probe_a.seq[probe_a_idx] != probe_b.seq[probe_b_idx]:
+            mismatches += 1
+          if mismatches > mismatch_thres:
+            break
+          probe_a_idx += 1
+          probe_b_idx += 1
+        if mismatches <= mismatch_thres:
+          # Found a shift with a small enough number of mismatches
+          return True
+      # All of the shifts have > mismatch_thres mismatches
+      return False
+  else:
+    def are_redundant(probe_a, probe_b):
+      mismatches = probe_a.min_mismatches_within_shift(probe_b, shift)
+      return mismatches <= mismatch_thres
   return are_redundant
 
 
