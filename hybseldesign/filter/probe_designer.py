@@ -13,10 +13,15 @@ class ProbeDesigner:
   (ordered) list 'filters' of filters.
 
   Each filter should be an instance of a subclass of Filter.
+
+  When replicate_first_version is True, candidate probes are
+  explicitly designed in a (buggy) way intended to replicate the
+  first version (Matlab code) of probe design.
   """
-  def __init__(self, seqs, filters):
+  def __init__(self, seqs, filters, replicate_first_version=False):
     self.seqs = seqs
     self.filters = filters
+    self.replicate_first_version = replicate_first_version
 
   """Generates the set of candidate probes and runs these through
   the provided filters.
@@ -25,8 +30,15 @@ class ProbeDesigner:
   probes processed by the filters in self.final_probes.
   """
   def design(self):
+    if self.replicate_first_version:
+      replicate_args = { 'add_probe_for_end_bases': False,
+                         'insert_bug': True }
+    else:
+      replicate_args = {}
     self.candidate_probes = candidate_probes.\
-        make_candidate_probes_from_sequences(self.seqs)
+        make_candidate_probes_from_sequences(self.seqs,
+          **replicate_args)
+
     probes = self.candidate_probes
     for f in self.filters:
       probes = f.filter(probes)
