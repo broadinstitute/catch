@@ -21,21 +21,14 @@ Possible probes that would contains strings of min_n_string_length or
 more N's are discarded and, instead, new probes flanking the string
 are added.
 
-When the sequence length is not divisible by probe_stride there are
-remaining bases at the end not covered. An extra probe is added for
-these iff add_probe_for_end_bases is True. (This argument was added
-to replicate past software and results, in which its value would be
-False.)
-
-insert_bug adds a bug to the code in order to replicate past software
+insert_bugs adds bugs to the code in order to replicate past software
 (the first version of probe design, as Matlab code) and its reuslts.
 
 It is possible (especially when there are strings of N's) that
 duplicate probes are returned.
 """
 def make_candidate_probes_from_sequence(seq, probe_length=100,
-    probe_stride=50, min_n_string_length=2,
-    add_probe_for_end_bases=True, insert_bug=False):
+    probe_stride=50, min_n_string_length=2, insert_bugs=False):
   if probe_length > len(seq):
     raise ValueError("Invalid probe_length " + str(probe_length))
 
@@ -51,12 +44,12 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
     subseq = seq[start:end]
     probes = []
 
-    if insert_bug and is_bug_location:
+    if insert_bugs and is_bug_location:
       if 'N' in subseq:
-        # A bug in the original version of the probe design (Matlab code)
-        # considered a probe with just a single 'N' (even if
-        # min_n_string_length > 1) to be invalid and otherwise to be
-        # valid
+        # A bug was present that considered a probe with just a
+        # single 'N' (even if min_n_string_length > 1) to be invalid
+        # and otherwise to be valid
+        # (line 116 of Matlab code)
         pass
       else:
         probes += [subseq]
@@ -74,15 +67,31 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
   for start in np.arange(0, len(seq), probe_stride):
     if start + probe_length > len(seq):
       break
-    # A bug in the original version of the probe design (Matlab code)
-    # was present in designing a so-called 'B adapter'
+    if insert_bugs:
+      if start + probe_length == len(seq) and \
+          start % probe_length == 0:
+        # A bug was present that stopped creating candidate probes
+        # one bp short of where it should have stopped (but only
+        # for the so-called 'A adapter'; this is not a problem for
+        # the 'B-adapter')
+        # (line 86 of Matlab code)
+        break
+
+    # A particular bug was present only in designing the
+    # so-called 'B adapter'
+    # (line 116 of Matlab code)
     is_bug_location = start % probe_length == probe_stride
+
     probes += add_probe_from_subsequence(start, start+probe_length,
                 is_bug_location=is_bug_location)
-  if len(seq) % probe_stride != 0 and add_probe_for_end_bases:
+  if len(seq) % probe_stride != 0:
     # There are bases on the right that were never covered, so add
     # another probe for this
-    probes += add_probe_from_subsequence(len(seq)-probe_length, len(seq))
+    if insert_bugs:
+      # A bug was present that ignored the bases on the end
+      pass
+    else:
+      probes += add_probe_from_subsequence(len(seq)-probe_length, len(seq))
 
   # Add probes flanking each string of N's. Specifically, add a probe
   # to the left of a string and to the right. The called function
@@ -113,8 +122,7 @@ It is possible (perhaps even likely depending on where
 the sequences come from) that duplicate probes are returned.
 """
 def make_candidate_probes_from_sequences(seqs, probe_length=100,        
-    probe_stride=50, min_n_string_length=2,
-    add_probe_for_end_bases=True, insert_bug=False):
+    probe_stride=50, min_n_string_length=2, insert_bugs=False):
   if type(seqs) != list:
     raise ValueError("seqs must be a list of sequences")
   if len(seqs) == 0:
@@ -128,7 +136,6 @@ def make_candidate_probes_from_sequences(seqs, probe_length=100,
     probes += make_candidate_probes_from_sequence(seq,
                 probe_length=probe_length, probe_stride=probe_stride,
                 min_n_string_length=min_n_string_length,
-                add_probe_for_end_bases=add_probe_for_end_bases,
-                insert_bug=insert_bug)
+                insert_bugs=insert_bugs)
   return probes
 
