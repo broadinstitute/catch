@@ -31,8 +31,7 @@ class ProbeDesigner:
   """
   def design(self):
     if self.replicate_first_version:
-      replicate_args = { 'add_probe_for_end_bases': False,
-                         'insert_bug': True }
+      replicate_args = { 'insert_bugs': True }
     else:
       replicate_args = {}
     self.candidate_probes = candidate_probes.\

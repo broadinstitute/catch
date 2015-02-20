@@ -4,14 +4,20 @@
 # Author: Hayden Metsky <hayden@mit.edu>
 
 import numpy as np
+import re
 
 
 """Reads the FASTA file fn and return a mapping from the name of
 each sequence to the sequence itself, where the sequence is
 stored as a native Python string ('str') or numpy array ('np')
 as determined by data_type.
+
+The degenerate bases ('Y','R','W','S','M','K') are replaced with
+'N' iff replace_degenerate is True.
 """
-def read_fasta(fn, data_type='str'):
+def read_fasta(fn, data_type='str', replace_degenerate=True):
+  degenerate_pattern = re.compile('[YRWSMK]')
+
   m = {}
   with open(fn) as f:
     curr_seq_name = ""
@@ -28,6 +34,8 @@ def read_fasta(fn, data_type='str'):
         m[curr_seq_name] = ''
       else:
         # Append the sequence
+        if replace_degenerate:
+          line = degenerate_pattern.sub('N', line)
         m[curr_seq_name] += line
 
   if data_type == 'str':
