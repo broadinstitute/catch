@@ -51,7 +51,7 @@ class NaiveRedundantFilter(BaseFilter):
   def _filter(self, input):
     probe_indices_to_delete = set()
     for i in xrange(len(input)):
-      if i % 1 == 0:
+      if i % 100 == 0:
         logger.info("Processing candidate probe %d of %d",
           i, len(input))
 
