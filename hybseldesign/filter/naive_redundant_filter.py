@@ -13,8 +13,14 @@ designing probes for hybrid selection.
 
 # Author: Hayden Metsky <hayden@mit.edu>
 
+import logging
+
 from hybseldesign.filter.base_filter import BaseFilter
 
+# Setup logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
 class NaiveRedundantFilter(BaseFilter):
 
@@ -45,6 +51,10 @@ class NaiveRedundantFilter(BaseFilter):
   def _filter(self, input):
     probe_indices_to_delete = set()
     for i in xrange(len(input)):
+      if i % 1 == 0:
+        logger.info("Processing candidate probe %d of %d",
+          i, len(input))
+
       if i in probe_indices_to_delete:
         continue
       probe_a = input[i]
