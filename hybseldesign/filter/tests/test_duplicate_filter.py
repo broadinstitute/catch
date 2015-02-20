@@ -30,4 +30,6 @@ class TestDuplicateFilter(unittest.TestCase):
     f = duplicate_filter.DuplicateFilter()
     f.filter(input_probes)
     self.assertItemsEqual(f.input_probes, input_probes)
-    self.assertItemsEqual(f.output_probes, desired_output_probes)
+    # Order should be preserved, so use assertEqual rather than
+    # assertItemsEqual
+    self.assertEqual(f.output_probes, desired_output_probes)
