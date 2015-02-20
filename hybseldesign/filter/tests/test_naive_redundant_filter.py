@@ -4,6 +4,7 @@
 # Author: Hayden Metsky <hayden@mit.edu>
 
 import unittest
+import logging
 
 from hybseldesign import probe
 from hybseldesign.filter import naive_redundant_filter as nrf
@@ -13,6 +14,10 @@ from hybseldesign.filter import naive_redundant_filter as nrf
 probes are redundant.
 """
 class TestNaiveRedundantFilterShiftAndMismatchCount(unittest.TestCase):
+
+  def setUp(self):
+    # Disable logging
+    logging.disable(logging.INFO)
 
   def compare_input_with_desired_output(self, shift, mismatches,
       input, desired_output):
@@ -61,4 +66,8 @@ class TestNaiveRedundantFilterShiftAndMismatchCount(unittest.TestCase):
                       'AGTCGTAGCG',
                       'ATTGTCGCGA']
     self.compare_input_with_desired_output(1, 1, input, desired_output)
+
+  def tearDown(self):
+    # Re-enable logging
+    logging.disable(logging.NOTSET)
 
