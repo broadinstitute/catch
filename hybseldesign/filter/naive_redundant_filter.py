@@ -80,14 +80,20 @@ other. If the smallest number of mismatches encountered is
 is <= mismatch_thres, then are_redundant outputs True; otherwise
 it outputs False.
 
-When the quick option is set to True, the function returned
-determines redundancy in a way that directly looks at the mismatch
-threshold in an attempt to reduce the number of comparisons; it
-may be faster in some cases. However, it is less tested.
+When the quick option is set to True and mismatch_thres is low,
+the function returned determines redundancy in a way that directly
+looks at the mismatch threshold in an attempt to reduce the number
+of comparisons; it may be faster in some cases. However, it is less
+tested.
 """
 def redundant_shift_and_mismatch_count(shift=0,
-    mismatch_thres=0, quick=True):
-  if quick:
+    mismatch_thres=0, quick=True, quick_mismatch_cutoff=10):
+  # The 'quick' are_redundant function will become slower than
+  # the shorter one below as mismatch_thres grows larger, so
+  # arbitrarily set a cutoff (quick_mismatch_cutoff) and only
+  # return the 'quick' function when mismatch_thres is below
+  # this cutoff.
+  if quick and mismatch_thres < quick_mismatch_cutoff:
     def are_redundant(probe_a, probe_b):
       probe_a_len = len(probe_a.seq)
       probe_b_len = len(probe_b.seq)
