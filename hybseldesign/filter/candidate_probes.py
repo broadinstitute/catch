@@ -40,7 +40,8 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
   # Namely, if that subsequence contains no string of N's, then it
   # is a probe to be added and the probe is returned in a single-
   # valued list. Otherwise, an empty list is returned.
-  def add_probe_from_subsequence(start, end, is_bug_location=False):
+  def add_probe_from_subsequence(start, end,
+      is_flanking_n_string=False, is_bug_location=False):
     subseq = seq[start:end]
     probes = []
 
@@ -59,6 +60,12 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
       if not n_string_query.search(subseq):
         # There's no string of N's, so this subsequence is a valid probe
         probes += [subseq]
+
+    # Convert the probes from a Python list of Python strings to a
+    # list of probe.Probe
+    probes = [probe.Probe.from_str(p) for p in probes]
+    for p in probes:
+      p.is_flanking_n_string = is_flanking_n_string
 
     return probes
 
@@ -101,16 +108,11 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
     if match.start() - probe_length >= 0:
       # Add the left flanking probe for match
       probes += add_probe_from_subsequence(match.start()-probe_length,
-                  match.start())
+                  match.start(), is_flanking_n_string=True)
     if match.end() + probe_length <= len(seq):
       # Add the right flanking probe for match
       probes += add_probe_from_subsequence(match.end(),
-                  match.end()+probe_length)
-
-  # Convert the probes from a Python list of Python strings to a
-  # list of probe.Probe
-  for i in xrange(len(probes)):
-    probes[i] = probe.Probe.from_str(probes[i])
+                  match.end()+probe_length, is_flanking_n_string=True)
 
   return probes
 
@@ -121,8 +123,9 @@ seqs.
 It is possible (perhaps even likely depending on where
 the sequences come from) that duplicate probes are returned.
 """
-def make_candidate_probes_from_sequences(seqs, probe_length=100,        
-    probe_stride=50, min_n_string_length=2, insert_bugs=False):
+def make_candidate_probes_from_sequences(seqs, probe_length=100,
+    probe_stride=50, min_n_string_length=2, insert_bugs=False,
+    move_all_n_string_flanking_probes_to_end=False):
   if type(seqs) != list:
     raise ValueError("seqs must be a list of sequences")
   if len(seqs) == 0:
@@ -137,5 +140,19 @@ def make_candidate_probes_from_sequences(seqs, probe_length=100,
                 probe_length=probe_length, probe_stride=probe_stride,
                 min_n_string_length=min_n_string_length,
                 insert_bugs=insert_bugs)
+
+  if move_all_n_string_flanking_probes_to_end:
+    # To precisely replicate past software/results, this option
+    # moves all probes that flank a string of N's to the end
+    # of the returned list.
+    probes_non_n = []
+    probes_n = []
+    for p in probes:
+      if p.is_flanking_n_string:
+        probes_n += [p]
+      else:
+        probes_non_n += [p]
+    probes = probes_non_n + probes_n
+
   return probes
 

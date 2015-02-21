@@ -15,6 +15,7 @@ class Probe:
   def __init__(self, seq):
     self.seq = seq
     self.hash = hash(seq.tostring())
+    self.is_flanking_n_string = False
 
   """Counts the number of mismatches between self and other.
 
