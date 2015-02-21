@@ -31,7 +31,10 @@ class ProbeDesigner:
   """
   def design(self):
     if self.replicate_first_version:
-      replicate_args = { 'insert_bugs': True }
+      replicate_args = {
+                'insert_bugs': True,
+                'move_all_n_string_flanking_probes_to_end': True
+      }
     else:
       replicate_args = {}
     self.candidate_probes = candidate_probes.\
