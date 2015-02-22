@@ -134,10 +134,22 @@ with less than or equal to 'mismatches' mismatches.
 If the length of the longest common substring with at most
 'mismatches' mismatches is >= lcf_thres, then are_redundant outputs
 True; otherwise it outputs False.
+
+When prune_with_heuristic is True, a heuristic (probe.shares_some_kmers)
+is called to determine whether the two probes might be redundant.
+If it outputs that they are likely not, then are_redundant outputs
+False and the longest common substring (a costly operation) is
+not computed. Both false positives and false negatives are possible,
+but should be rare.
 """
 def redundant_longest_common_substring(mismatches=0,
-    lcf_thres=100):
+    lcf_thres=100, prune_with_heuristic=True):
   def are_redundant(probe_a, probe_b):
+    if prune_with_heuristic:
+      if not probe_a.shares_some_kmers(probe_b):
+        # probe_a and probe_b are likely not redundant, so don't
+        # bother computing their longest common substring
+        return False
     lcf_length = probe_a.longest_common_substring_length(probe_b,
                     mismatches)
     return lcf_length >= lcf_thres
