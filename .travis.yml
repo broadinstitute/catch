@@ -1,0 +1,15 @@
+language: python
+
+python:
+  - 2.7
+  - 3.4
+
+install:
+ - pip install -r requirements.txt
+ - pip install coveralls nose-cov
+
+script:
+ - nosetests -v --with-xunit --with-coverage --cover-inclusive --cover-branches --cover-package hybseldesign
+
+after_success:
+ - coveralls
