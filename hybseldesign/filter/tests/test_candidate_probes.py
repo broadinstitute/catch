@@ -1,7 +1,7 @@
 """Tests for candidate_probes module.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import unittest
 

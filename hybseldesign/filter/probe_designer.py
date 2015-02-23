@@ -2,7 +2,7 @@
 passing these through a set of one or more given filters.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 from hybseldesign.filter import candidate_probes
 

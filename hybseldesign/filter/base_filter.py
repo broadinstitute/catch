@@ -16,7 +16,7 @@ saves the input probes in self.input_probes and the output probes in
 self.output_probes.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class BaseFilter:

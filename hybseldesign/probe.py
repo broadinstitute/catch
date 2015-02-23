@@ -2,7 +2,7 @@
 with them.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import numpy as np
 

@@ -1,14 +1,15 @@
+#!/usr/bin/env python
 """Script that runs hybseldesign to replicate the probes generated
 on the Ebola Zaire dataset by the prior version of code (Matlab
 and RemoveSimilarSequences.jar).
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import argparse
 
 from hybseldesign.datasets import ebola_zaire
-from hybseldesign.utils import seq_io
+from hybseldesign.utils import seq_io, version
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
@@ -60,6 +61,7 @@ if __name__ == "__main__":
       help=("Deem one probe redundant to another if, as one is "
             "shifted relative to the other, the minimum number of "
             "mismatches between them is <= 'mismatch_thres'"))
+  parser.add_argument('--version', '-V', action='version', version=version.get_version())
   args = parser.parse_args()
 
   main(args)
