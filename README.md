@@ -1,4 +1,5 @@
 [![Build Status](https://magnum.travis-ci.com/broadinstitute/hybsel_design.svg?token=1e54w9HsqGg5ZQzQ9ruW&branch=master)](https://magnum.travis-ci.com/broadinstitute/hybsel_design)
+[![Coverage Status](https://coveralls.io/repos/broadinstitute/hybsel_design/badge.svg?branch=master)](https://coveralls.io/r/broadinstitute/hybsel_design)
 
 hybsel_design
 =============
