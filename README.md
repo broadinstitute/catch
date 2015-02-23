@@ -1,3 +1,5 @@
+[![Build Status](https://magnum.travis-ci.com/broadinstitute/hybsel_design.svg?token=1e54w9HsqGg5ZQzQ9ruW&branch=master)](https://magnum.travis-ci.com/broadinstitute/hybsel_design)
+
 hybsel_design
 =============
 
