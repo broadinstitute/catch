@@ -1,8 +1,9 @@
+#!/usr/bin/env python
 """Script that runs hybseldesign to design probes from the Ebola
 2014 dataset using a filter-based approach.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 from hybseldesign.datasets import ebola2014
 from hybseldesign.utils import seq_io

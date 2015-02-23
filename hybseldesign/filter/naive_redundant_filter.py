@@ -11,7 +11,7 @@ implemented primarily to replicate previous software and results on
 designing probes for hybrid selection.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import logging
 

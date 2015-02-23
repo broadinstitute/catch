@@ -1,14 +1,15 @@
+#!/usr/bin/env python
 """Script that runs hybseldesign to design probes for the Ebola
 Zaire dataset by using a naive redundant filter in which redundancy
 is based on the longest common substring between two probes.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import argparse
 
 from hybseldesign.datasets import ebola_zaire
-from hybseldesign.utils import seq_io
+from hybseldesign.utils import seq_io, version
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
@@ -61,6 +62,7 @@ if __name__ == "__main__":
       help=("Deem two probes to be redundant if the longest "
             "common substring with at most 'mismatches' mismatches "
             "between them has a length that is >= 'lcf_thres' bp"))
+  parser.add_argument('--version', '-V', action='version', version=version.get_version())
   args = parser.parse_args()
 
   main(args)

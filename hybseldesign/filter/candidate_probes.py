@@ -2,7 +2,7 @@
 termed candidate probes, from a sequence or list of sequences.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import sys
 import re
