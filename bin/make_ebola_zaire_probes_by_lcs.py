@@ -14,6 +14,7 @@ from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import naive_redundant_filter
+from hybseldesign.filter import dominating_set_filter
 
 
 def main(args):
@@ -28,15 +29,24 @@ def main(args):
   #     task implicitly, but it does significantly lower runtime by
   #     decreasing the input size to the naive redundant filter
   df = duplicate_filter.DuplicateFilter()
-  #  2) Naive redundant filter (nf) -- execute a greedy algorithm to
-  #     condense 'similar' probes down to one
-  nf = naive_redundant_filter.NaiveRedundantFilter(
-        naive_redundant_filter.redundant_longest_common_substring(
-          mismatches=args.mismatches, lcf_thres=args.lcf_thres))
+  if args.main_filter == "ds":
+    # 2) Dominating set filter (ds) -- treat the problem as an
+    #    instance of the dominating set problem
+    mf = dominating_set_filter.DominatingSetFilter(
+          naive_redundant_filter.redundant_longest_common_substring(
+            mismatches=args.mismatches, lcf_thres=args.lcf_thres))
+  elif args.main_filter == "nr":
+    #  2) Naive redundant filter (nr) -- execute a greedy algorithm
+    #     to condense 'similar' probes down to one
+    mf = naive_redundant_filter.NaiveRedundantFilter(
+          naive_redundant_filter.redundant_longest_common_substring(
+            mismatches=args.mismatches, lcf_thres=args.lcf_thres))
+  else:
+    raise ValueError("Unknown main filter " + args.main_filter)
   #  3) Reverse complement (rc) -- add the reverse complement of
   #     each probe that remains
   rc = reverse_complement_filter.ReverseComplementFilter()
-  filters = [ df, nf, rc ]
+  filters = [ df, mf, rc ]
 
   # Design the probes
   # (including the replicate_first_version argument to execute
@@ -62,7 +72,11 @@ if __name__ == "__main__":
       help=("Deem two probes to be redundant if the longest "
             "common substring with at most 'mismatches' mismatches "
             "between them has a length that is >= 'lcf_thres' bp"))
-  parser.add_argument('--version', '-V', action='version', version=version.get_version())
+  parser.add_argument("-f", "--main_filter", type=str, default="ds",
+      help=("The primary filter to use: 'ds' (dominating set filter) "
+            "[default] or 'nr' (naive redundant filter)"))
+  parser.add_argument('--version', '-V', action='version',
+      version=version.get_version())
   args = parser.parse_args()
 
   main(args)
