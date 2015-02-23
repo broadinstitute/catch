@@ -1,7 +1,7 @@
 """Utilities for working with sequence i/o.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import numpy as np
 import re
