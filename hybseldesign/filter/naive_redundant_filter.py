@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+
 class NaiveRedundantFilter(BaseFilter):
 
   """are_redundant_fn is a function that takes as input two probes
@@ -40,11 +41,11 @@ class NaiveRedundantFilter(BaseFilter):
   """For each probe P, removes all subsequent probes that are redundant
   to P, where redundancy is determined by self.are_redundant_fn.
 
-  It is necessary to necessary to keep track of probes to delete
-  by their index (in probe_indices_to_delete) rather than by
-  storing the probe itself (e.g., in probes_to_delete). The reason
-  is that if there are two probes that are identical they will have
-  the same hash and be considered equal by __eq__; if only one is
+  It is necessary to keep track of probes to delete by their
+  index (in probe_indices_to_delete) rather than by storing the
+  probe itself (e.g., in probes_to_delete). The reason is that
+  if there are two probes that are identical they will have the
+  same hash and be considered equal by __eq__; if only one is
   intended to be deleted (i.e., the latter one in the list of input),
   they will both be deleted accidentally.
   """
