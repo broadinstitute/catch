@@ -4,7 +4,7 @@ reverse complement.
 The number of output probes is twice the number of input probes.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 from hybseldesign.filter.base_filter import BaseFilter
 

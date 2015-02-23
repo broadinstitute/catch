@@ -6,7 +6,7 @@ guarantees about the order of what is returned (i.e., it is
 not stable with respect to the input order).
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 from hybseldesign.filter.base_filter import BaseFilter
 

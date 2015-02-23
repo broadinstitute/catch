@@ -2,7 +2,7 @@
 sequences, a problem that is potentially relevant to probe design.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 from collections import deque
 
