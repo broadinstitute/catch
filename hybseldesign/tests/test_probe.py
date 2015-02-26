@@ -64,7 +64,7 @@ class TestProbe(unittest.TestCase):
   def test_share_some_kmers_nonmemoized(self):
     np.random.seed(1)
     args = { 'k': 5, 'num_kmers_to_test': 10,
-             'memoize_kmer_hashes': False }
+             'memoize_kmers': False }
     a = probe.Probe.from_str('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
     b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
     c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')
@@ -88,7 +88,7 @@ class TestProbe(unittest.TestCase):
   def test_share_some_kmers_memoized(self):
     np.random.seed(1)
     args = { 'k': 5, 'num_kmers_to_test': 10,
-             'memoize_kmer_hashes': True }
+             'memoize_kmers': True }
     a = probe.Probe.from_str('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
     b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
     c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')

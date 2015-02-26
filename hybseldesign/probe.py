@@ -18,9 +18,8 @@ class Probe:
     self.seq_str = seq.tostring()
     self.is_flanking_n_string = False
 
-    self.kmer_hashes = defaultdict(set)
-    self.kmer_hashes_rand_choices = defaultdict(
-                                       lambda : defaultdict(list))
+    self.kmers = defaultdict(set)
+    self.kmers_rand_choices = defaultdict(lambda : defaultdict(list))
 
   """Counts the number of mismatches between self and other.
 
@@ -75,33 +74,23 @@ class Probe:
                 dtype='S1')
     return Probe(rc_seq)
 
-  """Adds the hash of each k-mer of this probe to self.kmer_hashes.
-
-  This could add the k-mer itself, rather than the hash, to avoid
-  false positives (due to collisions) on lookup; however, storing
-  the hash rather than a k-mer gives space savings and avoids having
-  to compute the hash of a k-mer repeatedly on lookup.
-
-  Use hash(kmer) & 0xffffffff so that the stored hash is 32-bit
-  rather than 64-bit; 32-bit suffices here and halves the space
-  requirements.
+  """Returns the set of k-mers in this probe.
   """
-  def construct_kmer_hashes(self, k):
+  def construct_kmers(self, k):
+    kmers = set()
     for i in xrange(len(self.seq)-k+1):
       kmer = self.seq_str[i:(i+k)]
-      self.kmer_hashes[k].add(hash(kmer) & 0xffffffff)
+      kmers.add(kmer)
+    return kmers
 
   """A heuristic that outputs whether it is likely that self and
   other share at least one k-mer. Note that, depending on the
   sequences being compared and the parameter values, false negatives
   are a very real possibility.
 
-  When memoize_kmer_hashes is True, false positives are possible
-  although extremely unlikely; when it is False, there are no false
-  positives. In either case, false negatives are possible (indeed
-  even likely for two sequences with very few k-mers in common) and
-  their probability of occurring depends on the number of k-mers in
-  common and on num_kmers_to_test.
+  False negatives are possible (indeed even likely for two sequences
+  with very few k-mers in common) and their probability of occurring
+  depends on the number of k-mers in common and on num_kmers_to_test.
 
   This heuristic is intended primarily for determining whether it
   is possible that two sequences are 'redundant'. If two sequences
@@ -130,33 +119,30 @@ class Probe:
     1 - ( (1-(1/4)^k )^{len(seq)-k+1} )^{num_kmers_to_test}
   """
   def shares_some_kmers(self, other, k=10, num_kmers_to_test=5,
-      memoize_kmer_hashes=True):
-    if memoize_kmer_hashes:
-      # Construct the k-mer hashes for self and other if they have
+      memoize_kmers=True):
+    if memoize_kmers:
+      # Construct the k-mers for self and other if they have
       # not yet been constructed for the given k
-      if len(self.kmer_hashes[k]) == 0:
-        self.construct_kmer_hashes(k)
-      if len(other.kmer_hashes[k]) == 0:
-        other.construct_kmer_hashes(k)
+      if len(self.kmers[k]) == 0:
+        self.kmers[k] = self.construct_kmers(k)
+      if len(other.kmers[k]) == 0:
+        other.kmers[k] = other.construct_kmers(k)
 
-      if len(self.kmer_hashes_rand_choices[k][num_kmers_to_test]) == 0:
-        rand_kmer_hashes = np.random.choice(list(self.kmer_hashes[k]),
+      if len(self.kmers_rand_choices[k][num_kmers_to_test]) == 0:
+        rand_kmers = np.random.choice(list(self.kmers[k]),
             size=num_kmers_to_test, replace=True)
         # Memoize the random choices too because the calls to
-        # list(self.kmer_hashes[k]) and to np.random.choice are
+        # list(self.kmers[k]) and to np.random.choice are
         # slow
-        self.kmer_hashes_rand_choices[k][num_kmers_to_test] = \
-            rand_kmer_hashes
+        self.kmers_rand_choices[k][num_kmers_to_test] = \
+            rand_kmers
       else:
-        rand_kmer_hashes = \
-            self.kmer_hashes_rand_choices[k][num_kmers_to_test]
+        rand_kmers = \
+            self.kmers_rand_choices[k][num_kmers_to_test]
 
-      other_kmer_hashes = other.kmer_hashes[k]
-      for rand_kmer_hash in rand_kmer_hashes:
-        if rand_kmer_hash in other_kmer_hashes:
-          # This may be a collision and it may be that in fact
-          # self and other do not share this k-mer, but we allow
-          # false positives
+      other_kmers = other.kmers[k]
+      for rand_kmer in rand_kmers:
+        if rand_kmer in other_kmers:
           return True
       return False
     else:
