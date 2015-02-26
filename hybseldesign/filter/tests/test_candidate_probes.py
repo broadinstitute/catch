@@ -61,6 +61,20 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
     self.assertItemsEqual(p, ['ATCGNC', 'TCGNCG'] + \
         ['ATCGNC', 'TCGNCG', 'TCGATA', 'TCGATA', 'CGATAT'])
 
+  """Tests the version with bugs, intended to replicate the original
+  candidate probe designer.
+  """
+  def test_buggy(self):
+    p = candidate_probes.make_candidate_probes_from_sequences(
+              ['ATCGNCGNNTCG', 'ATCGNCGNNTCGATAT'],
+              probe_length=6, probe_stride=3, min_n_string_length=2,
+              insert_bugs=True,
+              move_all_n_string_flanking_probes_to_end=True)
+    p = [x.seq.tostring() for x in p]
+    # Use assertEqual rather than assertItemsEqual to check order
+    self.assertEqual(p, ['ATCGNC'] + ['ATCGNC', 'TCGATA'] + \
+        ['TCGNCG', 'TCGNCG', 'TCGATA'] )
+
 
 """Tests the candidate probes from the Ebola 2014 dataset.
 """
