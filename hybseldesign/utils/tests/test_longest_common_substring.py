@@ -1,7 +1,7 @@
 """Tests for longest_common_substring module.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import unittest
 
