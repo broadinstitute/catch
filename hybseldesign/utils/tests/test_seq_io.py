@@ -1,7 +1,7 @@
 """Tests for seq_io module.
 """
 
-# Author: Hayden Metsky <hayden@mit.edu>
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import unittest
 
