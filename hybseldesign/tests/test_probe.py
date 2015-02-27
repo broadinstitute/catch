@@ -107,3 +107,121 @@ class TestProbe(unittest.TestCase):
     self.assertGreater(ac, 90)
     self.assertGreater(ca, 90)
 
+  """Test construct_kmers method.
+  """
+  def test_construct_kmers(self):
+    a = probe.Probe.from_str('ABCDEFGHI')
+    self.assertEqual(a.construct_kmers(4),
+        set(['ABCD','BCDE','CDEF','DEFG','EFGH','FGHI']))
+
+
+"""Tests construct_kmer_probe_map function.
+"""
+class TestConstructKmerProbeMap(unittest.TestCase):
+
+  def make_random_probe(self, length):
+    bases = ['A','T','C','G']
+    s = "".join(np.random.choice(bases, size=length, replace=True))
+    return probe.Probe.from_str(s)
+
+  """Make 50 random probes. From them, construct the kmer probe map
+  with k=15 and with 10 kmers per probe. For each probe, check that
+  at least 8 of its kmers can be found in this map (because kmers
+  are selected from the probes with replacement, not all 10 may be
+  present, and indeed not even 8 may be present).
+  """
+  def test_random(self):
+    np.random.seed(1)
+    k = 15
+    num_kmers_per_probe = 10
+    probes = [self.make_random_probe(100) for _ in xrange(50)]
+    kmer_map = probe.construct_kmer_probe_map(probes, k=k,
+        num_kmers_per_probe=num_kmers_per_probe)
+    for p in probes:
+      num_found = 0
+      for kmer in p.construct_kmers(k):
+        if p in kmer_map[kmer]:
+          num_found += 1
+      self.assertGreaterEqual(num_found, 0.8*num_kmers_per_probe)
+
+  def test_shared_kmer(self):
+    np.random.seed(1)
+    a = probe.Probe.from_str('ABCDEFG')
+    b = probe.Probe.from_str('XYZDEFH')
+    probes = [a, b]
+    # Use a high num_kmers_per_probe to ensure all possible
+    # kmers are selected to be put into the map
+    kmer_map = probe.construct_kmer_probe_map(probes, k=3,
+        num_kmers_per_probe=50)
+    self.assertTrue(a in kmer_map['DEF'])
+    self.assertTrue(b in kmer_map['DEF'])
+    self.assertTrue(a in kmer_map['ABC'])
+    self.assertFalse(b in kmer_map['ABC'])
+    self.assertFalse(a in kmer_map['XYZ'])
+    self.assertTrue(b in kmer_map['XYZ'])
+    self.assertTrue(a in kmer_map['EFG'])
+    self.assertFalse(b in kmer_map['EFG'])
+    self.assertFalse(a in kmer_map['EFH'])
+    self.assertTrue(b in kmer_map['EFH'])
+
+
+"""Tests the probe_covers_sequence_by_longest_common_substring
+function.
+"""
+class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
+
+  def setUp(self):
+    self.seq = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+  def test_match_no_mismatches(self):
+    f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+    match = f(probe.Probe.from_str('GHIJKL'), self.seq)
+    self.assertTrue(match != None)
+    start, end = match
+    self.assertEqual(start, 6)
+    self.assertEqual(end, 12)
+    match = f(probe.Probe.from_str('FGHIJKLM'), self.seq)
+    self.assertTrue(match != None)
+    start, end = match
+    self.assertEqual(start, 5)
+    self.assertEqual(end, 13)
+
+  def test_match_with_mismatches(self):
+    f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
+    match = f(probe.Probe.from_str('GHIXKL'), self.seq)
+    self.assertTrue(match != None)
+    start, end = match
+    self.assertEqual(start, 6)
+    self.assertEqual(end, 12)
+    match = f(probe.Probe.from_str('GHIJKX'), self.seq)
+    self.assertTrue(match != None)
+    start, end = match
+    self.assertEqual(start, 6)
+    self.assertEqual(end, 12)
+    match = f(probe.Probe.from_str('FGHIJKXM'), self.seq)
+    self.assertTrue(match != None)
+    start, end = match
+    self.assertEqual(start, 5)
+    self.assertEqual(end, 13)
+
+  def test_no_match_no_mismatches(self):
+    f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+    match = f(probe.Probe.from_str('GHIXKL'), self.seq)
+    self.assertTrue(match == None)
+    match = f(probe.Probe.from_str('GHIJK'), self.seq)
+    self.assertTrue(match == None)
+    
+  def test_no_match_with_mismatches(self):
+    f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
+    match = f(probe.Probe.from_str('GHIXKX'), self.seq)
+    self.assertTrue(match == None)
+    f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
+    match = f(probe.Probe.from_str('GHIJ'), self.seq)
+    self.assertTrue(match == None)
+
+
+"""Tests the find_probe_covers_in_sequence function.
+"""
+class TestFindProbeCoversInSequence(unittest.TestCase):
+
+  pass
