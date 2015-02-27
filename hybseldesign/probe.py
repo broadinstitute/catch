@@ -76,12 +76,19 @@ class Probe:
     return Probe(rc_seq)
 
   """Returns the set of k-mers in this probe.
+
+  When include_positions is True, the set consists of tuples in
+  which the first element is a kmer and the second is its position
+  in the probe.
   """
-  def construct_kmers(self, k):
+  def construct_kmers(self, k, include_positions=False):
     kmers = set()
     for i in xrange(len(self.seq)-k+1):
       kmer = self.seq_str[i:(i+k)]
-      kmers.add(kmer)
+      if include_positions:
+        kmers.add((kmer, i))
+      else:
+        kmers.add(kmer)
     return kmers
 
   """A heuristic that outputs whether it is likely that self and
@@ -187,14 +194,23 @@ class Probe:
     return Probe(np.fromstring(seqStr, dtype='S1'))
 
 
-def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10):
+def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10,
+    include_positions=False):
   kmer_probe_map = defaultdict(set)
   for probe in probes:
-    kmers = probe.construct_kmers(k)
-    rand_kmers = np.random.choice(list(kmers),
-        size=num_kmers_per_probe, replace=True)
-    for kmer in rand_kmers:
-      kmer_probe_map[kmer].add(probe)
+    kmers = list(probe.construct_kmers(k, include_positions))
+    if include_positions:
+      # np.random.choice won't directly pick tuples from a list,
+      # so instead randomly select indices
+      rand_kmers = [kmers[i] for i in np.random.choice(len(kmers),
+          size=num_kmers_per_probe, replace=True)]
+      for kmer, pos in rand_kmers:
+        kmer_probe_map[kmer].add((probe, pos))
+    else:
+      rand_kmers = np.random.choice(kmers,
+          size=num_kmers_per_probe, replace=True)
+      for kmer in rand_kmers:
+        kmer_probe_map[kmer].add(probe)
   return kmer_probe_map
 
 
@@ -207,50 +223,46 @@ def find_probe_covers_in_sequence(sequence,
     cover_range_for_probe_in_subsequence_fn = \
       probe_covers_sequence_by_longest_common_substring()
 
-  # Check that the kmers in the given map are of length k
+  # Check that the kmers in the given map are of length k and
+  # that the kmers in the given map come with positions
   for kmer in kmer_probe_map.keys():
     if len(kmer) != k:
       raise ValueError("Given kmer has length %d but expected %d" % \
                         (len(kmer), k))
+    for v in kmer_probe_map[kmer]:
+      if type(v) != tuple:
+        raise ValueError(("Given kmer_probe_map must include kmer "
+            "positions"))
 
-    # Iterate through every kmer in sequence
-    # Each time a probe is found to cover a range of sequence,
-    # add that range, as a tuple, to the probe's entry in
-    # probe_cover_ranges
-    probe_cover_ranges = defaultdict(list)
-    for i in xrange(len(sequence)-k+1):
-      kmer = self.seq_str[i:(i+k)]
-      # Find the probes with this kmer (with the potential to miss
-      # some probes due to false negatives)
-      probes_to_align = kmer_probe_map[kmer]
-      for probe in probes_to_align:
-        # We could find kmer in probe, align probe to sequence
-        # at that position, and then expand outward to produce
-        # the alignment. But this presents problems if kmer
-        # appears more than once in probe (e.g., in repetitive
-        # regions). A more robust approach is to align probe
-        # to a subsequence of sequence based around position i.
-        # Consider the two extremes: If kmer is at the very right
-        # of probe, the leftmost position where probe could align
-        # is i+k-len(probe.seq). If kmer is at the very left of
-        # probe, the rightmost position where probe could align is
-        # i+len(probe.seq) (exclusive). These establish the
-        # boundaries on the subsequence.
-        subseq_left = max(0, i+k-len(probe.seq))
-        subseq_right = min(len(sequence), i+len(probe.seq))
-        subsequence = sequence[subseq_left:subseq_right]
-        cover_range = \
-          cover_range_for_probe_in_subsequence_fn(probe, subsequence)
-        if cover_range == None:
-          # probe does not meet the threshold for covering this
-          # subsequence
-          continue
-        cover_start, cover_end = cover_range
-        # cover_start and cover_end are relative to subsequence, so
-        # adjust these to be relative to sequence
-        cover_start += subseq_left
-        cover_end += subseq_left
-        probe_cover_ranges.add((cover_start, cover_end))
+  # Iterate through every kmer in sequence
+  # Each time a probe is found to cover a range of sequence,
+  # add that range, as a tuple, to the probe's entry in
+  # probe_cover_ranges
+  probe_cover_ranges = defaultdict(list)
+  for i in xrange(len(sequence)-k+1):
+    kmer = sequence[i:(i+k)]
+    # Find the probes with this kmer (with the potential to miss
+    # some probes due to false negatives)
+    probes_to_align = kmer_probe_map[kmer]
+    for probe, pos in probes_to_align:
+      # kmer appears in probe at position pos. So align probe
+      # to sequence at i-pos and see how much of the subsequence
+      # starting here the probe covers.
+      subseq_left = max(0, i-pos)
+      subseq_right = min(len(sequence), i-pos+len(probe.seq))
+      subsequence = sequence[subseq_left:subseq_right]
+      cover_range = \
+        cover_range_for_probe_in_subsequence_fn(probe, subsequence)
+      if cover_range == None:
+        # probe does not meet the threshold for covering this
+        # subsequence
+        continue
+      cover_start, cover_end = cover_range
+      # cover_start and cover_end are relative to subsequence, so
+      # adjust these to be relative to sequence
+      cover_start += subseq_left
+      cover_end += subseq_left
+      probe_cover_ranges[probe].append((cover_start, cover_end))
 
   # It's possible that the list of cover ranges for a probe has
   # overlapping ranges. Clean the list of cover ranges by "merging"
