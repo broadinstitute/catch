@@ -1,5 +1,5 @@
-"""Structure(s) storing probes and methods for directly working
-with them.
+"""Structure(s) storing probes, as well as methods and functions
+for directly working with them.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -8,6 +8,7 @@ from collections import defaultdict
 import numpy as np
 
 from hybseldesign.utils import longest_common_substring
+from hybseldesign.utils import interval
 
 
 """Immutable sequence representing a probe/bait.
@@ -118,7 +119,7 @@ class Probe:
   this heuristic finds at least one k-mer in common. That is:
     1 - ( (1-(1/4)^k )^{len(seq)-k+1} )^{num_kmers_to_test}
   """
-  def shares_some_kmers(self, other, k=10, num_kmers_to_test=5,
+  def shares_some_kmers(self, other, k=10, num_kmers_to_test=10,
       memoize_kmers=True):
     if memoize_kmers:
       # Construct the k-mers for self and other if they have
@@ -184,3 +185,92 @@ class Probe:
   @staticmethod
   def from_str(seqStr):
     return Probe(np.fromstring(seqStr, dtype='S1'))
+
+
+def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10):
+  kmer_probe_map = defaultdict(set)
+  for probe in probes:
+    kmers = probe.construct_kmers(k)
+    rand_kmers = np.random.choice(list(kmers),
+        size=num_kmers_per_probe, replace=True)
+    for kmer in rand_kmers:
+      kmer_probe_map[kmer].add(probe)
+  return kmer_probe_map
+
+
+def find_probe_covers_in_sequence(sequence,
+    kmer_probe_map, k=15,
+    cover_range_for_probe_in_subsequence_fn=None):
+  if cover_range_for_probe_in_subsequence_fn == None:
+    # By default, determine a cover range using a longest common
+    # substring with its default parameters
+    cover_range_for_probe_in_subsequence_fn = \
+      probe_covers_sequence_by_longest_common_substring()
+
+  # Check that the kmers in the given map are of length k
+  for kmer in kmer_probe_map.keys():
+    if len(kmer) != k:
+      raise ValueError("Given kmer has length %d but expected %d" % \
+                        (len(kmer), k))
+
+    # Iterate through every kmer in sequence
+    # Each time a probe is found to cover a range of sequence,
+    # add that range, as a tuple, to the probe's entry in
+    # probe_cover_ranges
+    probe_cover_ranges = defaultdict(list)
+    for i in xrange(len(sequence)-k+1):
+      kmer = self.seq_str[i:(i+k)]
+      # Find the probes with this kmer (with the potential to miss
+      # some probes due to false negatives)
+      probes_to_align = kmer_probe_map[kmer]
+      for probe in probes_to_align:
+        # We could find kmer in probe, align probe to sequence
+        # at that position, and then expand outward to produce
+        # the alignment. But this presents problems if kmer
+        # appears more than once in probe (e.g., in repetitive
+        # regions). A more robust approach is to align probe
+        # to a subsequence of sequence based around position i.
+        # Consider the two extremes: If kmer is at the very right
+        # of probe, the leftmost position where probe could align
+        # is i+k-len(probe.seq). If kmer is at the very left of
+        # probe, the rightmost position where probe could align is
+        # i+len(probe.seq) (exclusive). These establish the
+        # boundaries on the subsequence.
+        subseq_left = max(0, i+k-len(probe.seq))
+        subseq_right = min(len(sequence), i+len(probe.seq))
+        subsequence = sequence[subseq_left:subseq_right]
+        cover_range = \
+          cover_range_for_probe_in_subsequence_fn(probe, subsequence)
+        if cover_range == None:
+          # probe does not meet the threshold for covering this
+          # subsequence
+          continue
+        cover_start, cover_end = cover_range
+        # cover_start and cover_end are relative to subsequence, so
+        # adjust these to be relative to sequence
+        cover_start += subseq_left
+        cover_end += subseq_left
+        probe_cover_ranges.add((cover_start, cover_end))
+
+  # It's possible that the list of cover ranges for a probe has
+  # overlapping ranges. Clean the list of cover ranges by "merging"
+  # overlapping ones.
+  probe_cover_ranges_merged = defaultdict(list)
+  for probe, cover_ranges in probe_cover_ranges.iteritems():
+    probe_cover_ranges_merged[probe] = interval.\
+        merge_overlapping(cover_ranges)
+  return probe_cover_ranges_merged
+
+
+def probe_covers_sequence_by_longest_common_substring(mismatches=0,
+    lcf_thres=100):
+  def lcf(probe, sequence):
+    l, s_a, s_b = longest_common_substring.k_lcf(probe.seq, sequence,
+        mismatches)
+    if l >= lcf_thres:
+      # s_b is the starting position of the substring in sequence
+      # s_b + l is its ending position (exclusive)
+      return (s_b, s_b + l)
+    else:
+      return None
+  return lcf
