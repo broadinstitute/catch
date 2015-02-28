@@ -11,7 +11,7 @@ from hybseldesign.utils import longest_common_substring as lcf
 """Tests the longest common substring with k mismatches
 implementation.
 """
-class TestLongestCommonSubstringWithKMismatches(unittest.TestCase):
+class TestLCSWithKMismatches(unittest.TestCase):
 
   def test_different(self):
     a = 'ABC'
@@ -69,4 +69,93 @@ class TestLongestCommonSubstringWithKMismatches(unittest.TestCase):
     self.assertEqual(lcf.k_lcf(a,b,2), (12,7,1))
     self.assertEqual(lcf.k_lcf(a,b,3), (13,6,0))
     self.assertEqual(lcf.k_lcf(a,b,4), (15,7,1))
+
+
+"""Tests the longest common substring with k mismatches
+centered around an anchor function.
+"""
+class TestLCSAroundAnchorWithKMismatches(unittest.TestCase):
+
+  def test_just_anchor(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYZDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (3,3))
+
+  def test_anchor_and_around(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYCDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (4,2))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYCDEFGTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (5,2))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYCDEFGHUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (6,2))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBCDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (5,1))
+    a = 'ABCDEFGHIJKLM'
+    b = 'ABCDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (6,0))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYCDEFGHIJKLM'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (11,2))
+
+  def test_anchor_start(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'ABCDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,0,3,0), (6,0))
+
+  def test_anchor_end(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYCDEFSTUJKLM'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,10,13,0), (4,9))
+
+  def test_more_mismatches_than_needed(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'ABCDEFGHIJKLM'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (13,0))
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,1), (13,0))
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,2), (13,0))
+    a = 'ABCDEFGHIJKLM'
+    b = 'AXCDEFGHIJKLM'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (11,2))
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,1), (13,0))
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,2), (13,0))
+
+  def test_with_one_mismatch(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBZDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,0), (3,3))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBZDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,1), (5,1))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBZDEFSHIVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,1), (6,3))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYZDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,1), (4,3))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XYZDEFGTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,1), (5,3))
+    
+  def test_with_two_mismatches(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBZDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,2), (6,1))
+    a = 'ABCDEFGHIJKLM'
+    b = 'ABZDEFSTUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,2), (7,0))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBZDEFGTUJKLM'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,2), (10,3))
+    a = 'ABCDEFGHIJKLM'
+    b = 'XBZDEFSHUVWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,2), (7,1))
+
+  def test_with_three_mismatches(self):
+    a = 'ABCDEFGHIJKLM'
+    b = 'ABZDEFSTIJWXY'
+    self.assertEqual(lcf.k_lcf_around_anchor(a,b,3,6,3), (10,0))
 
