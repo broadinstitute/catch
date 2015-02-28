@@ -34,7 +34,7 @@ in the set cover, then the output is {0,2}.
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
-def set_cover_approx(sets):
+def approx(sets):
   # Create the universe as the union of all input sets
   universe = set()
   for s in sets.values():
