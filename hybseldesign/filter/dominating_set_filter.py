@@ -10,7 +10,7 @@ is either chosen or is redundant to a chosen probe), we are solving
 an instance of the dominating set problem.
 
 We solve the problem by reducing it to an instance of set cover
-and calling the utils.set_cover_approx function to compute an
+and calling the utils.set_cover.approx function to compute an
 approximate set cover. Because there is an L-reduction between
 set cover and dominating set, the approximation guarantees from set
 cover apply to the solution here.
@@ -22,7 +22,7 @@ import logging
 from collections import defaultdict
 
 from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign.utils import set_cover_approx
+from hybseldesign.utils import set_cover
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ class DominatingSetFilter(BaseFilter):
           sets[j].add(probe_a)
 
     # Run the set cover approximation algorithm
-    set_ids_in_cover = set_cover_approx.set_cover_approx(sets)
+    set_ids_in_cover = set_cover.approx(sets)
 
     return [input[id] for id in set_ids_in_cover]
 
