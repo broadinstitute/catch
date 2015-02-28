@@ -191,12 +191,12 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
   def test_match_no_mismatches(self):
     f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-    match = f(probe.Probe.from_str('ABCGHIJKLXYZ'), self.seq)
+    match = f('ZZZABCGHIJKLXYZ', self.seq, 6, 9)
     self.assertTrue(match != None)
     start, end = match
     self.assertEqual(start, 6)
     self.assertEqual(end, 12)
-    match = f(probe.Probe.from_str('AFGHIJKLMDEF'), self.seq)
+    match = f('ZZZZAFGHIJKLMDEF', self.seq, 6, 9)
     self.assertTrue(match != None)
     start, end = match
     self.assertEqual(start, 5)
@@ -204,17 +204,17 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
   def test_match_with_mismatches(self):
     f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-    match = f(probe.Probe.from_str('GHIGHIXKLDEF'), self.seq)
+    match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9)
     self.assertTrue(match != None)
     start, end = match
     self.assertEqual(start, 6)
     self.assertEqual(end, 12)
-    match = f(probe.Probe.from_str('GHIJKXSWZ'), self.seq)
+    match = f('ZZZZZZGHIJKXSWZ', self.seq, 6, 9)
     self.assertTrue(match != None)
     start, end = match
     self.assertEqual(start, 6)
     self.assertEqual(end, 12)
-    match = f(probe.Probe.from_str('AGTFGHIJKXM'), self.seq)
+    match = f('ZZAGTFGHIJKXM', self.seq, 6, 9)
     self.assertTrue(match != None)
     start, end = match
     self.assertEqual(start, 5)
@@ -222,17 +222,17 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
   def test_no_match_no_mismatches(self):
     f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-    match = f(probe.Probe.from_str('ABCGHIXKLXYZ'), self.seq)
+    match = f('ZZZABCGHIXKLXYZ', self.seq, 6, 9)
     self.assertTrue(match == None)
-    match = f(probe.Probe.from_str('AGHIJKBC'), self.seq)
+    match = f('ZZZZZAGHIJKBC', self.seq, 6, 9)
     self.assertTrue(match == None)
     
   def test_no_match_with_mismatches(self):
     f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-    match = f(probe.Probe.from_str('ABCGHIXKXXYZ'), self.seq)
+    match = f('ZZZABCGHIXKXXYZ', self.seq, 6, 9)
     self.assertTrue(match == None)
     f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-    match = f(probe.Probe.from_str('AGHIJYZ'), self.seq)
+    match = f('ZZZZZAGHIJYZ', self.seq, 6, 9)
     self.assertTrue(match == None)
 
 
@@ -321,37 +321,37 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
               kmer_probe_map, k, f)
     self.assertItemsEqual(found[a], [(3,13), (25,38)])
 
-  """Runs, a few times, a test in which a long sequence is randomly
+  def test_random_small_genome(self):
+    self.run_random(100, 15000, 25000, 300)
+
+  def test_random_large_genome(self):
+    self.run_random(2, 1500000, 2500000, 30000)
+
+  """Runs, n times, a test in which a long sequence is randomly
   generated and probes are generated from that sequence. Makes 100 bp
   probes with k=15 and num_kmers_per_probe=10 and creates the probes
   with the intention of determining coverage with a longest common
-  substring.
+  substring. The genome size is randomly chosen between genome_min
+  and genome_max, and the number of probes generated is num_probes.
   """
-  def test_random(self):
-    """
-    AUTO PASS TEST
-    """
-    return
-    """
-    AUTO PASS TEST
-    """
+  def run_random(self, n, genome_min, genome_max, num_probes):
     np.random.seed(1)
-    for n in xrange(1):
+    for n in xrange(n):
       # Make a random sequence
-      seq_length = np.random.randint(8000, 12000)
+      seq_length = np.random.randint(genome_min, genome_max)
       sequence = "".join(np.random.choice(['A','T','C','G'],
           size=seq_length, replace=True))
       desired_probe_cover_ranges = defaultdict(list)
-      # Make 300 random probes
+      # Make num_probes random probes
       probes = []
-      for m in xrange(300):
+      for m in xrange(num_probes):
         probe_length = 100
         subseq_start = np.random.randint(0, seq_length-probe_length)
         subseq_end = subseq_start + probe_length
         cover_length = np.random.randint(80, 100)
         cover_start = subseq_start + \
             np.random.randint(0, probe_length-cover_length+1)
-        cover_end = cover_start + cover_length
+        cover_end = min(seq_length, cover_start + cover_length)
         probe_str_cover = sequence[cover_start:cover_end]
         # Add random bases before and after what the probe should
         # cover
@@ -362,20 +362,51 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             "".join(np.random.choice(['A','T','C','G'],
             size=subseq_end-cover_end, replace=True))
         probe_str = probe_str_start + probe_str_cover + probe_str_end
-        # Add 0, 1, or 2 random mismatches
-        for k in xrange(np.random.randint(0, 3)):
+        # Add 0, 1, 2, or 3 random mismatches
+        for k in xrange(np.random.randint(0, 4)):
           pos = np.random.randint(0, probe_length)
+          base_choices = [b for b in ['A','T','C','G'] if b != probe_str[pos]]
           probe_str = probe_str[:pos] + \
-              "".join(np.random.choice(['A','T','C','G'], size=1)) + \
+              "".join(np.random.choice(base_choices, size=1)) + \
               probe_str[(pos+1):]
         p = probe.Probe.from_str(probe_str)
         desired_probe_cover_ranges[p].append((cover_start, cover_end))
         probes += [p]
       kmer_probe_map = probe.construct_kmer_probe_map(probes,
-          k=15, num_kmers_per_probe=5, include_positions=True)
+          k=15, num_kmers_per_probe=10, include_positions=True)
       f = probe.probe_covers_sequence_by_longest_common_substring(3, 80)
       found = probe.find_probe_covers_in_sequence(sequence,
           kmer_probe_map, k=15,
           cover_range_for_probe_in_subsequence_fn=f)
-      pass
-      
+      # Check that this didn't find any extraneous probes and that
+      # it found at least 95% of the original (it may miss some
+      # due to false negatives in the approach)
+      self.assertLessEqual(len(found), len(probes))
+      self.assertGreaterEqual(len(found), 0.95*len(probes))
+      # Check that each desired probe was found correctly
+      for p, cover_ranges in desired_probe_cover_ranges.iteritems():
+        found_cover_ranges = found[p]
+        # This probe most likely was found once, but could have
+        # been missed (due to false negatives in the approach) and
+        # may have been found more than once due to chance (but
+        # probably not too much more!)
+        self.assertTrue(len(found_cover_ranges) in [0,1,2])
+        if len(found_cover_ranges) == 0:
+          continue
+        # The cover ranges should have been captured, and the ones
+        # found may extend past what was desired by a small amount due
+        # to allowing mismatches and chance
+        # Because of mismatches possibly added to the end of the
+        # desired cover range, what was recaptured may not always
+        # encompass the entire cover range, so allow some small tolerance
+        for desired_cv in cover_ranges:
+          found_desired_cv = False
+          for found_cv in found_cover_ranges:
+            left_diff = desired_cv[0] - found_cv[0]
+            right_diff = found_cv[1] - desired_cv[1]
+            if left_diff >= -5 and left_diff < 15:
+              if right_diff >= -5 and right_diff < 15:
+                found_desired_cv = True
+                break
+          self.assertTrue(found_desired_cv)
+
