@@ -127,3 +127,13 @@ class TestSetCoverApprox(unittest.TestCase):
     self.assertEqual(sc.approx(input, costs=costs, p=0.8),
         desired_output)
 
+  def test_no_elements(self):
+    input = { }
+    self.assertEqual(sc.approx(input), set([]))
+    inptut = { 0: set([]) }
+    self.assertEqual(sc.approx(input), set([]))
+
+  def test_one_element(self):
+    input = { 0: set([1]) }
+    self.assertEqual(sc.approx(input), set([0]))
+
