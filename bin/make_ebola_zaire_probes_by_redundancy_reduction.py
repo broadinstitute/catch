@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Script that runs hybseldesign to design probes for the Ebola
-Zaire dataset by using a naive redundant filter in which redundancy
-is based on the longest common substring between two probes.
+Zaire dataset by using either a naive redundant filter or a
+dominating set filter to remove redundancies in candidate probes
+based on the longest common substring between two probes.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
