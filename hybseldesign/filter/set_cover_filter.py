@@ -194,9 +194,6 @@ class SetCoverFilter(BaseFilter):
     # Ensure that the input is a list
     input = list(input)
 
-    input = input[:3000]
-    self.probe_designer.seqs = self.probe_designer.seqs[:5]
-
     logger.info("Building map from k-mers to probes")
     kmer_probe_map = probe.construct_kmer_probe_map(
         input, include_positions=True)
