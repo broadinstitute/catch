@@ -43,6 +43,7 @@ class ProbeDesigner:
 
     probes = self.candidate_probes
     for f in self.filters:
+      f.probe_designer = self
       probes = f.filter(probes)
     self.final_probes = probes
 
