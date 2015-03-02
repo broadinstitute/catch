@@ -56,3 +56,42 @@ def read_fasta(fn, data_type='str', replace_degenerate=True):
 
   return m_converted
 
+
+"""A generator that scans through the FASTA file fn and, upon
+completing the read of a sequence, yields that sequence, where
+the sequence is stored as a native Python string ('str') or numpy
+array ('np') as determined by data_type.
+
+The degenerate bases ('Y','R','W','S','M','K') are replaced with
+'N' iff replace_degenerate is True.
+"""
+def iterate_fasta(fn, data_type='str', replace_degenerate=True):
+  degenerate_pattern = re.compile('[YRWSMK]')
+
+  def format_seq(seq):
+    if data_type == 'str':
+      # Already stored as str
+      return seq
+    elif data_type == 'np':
+      return np.fromstring(seq, dtype='S1')
+    else:
+      raise ValueError("Unknown data_type " + data_tyoe)
+
+  with open(fn) as f:
+    curr_seq = ''
+    for line in f:
+      line = line.rstrip()
+      if line.startswith('>'):
+        # Yield the current sequence (if there is one) and reset the
+        # sequence being read
+        if len(curr_seq) > 0:
+          yield format_seq(curr_seq)
+        curr_seq = ''
+      else:
+        # Append the sequence
+        if replace_degenerate:
+          line = degenerate_pattern.sub('N', line)
+        curr_seq += line
+    if len(curr_seq) > 0:
+      yield format_seq(curr_seq)
+
