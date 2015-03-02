@@ -37,3 +37,12 @@ class TestEbola2014FASTARead(unittest.TestCase):
       n = sum([seq.count(char) for char in ['A','T','C','G','N']])
       self.assertEqual(len(seq), n)
 
+  """Test that the generator works correctly by comparing to
+  the output from read_fasta.
+  """
+  def test_generator(self):
+    generator_seqs = []
+    for seq in seq_io.iterate_fasta(ebola2014.fasta_path()):
+      generator_seqs += [seq]
+    self.assertEqual(generator_seqs, self.seqs)
+
