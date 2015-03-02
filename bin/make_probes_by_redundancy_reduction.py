@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Script that runs hybseldesign to design probes for the Ebola
-Zaire dataset by using either a naive redundant filter or a
-dominating set filter to remove redundancies in candidate probes
-based on the longest common substring between two probes.
+"""Script that runs hybseldesign to design probes for a given
+dataset by using either a naive redundant filter or a dominating
+set filter to remove redundancies in candidate probes based on
+the longest common substring between two probes.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -10,6 +10,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 import argparse
 
 from hybseldesign.datasets import ebola_zaire
+from hybseldesign.datasets import ebola2014
 from hybseldesign.utils import seq_io, version
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
@@ -17,10 +18,16 @@ from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import naive_redundant_filter
 from hybseldesign.filter import dominating_set_filter
 
+DATASETS = { "ebola_zaire": ebola_zaire,
+             "ebola2014": ebola2014 }
+
 
 def main(args):
-  # Read the Ebola Zaire FASTA sequences
-  seqs = seq_io.read_fasta(ebola_zaire.fasta_path()).values()
+  # Read the FASTA sequences
+  if args.dataset not in DATASETS:
+    raise ValueError("Unknown dataset %s" % args.dataset)
+  fasta_path = DATASETS[args.dataset].fasta_path()
+  seqs = seq_io.read_fasta(fasta_path).values()
 
   # Setup the filters
   # The filters we use are, in order:
@@ -76,6 +83,8 @@ if __name__ == "__main__":
   parser.add_argument("-f", "--main_filter", type=str, default="ds",
       help=("The primary filter to use: 'ds' (dominating set filter) "
             "[default] or 'nr' (naive redundant filter)"))
+  parser.add_argument("-d", "--dataset", type=str, default="ebola_zaire",
+      help=("A label for the dataset to use"))
   parser.add_argument('--version', '-V', action='version',
       version=version.get_version())
   args = parser.parse_args()
