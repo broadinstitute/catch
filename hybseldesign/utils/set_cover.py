@@ -4,6 +4,7 @@
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import math
+from collections import defaultdict
 
 
 """Approximates the solution to an instance of the set cover problem
@@ -142,9 +143,12 @@ set cover problem in which there are multiple universes and we
 seek to find a collection of sets whose union covers a specified
 fraction of each given universe.
 
-The input 'sets' is a dict mapping set identifiers to sets. The
-input 'universes' is a dict mapping universe identifiers to sets
-consisting of the elements in the corresponding universe. The
+The input 'sets' is a dict mapping set identifiers to other dicts,
+which then map universe identifiers to sets of elements. That is,
+consider all the elements in some set set_id. sets[set_id] is a dict
+in which all the elements in set_id are split up by the universe
+they are a part of; sets[set_id][universe_id] is a set containing
+the elements in set_id that come from universe universe_id. The
 optional input 'costs' is a dict mapping set identifiers to the
 costs (or weights) of the set; the default is for every set to have
 a cost of 1, making this equivalent to the unweighted problem. The
@@ -152,22 +156,29 @@ optional input 'universe_p' is a dict mapping universe identifiers
 to floats in [0,1] that specifiy the fraction of the corresponding
 universe we must cover; the default is for the coverage fraction of
 each universe to be 1.0, making this equivalent to the problem in
-which there is a single universe (the union of all the given
-universes) that must be completely covered.  The output is a set
-consisting of the identifiers of the sets chosen to be in the set
-cover. For example, if the sets input is
+which there is a single universe (the union of all given universes)
+that must be completely covered.  The output is a set consisting of
+the identifiers of the sets chosen to be in the set cover. For
+example, if the sets input is
   { 0: S_1, 1: S_2, 2: S_3 }
 where each S_i is a set, and the sets S_1 and S_3 are chosen to be
 in the set cover, then the output is {0,2}.
 
+Note that elements with the same value from different universes are
+effectively treated as different elements. For example, covering the
+element "42" from universe 2 does not necessarily cover the element
+"42" from universe 1 (unless a chosen set contains "42" from
+universe 2 as well as "42" from universe 1).
+
 This is a generalization of the partial, weighted set cover problem
-whose solution is approximated by approx(..). (For any input to
-that function, simply create a single universe whose elements
-consist of the union of all the input sets, and that supply that
-universe as input to this function.) Indeed, this function and
+whose solution is approximated by approx(..). (For any input to that
+function, simply create a single universe (e.g., with id 0) whose
+elements consist of the union of all the input sets, and then create
+a new input sets to this function in which each original set set_id
+is instead found in sets[set_id][0].) Indeed, this function and
 approx(..) are very similar, with this one simply generalizing to
-allow for multiple universes. However, whereas approx(..) achieves
-a provable guarantee on the approximation factor, it is not clear
+allow for multiple universes. However, whereas approx(..) achieves a
+provable guarantee on the approximation factor, it is not clear
 whether the straightforward generalization implemented in this
 function achieves the same factor; therefore, there may be room for
 improvement in this function. Furthermore, the generalization to
@@ -177,8 +188,7 @@ notion of a single universe. For these reasons -- although the
 approx(..) function could be greatly shortened by simply calling
 this function -- we choose to implement the versions separately.
 """
-def approx_multiuniverse(sets, universes, costs=None,
-    universe_p=None):
+def approx_multiuniverse(sets, costs=None, universe_p=None):
   if costs == None:
     # Give each set a default cost of 1
     costs = { set_id: 1 for set_id in sets.keys() }
@@ -186,6 +196,13 @@ def approx_multiuniverse(sets, universes, costs=None,
     for c in costs.values():
       if c < 0:
         raise ValueError("All costs must be nonnegative")
+
+  # Create the universes from given sets
+  universes = defaultdict(set)
+  for sets_by_universe in sets.values():
+    for universe_id, s in sets_by_universe.iteritems():
+      universes[universe_id].update(s)
+
   if universe_p == None:
     # Give each universe a coverage fraction of 1.0 (i.e., cover
     # all of it)
@@ -200,26 +217,6 @@ def approx_multiuniverse(sets, universes, costs=None,
         raise ValueError(("universe_p is missing a value for "
                           "universe %d" % universe_id))
 
-  # Check that it is possible to achieve the desired coverage of
-  # each universe (i.e., by taking all the elements in the union of
-  # all sets)
-  sets_union = set()
-  for s in sets.values():
-    sets_union.update(s)
-  for universe_id, universe in universes.iteritems():
-    p = universe_p[universe_id]
-    num_possible = len(universe.intersection(sets_union))
-    num_desired = math.ceil(p*len(universe))
-    if num_possible < num_desired:
-      raise ValueError(("%d elements of universe %d must be "
-                        "covered, but it is only possible to cover "
-                        "%d elements" % (num_desired, universe_id,
-                        num_possible)))
-
-  # Make new sets of all the universes so they can be modified
-  # without disrupting the state of this function's caller
-  universes = { k: set(universes[k]) for k in universes.keys() }
-
   num_that_can_be_uncovered = {}
   num_left_to_cover = {}
   for universe_id, universe in universes.iteritems():
@@ -233,7 +230,7 @@ def approx_multiuniverse(sets, universes, costs=None,
     num_left_to_cover[universe_id] = \
         len(universe) - num_that_can_be_uncovered[universe_id]
 
-  set_ids_not_in_cover = sets.keys()
+  set_ids_not_in_cover = set(sets.keys())
   set_ids_in_cover = set()
   # Keep iterating until desired partial cover of each universe
   # is obtained (note that [] evaluates to False)
@@ -243,7 +240,7 @@ def approx_multiuniverse(sets, universes, costs=None,
     # number of uncovered elements (that need to be covered) that
     # it covers
     id_min_ratio, min_ratio = None, float('inf')
-    for id in set_ids_not_in_cover:
+    for set_id in set_ids_not_in_cover:
       # There is no strict need to keep track of set_ids_not_in_cover
       # and iterate through these; we could have iterated over
       # all input sets. However, sets that are already put into the
@@ -251,9 +248,12 @@ def approx_multiuniverse(sets, universes, costs=None,
       # none of it), so there is no reason to iterate over the sets
       # already placed in the cover. Not doing so should yield some
       # runtime improvements.
-      s = sets[id]
       num_needed_covered_across_universes = 0
       for universe_id, universe in universes.iteritems():
+        if universe_id not in sets[set_id]:
+          # There is nothing to cover in this universe
+          continue
+        s = sets[set_id][universe_id]
         num_covered = len(s.intersection(universe))
         # There is no need to cover more than num_left_to_cover
         # elements for this universe
@@ -264,16 +264,21 @@ def approx_multiuniverse(sets, universes, costs=None,
         # s covers no elements that need to be covered, so it should
         # not be in the set cover
         continue
-      ratio = float(costs[id]) / num_needed_covered_across_universes
+      ratio = float(costs[set_id]) / num_needed_covered_across_universes
       if ratio < min_ratio:
-        id_min_ratio = id
+        id_min_ratio = set_id
         min_ratio = ratio
     # id_min_ratio goes into the set cover
     set_ids_in_cover.add(id_min_ratio)
     set_ids_not_in_cover.remove(id_min_ratio)
     for universe_id, universe in universes.iteritems():
-      universe.difference_update(sets[id_min_ratio])
+      if universe_id not in sets[id_min_ratio]:
+        # id_min_ratio covers nothing in this universe
+        continue
+      universe.difference_update(sets[id_min_ratio][universe_id])
       num_left_to_cover[universe_id] = max(0,
           len(universe) - num_that_can_be_uncovered[universe_id])
+      print universe_id, num_left_to_cover[universe_id]
 
   return set_ids_in_cover
+
