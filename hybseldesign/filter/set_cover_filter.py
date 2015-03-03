@@ -59,6 +59,11 @@ class SetCoverFilter(BaseFilter):
   'coverage_frac' is a float in [0,1] that determines the fraction
   of each of the target genomes that must be covered by the selected
   probes.
+
+  The constructed universes (from the target genomes) do not contain
+  N's nor do they contain any bases within a 'probe_length' window
+  flanked by two strings of 'min_n_string_length' N's -- i.e., such
+  bases are not required to be covered.
   """
   def __init__(self, mismatches=0, lcf_thres=100,
       blacklisted_genomes=[], coverage_frac=1.0,
