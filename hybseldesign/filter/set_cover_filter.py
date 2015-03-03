@@ -74,10 +74,9 @@ class SetCoverFilter(BaseFilter):
   Specifically, the returned value is a dict mapping set_ids (from 0
   through len(candidate_probes)-1) to sets, where each set_id
   corresponds to a candidate probe in candidate_probes. Each set
-  consists of two-element tuples, in which the first element is an
-  integer representing a target genome and the second element is an
-  integer representing a bp of the target genome that the probe
-  covers.
+  consists of integers that each represent a base of the target
+  genome that the probe covers (the integer encodes both the target
+  genome and the covered position/bp of the target genome).
 
   The target genomes must be in the list self.probe_designer.seqs.
   The i'th genome in this list is labeled by integer i in the
@@ -94,6 +93,7 @@ class SetCoverFilter(BaseFilter):
       sets[id] = set()
 
     target_genomes = self.probe_designer.seqs
+    total_prior_seq_length = 0
     for i, sequence in enumerate(target_genomes):
       logger.info("  Computing coverage across genome %d of %d",
           i, len(target_genomes))
@@ -106,8 +106,10 @@ class SetCoverFilter(BaseFilter):
         set_id = probe_id[p]
         for cover_range in cover_ranges:
           for bp in xrange(cover_range[0], cover_range[1]):
-            # Add the tuple (genome id (i), base position (bp))
-            sets[set_id].add((i, bp))
+            # Add an integer that uniquely identifies the genome id
+            # (i) and the base position (bp)
+            sets[set_id].add(total_prior_seq_length + bp)
+      total_prior_seq_length += len(sequence)
 
     return sets
 
@@ -118,10 +120,10 @@ class SetCoverFilter(BaseFilter):
   Specifically, the returned value is a dict mapping universe_ids
   (from 0 through len(target_genomes)-1) to sets, where each
   universe_id corresponds to a target genome. Each set consists of
-  two-element tuples, in which the first element is the universe_id
-  (i.e., an integer representing the target genome) and the second
-  element represents a bp in the target genome. Thus, the size of
-  the set for a target genome is exactly the length of that genome.
+  integers that each uniquely encode a particular bp of the
+  corresponding universe_id (i.e., a particular position on the
+  corresponding target genome). Thus, the size of the set for a
+  target genome is exactly the length of that genome.
 
   The target genomes must be in the list self.probe_designer.seqs.
   The i'th genome in this list is labeled by integer i in the
@@ -133,8 +135,11 @@ class SetCoverFilter(BaseFilter):
   def _make_universes(self):
     universes = {}
     target_genomes = self.probe_designer.seqs
+    total_prior_seq_length = 0
     for i, sequence in enumerate(target_genomes):
-      universes[i] = set([(i, bp) for bp in xrange(0, len(sequence))])
+      universes[i] = set([total_prior_seq_length + bp for \
+                            bp in xrange(0, len(sequence))])
+      total_prior_seq_length += len(sequence)
     return universes
 
   """Returns a collection of costs, in which each cost corresponds
