@@ -32,6 +32,7 @@ mismatches between a sequence and a probe.
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import logging
+import re
 
 from hybseldesign import probe
 from hybseldesign.filter.base_filter import BaseFilter
@@ -60,12 +61,15 @@ class SetCoverFilter(BaseFilter):
   probes.
   """
   def __init__(self, mismatches=0, lcf_thres=100,
-      blacklisted_genomes=[], coverage_frac=1.0):
+      blacklisted_genomes=[], coverage_frac=1.0,
+      min_n_string_length=2, probe_length=100):
     self.cover_range_fn = \
         probe.probe_covers_sequence_by_longest_common_substring(
             mismatches=mismatches, lcf_thres=lcf_thres)
     self.blacklisted_genomes = blacklisted_genomes
     self.coverage_frac = coverage_frac
+    self.min_n_string_length = min_n_string_length
+    self.probe_length = probe_length
 
   """Returns a collection of sets, in which each set corresponds to
   a candidate probe and contains the bases of the target genomes
@@ -133,12 +137,35 @@ class SetCoverFilter(BaseFilter):
   as the 'universes' input.
   """
   def _make_universes(self):
+    n_query = re.compile('(N+)')
+    n_string_query = \
+        re.compile('(N{'+str(self.min_n_string_length)+',})')
+
     universes = {}
     target_genomes = self.probe_designer.seqs
     total_prior_seq_length = 0
     for i, sequence in enumerate(target_genomes):
       universes[i] = set([total_prior_seq_length + bp for \
                             bp in xrange(0, len(sequence))])
+
+      # Don't attempt to cover any N's
+      for match in n_query.finditer(sequence):
+        for bp in xrange(match.start(), match.end()):
+          universes[i].remove(total_prior_seq_length + bp)
+
+      # Don't attempt to cover any bases in a self.probe_length
+      # window between two strings of N's, as no candidate probe
+      # has been generated for those
+      n_string_query_matches = [match for match \
+          in n_string_query.finditer(sequence)]
+      for mi, match in enumerate(n_string_query_matches):
+        if mi == len(n_string_query_matches) - 1:
+          continue
+        next_match_start = n_string_query_matches[mi+1].start()
+        if next_match_start - match.end() < self.probe_length:
+          for bp in xrange(match.end(), next_match_start):
+            universes[i].remove(total_prior_seq_length + bp)
+
       total_prior_seq_length += len(sequence)
     return universes
 
