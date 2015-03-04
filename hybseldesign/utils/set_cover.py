@@ -253,9 +253,10 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
   # is obtained (note that [] evaluates to False)
   while [True for universe_id in universes.keys() \
         if num_left_to_cover[universe_id] > 0]:
-    logger.info(("Selected %d sets with a total of %d elements "
-                 "remaining to be covered"), len(set_ids_in_cover),
-                 sum(num_left_to_cover.values()))
+    if len(set_ids_in_cover) % 100 == 0:
+      logger.info(("Selected %d sets with a total of %d elements "
+                   "remaining to be covered"), len(set_ids_in_cover),
+                   sum(num_left_to_cover.values()))
 
     # Find the set that minimizes the ratio of its cost to the
     # number of uncovered elements (that need to be covered) that
