@@ -314,16 +314,22 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
         np.sum([costs[set_id] for set_id in output])
     return float(sum_of_weights_of_selected_sets) / sum_of_all_weights
 
+  def test_random(self):
+    output_set = self.run_random(False)
+    output_array = self.run_random(True)
+    self.assertEqual(output_set, output_array)
+
   """Generates random instances of set cover, computes the solution,
   and verifies that the solution achieves the desired coverage. Also
   verifies that, on average, the solution achieves a reasonable
   reduction in the sum of weights of chosen sets versus choosing
   all sets.
   """
-  def test_random(self):
+  def run_random(self, use_arrays):
     np.random.seed(1)
     weight_fracs = []
-    for n in xrange(25):
+    outputs = []
+    for n in xrange(20):
       # Generate the universes
       num_universes = np.random.randint(1, 10)
       universes = {}
@@ -354,9 +360,11 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
       universe_p = { universe_id: np.random.random() \
                       for universe_id in xrange(num_universes) }
       # Compute the set cover
-      output = sc.approx_multiuniverse(sets, costs, universe_p)
+      output = sc.approx_multiuniverse(sets, costs, universe_p,
+          use_arrays)
       self.verify_partial_cover(sets, universe_p, output)
       weight_fracs += [self.weight_frac(costs, output)]
+      outputs += [output]
     # There's no guarantee that the average weight_frac should be
     # small, but in the average case it should be so test it anyway
     # (e.g., test that it's less than 0.01)
