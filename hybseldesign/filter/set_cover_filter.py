@@ -34,6 +34,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 import logging
 import re
 from collections import defaultdict
+from array import array
 
 from hybseldesign import probe
 from hybseldesign.filter.base_filter import BaseFilter
@@ -93,7 +94,8 @@ class SetCoverFilter(BaseFilter):
     sets = {}
     for id, p in enumerate(candidate_probes):
       probe_id[p] = id
-      sets[id] = defaultdict(set)
+      # Store values in an array of type 'I' to be space efficient
+      sets[id] = defaultdict(lambda: array('I'))
 
     target_genomes = self.probe_designer.seqs
     for i, sequence in enumerate(target_genomes):
@@ -108,7 +110,7 @@ class SetCoverFilter(BaseFilter):
         set_id = probe_id[p]
         for cover_range in cover_ranges:
           for bp in xrange(cover_range[0], cover_range[1]):
-            sets[set_id][i].add(bp)
+            sets[set_id][i].append(bp)
 
     return sets
 
@@ -185,7 +187,8 @@ class SetCoverFilter(BaseFilter):
     logger.info(("Approximating the solution to the set cover "
                  "instance"))
     set_ids_in_cover = set_cover.approx_multiuniverse(
-                        sets, costs=costs, universe_p=universe_p)
+                        sets, costs=costs, universe_p=universe_p,
+                        use_arrays=True)
 
     return [input[id] for id in set_ids_in_cover]
 
