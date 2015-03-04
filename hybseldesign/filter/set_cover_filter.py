@@ -63,12 +63,15 @@ class SetCoverFilter(BaseFilter):
   probes.
   """
   def __init__(self, mismatches=0, lcf_thres=100,
-      blacklisted_genomes=[], coverage_frac=1.0):
+      blacklisted_genomes=[], coverage_frac=1.0,
+      kmer_size=15, num_kmers_per_probe=10):
     self.cover_range_fn = \
         probe.probe_covers_sequence_by_longest_common_substring(
             mismatches=mismatches, lcf_thres=lcf_thres)
     self.blacklisted_genomes = blacklisted_genomes
     self.coverage_frac = coverage_frac
+    self.kmer_size = kmer_size
+    self.num_kmers_per_probe = num_kmers_per_probe
 
   """Returns a collection of sets, in which each set corresponds to
   a candidate probe and contains the bases of the target genomes
@@ -101,7 +104,7 @@ class SetCoverFilter(BaseFilter):
       logger.info("  Computing coverage across genome %d of %d",
           i, len(self.target_genomes))
       probe_cover_ranges = probe.find_probe_covers_in_sequence(
-          sequence, kmer_probe_map,
+          sequence, kmer_probe_map, k=self.kmer_size,
           cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
       # Add the bases of sequence that are covered by all the probes
       # into sets with universe_id equal to i
@@ -144,7 +147,7 @@ class SetCoverFilter(BaseFilter):
         logger.info(("  Computing coverage across a blacklisted "
                      "sequence"))
         probe_cover_ranges = probe.find_probe_covers_in_sequence(
-            sequence, kmer_probe_map,
+            sequence, kmer_probe_map, k=self.kmer_size,
             cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
         # Add the number of bases of sequence that are covered by
         # all the probes into costs
@@ -172,8 +175,10 @@ class SetCoverFilter(BaseFilter):
     input = list(input)
 
     logger.info("Building map from k-mers to probes")
-    kmer_probe_map = probe.construct_kmer_probe_map(
-        input, include_positions=True)
+    kmer_probe_map = probe.construct_kmer_probe_map(input,
+        k=self.kmer_size,
+        num_kmers_per_probe=self.num_kmers_per_probe,
+        include_positions=True)
 
     logger.info("Building set cover sets input")
     sets = self._make_sets(input, kmer_probe_map)
