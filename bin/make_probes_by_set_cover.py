@@ -31,6 +31,9 @@ def main(args):
   fasta_path = DATASETS[args.dataset].fasta_path()
   seqs = seq_io.read_fasta(fasta_path).values()
 
+  if args.limit_target_genomes:
+    seqs = seqs[:args.limit_target_genomes]
+
   blacklisted_genomes = []
   if args.blacklist_hg19:
     blacklisted_genomes += [ hg19.fasta_path() ]
@@ -61,7 +64,11 @@ def main(args):
   # Print the arguments and the number of final probes
   # (The final probes are stored in pb.final_probes if their
   #  sequences are desired)
-  print args.mismatches, args.lcf_thres, len(pb.final_probes)
+  if args.limit_target_genomes:
+    print args.mismatches, args.lcf_thres, args.limit_target_genomes, \
+        len(pb.final_probes)
+  else:
+    print args.mismatches, args.lcf_thres, len(pb.final_probes)
 
 
 if __name__ == "__main__":
@@ -82,6 +89,9 @@ if __name__ == "__main__":
       help=("Penalize probes based on how much of hg19 they cover"))
   parser.add_argument("-d", "--dataset", type=str, default="ebola_zaire",
       help=("A label for the dataset to use"))
+  parser.add_argument("--limit_target_genomes", type=int,
+      help=("(Optional) Use only the first N target genomes in the "
+            "dataset"))
   parser.add_argument('--version', '-V', action='version',
       version=version.get_version())
   args = parser.parse_args()
