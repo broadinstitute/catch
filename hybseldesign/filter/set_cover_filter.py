@@ -79,12 +79,12 @@ class SetCoverFilter(BaseFilter):
   particular set_id maps universe_ids (0 through
   len(target_genomes)-1) to sets. set_id corresponds to a candidate
   probe in candidate_probes and universe_id corresponds to a target
-  genome in self.probe_designer.seqs. The i'th target genome in that
+  genome in self.target_genomes. The i'th target genome in that
   list is given universe_id equal to i. In the returned value, sets,
   sets[set_id][universe_id] is a set of all the bases (as integers)
   covered by probe set_id in the target genome universe_id.
 
-  The target genomes must be in the list self.probe_designer.seqs.
+  The target genomes must be in the list self.target_genomes.
 
   The output is intended for input to set_cover.approx_multiuniverse
   as the 'sets' input.
@@ -97,10 +97,9 @@ class SetCoverFilter(BaseFilter):
       # Store values in an array of type 'I' to be space efficient
       sets[id] = defaultdict(lambda: array('I'))
 
-    target_genomes = self.probe_designer.seqs
-    for i, sequence in enumerate(target_genomes):
+    for i, sequence in enumerate(self.target_genomes):
       logger.info("  Computing coverage across genome %d of %d",
-          i, len(target_genomes))
+          i, len(self.target_genomes))
       probe_cover_ranges = probe.find_probe_covers_in_sequence(
           sequence, kmer_probe_map,
           cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
@@ -165,7 +164,7 @@ class SetCoverFilter(BaseFilter):
   as the 'universe_p' input.
   """
   def _make_universe_p(self):
-    num_universes = len(self.probe_designer.seqs)
+    num_universes = len(self.target_genomes)
     return { i: self.coverage_frac for i in xrange(num_universes) }
 
   def _filter(self, input):
