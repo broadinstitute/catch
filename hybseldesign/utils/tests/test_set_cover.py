@@ -4,6 +4,7 @@
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import unittest
+import logging
 import numpy as np
 from collections import defaultdict
 
@@ -138,6 +139,10 @@ class TestSetCoverApprox(unittest.TestCase):
 """Tests approx_multiuniverse function.
 """
 class TestSetCoverApproxMultiuniverse(unittest.TestCase):
+
+  def setUp(self):
+    # Disable logging
+    logging.disable(logging.INFO)
 
   def test_one_universe_complete_unweighted(self):
     sets = { 0: { 0: set([1,2]) },
@@ -369,3 +374,8 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
     # small, but in the average case it should be so test it anyway
     # (e.g., test that it's less than 0.01)
     self.assertLess(np.median(weight_fracs), 0.01)
+
+  def tearDown(self):
+    # Re-enable logging
+    logging.disable(logging.NOTSET)
+
