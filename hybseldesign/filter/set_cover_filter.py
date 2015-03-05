@@ -147,7 +147,7 @@ class SetCoverFilter(BaseFilter):
         logger.info(("  Computing coverage across a blacklisted "
                      "sequence"))
         # Blacklist both sequence and its reverse complement
-        while reverse_complement in [False, True]:
+        for reverse_complement in [False, True]:
           if reverse_complement:
             rc_map = {'A':'T', 'T':'A', 'C':'G', 'G':'C'}
             sequence = ''.join([rc_map.get(b,b) for b in sequence[::-1]])
