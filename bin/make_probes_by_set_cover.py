@@ -65,10 +65,11 @@ def main(args):
   # (The final probes are stored in pb.final_probes if their
   #  sequences are desired)
   if args.limit_target_genomes:
-    print args.mismatches, args.lcf_thres, args.limit_target_genomes, \
-        len(pb.final_probes)
+    print args.mismatches, args.lcf_thres, args.coverage_frac, \
+        args.limit_target_genomes, len(pb.final_probes)
   else:
-    print args.mismatches, args.lcf_thres, len(pb.final_probes)
+    print args.mismatches, args.lcf_thres, args.coverage_frac, \
+        len(pb.final_probes)
 
 
 if __name__ == "__main__":
