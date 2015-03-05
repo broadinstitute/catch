@@ -200,5 +200,9 @@ class SetCoverFilter(BaseFilter):
                         sets, costs=costs, universe_p=universe_p,
                         use_arrays=True)
 
+    # Save costs if there are blacklisted genomes
+    if len(self.blacklisted_genomes) > 0:
+      self.probe_costs = costs.values()
+
     return [input[id] for id in set_ids_in_cover]
 
