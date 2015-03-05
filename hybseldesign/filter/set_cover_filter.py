@@ -146,16 +146,22 @@ class SetCoverFilter(BaseFilter):
       for sequence in seq_io.iterate_fasta(fasta_path):
         logger.info(("  Computing coverage across a blacklisted "
                      "sequence"))
-        probe_cover_ranges = probe.find_probe_covers_in_sequence(
-            sequence, kmer_probe_map, k=self.kmer_size,
-            cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
-        # Add the number of bases of sequence that are covered by
-        # all the probes into costs
-        for p, cover_ranges in probe_cover_ranges.iteritems():
-          set_id = probe_id[p]
-          for cover_range in cover_ranges:
-            num_bp_covered = cover_range[1] - cover_range[0]
-            costs[set_id] += num_bp_covered
+        # Blacklist both sequence and its reverse complement
+        while reverse_complement in [False, True]:
+          if reverse_complement:
+            rc_map = {'A':'T', 'T':'A', 'C':'G', 'G':'C'}
+            sequence = ''.join([rc_map.get(b,b) for b in sequence[::-1]])
+
+          probe_cover_ranges = probe.find_probe_covers_in_sequence(
+              sequence, kmer_probe_map, k=self.kmer_size,
+              cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
+          # Add the number of bases of sequence that are covered by
+          # all the probes into costs
+          for p, cover_ranges in probe_cover_ranges.iteritems():
+            set_id = probe_id[p]
+            for cover_range in cover_ranges:
+              num_bp_covered = cover_range[1] - cover_range[0]
+              costs[set_id] += num_bp_covered
 
     return costs
 
