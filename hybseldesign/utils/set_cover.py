@@ -219,6 +219,7 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
           universes[universe_id].add(v)
       else:
         universes[universe_id].update(s)
+  universes = dict(universes)
 
   if universe_p == None:
     # Give each universe a coverage fraction of 1.0 (i.e., cover
