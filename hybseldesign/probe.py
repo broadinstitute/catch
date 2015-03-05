@@ -227,7 +227,7 @@ def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10,
           size=num_kmers_per_probe, replace=True)
       for kmer in rand_kmers:
         kmer_probe_map[kmer].add(probe)
-  return kmer_probe_map
+  return dict(kmer_probe_map)
 
 
 """Finds the ranges in sequence that each probe in a given set of
@@ -299,6 +299,21 @@ def find_probe_covers_in_sequence(sequence,
     kmer = sequence[i:(i+k)]
     # Find the probes with this kmer (with the potential to miss
     # some probes due to false negatives)
+    if kmer not in kmer_probe_map:
+      # In an earlier version, kmer_probe_map was a defaultdict
+      # and this 'if' condition was left out -- if the kmer was not
+      # in kmer_probe_map, then probes_to_align (below) would simply
+      # be empty. However, this leads to a *huge* memory leak. Each
+      # time kmer is looked up in kmer_probe_map, a new set is
+      # created by the defaultdict when kmer does not exist as a key.
+      # This new set is entered into kmer_probe_map, with kmer as
+      # the key, and is never removed. Because of the many possible
+      # kmers and the large overhead of a Python set, the size of
+      # kmer_probe_map grows enormously (into hundreds of GB very
+      # quickly) when many kmers are looked up that do not exist.
+      # Thus, a better solution is for kmer_probe_map to be a
+      # regular dict, and to have this check instead.
+      continue
     probes_to_align = kmer_probe_map[kmer]
     for probe, pos in probes_to_align:
       # kmer appears in probe at position pos. So align probe
@@ -344,7 +359,7 @@ def find_probe_covers_in_sequence(sequence,
   for probe, cover_ranges in probe_cover_ranges.iteritems():
     probe_cover_ranges_merged[probe] = interval.\
         merge_overlapping(cover_ranges)
-  return probe_cover_ranges_merged
+  return dict(probe_cover_ranges_merged)
 
 
 """Returns a function that, given a probe and sequence anchored at

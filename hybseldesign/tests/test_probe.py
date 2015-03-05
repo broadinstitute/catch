@@ -141,7 +141,7 @@ class TestConstructKmerProbeMap(unittest.TestCase):
     for p in probes:
       num_found = 0
       for kmer in p.construct_kmers(k):
-        if p in kmer_map[kmer]:
+        if kmer in kmer_map and p in kmer_map[kmer]:
           num_found += 1
       self.assertGreaterEqual(num_found, 0.8*num_kmers_per_probe)
 
@@ -259,7 +259,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
               kmer_probe_map, k, f)
     self.assertItemsEqual(found[a], [(6,12)])
     self.assertItemsEqual(found[b], [(18,24)])
-    self.assertItemsEqual(found[c], [])
+    self.assertFalse(c in found)
 
   """Tests with short sequence, short probes, and small k
   where one probe appears twice.
@@ -280,7 +280,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
               kmer_probe_map, k, f)
     self.assertItemsEqual(found[a], [(2,8), (16,22)])
     self.assertItemsEqual(found[b], [(6,12)])
-    self.assertItemsEqual(found[c], [])
+    self.assertFalse(c in found)
 
   """Tests with short sequence, short probes, and small k
   where probes contain more than what they cover.
@@ -385,14 +385,14 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
       self.assertGreaterEqual(len(found), 0.95*len(probes))
       # Check that each desired probe was found correctly
       for p, cover_ranges in desired_probe_cover_ranges.iteritems():
+        if p not in found:
+          continue
         found_cover_ranges = found[p]
         # This probe most likely was found once, but could have
         # been missed (due to false negatives in the approach) and
         # may have been found more than once due to chance (but
         # probably not too much more!)
-        self.assertTrue(len(found_cover_ranges) in [0,1,2])
-        if len(found_cover_ranges) == 0:
-          continue
+        self.assertTrue(len(found_cover_ranges) in [1,2])
         # The cover ranges should have been captured, and the ones
         # found may extend past what was desired by a small amount due
         # to allowing mismatches and chance
