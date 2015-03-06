@@ -60,6 +60,10 @@ def main(args):
   rc = reverse_complement_filter.ReverseComplementFilter()
   filters = [ df, scf, rc ]
 
+  # Don't apply the set cover filter if desired
+  if args.skip_set_cover:
+    filters.remove(scf)
+
   # Design the probes
   pb = probe_designer.ProbeDesigner(seqs, filters)
   pb.design()
@@ -88,6 +92,12 @@ if __name__ == "__main__":
   parser.add_argument("-c", "--coverage_frac", type=float, default=1.0,
       help=("A float in [0,1] giving the fraction of each target "
             "genome that must be covered by the selected probes"))
+  parser.add_argument("--skip_set_cover", dest="skip_set_cover",
+      action="store_true",
+      help=("Skip the set cover filter; this is useful when we "
+            "wish to see the probes generated from only the "
+            "duplicate and reverse complement filters, to gauge "
+            "the effects of the set cover filter"))
   parser.add_argument("--blacklist_hg19", dest="blacklist_hg19",
       action="store_true",
       help=("Penalize probes based on how much of hg19 they cover"))
