@@ -248,6 +248,20 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
     num_left_to_cover[universe_id] = \
         len(universe) - num_that_can_be_uncovered[universe_id]
 
+  # Computing intersections between a particular set and a particular
+  # universe is the bottleneck of this function. However, a lot of
+  # time the intersection may be computed even though it has already
+  # been computed between the same set and (unchanged) universe.
+  # (While the contents of sets are not modified, elements in
+  # universes are discarded. But not every universe is modified at
+  # every iteration, so when one is not modified an intersection with
+  # that universe is unnecessarily computed again.) To avoid this,
+  # memoize the sizes of the intersections of universes with sets
+  # and discard memoized values for a particular universe U_i when
+  # U_i is updated.
+  memoized_intersect_counts = { universe_id: {} for universe_id \
+                                   in universes.keys() }
+
   set_ids_not_in_cover = set(sets.keys())
   set_ids_in_cover = set()
   # Keep iterating until desired partial cover of each universe
@@ -276,11 +290,32 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
         if universe_id not in sets[set_id]:
           # There is nothing to cover in this universe
           continue
-        s = sets[set_id][universe_id]
-        if use_arrays:
-          num_covered = sum([1 for v in s if v in universe])
+        if set_id in memoized_intersect_counts[universe_id]:
+          # We have num_covered memoized
+          num_covered = memoized_intersect_counts[universe_id][set_id]
         else:
-          num_covered = len(s.intersection(universe))
+          s = sets[set_id][universe_id]
+          if use_arrays:
+            if len(universe) >= len(s):
+              # Compute an intersection by looking up, in universe,
+              # each element of s
+              num_covered = sum([1 for v in s if v in universe])
+            else:
+              # Compute an intersection by looking up, in a set of
+              # s, each element of universe
+              # This may not actually be faster than the above
+              # computation for len(universe) >= len(s). Converting
+              # s to a set takes time, for example. A better approach
+              # would be to do this computation (as opposed to the
+              # above one, which looks up in unvierse) only when
+              # universe is significantly smaller than the size of s
+              # (e.g., k times smaller for some k > 1).
+              s_set = set(s)
+              num_covered = sum([1 for v in universe if v in s_set])
+          else:
+            num_covered = len(s.intersection(universe))
+          # Memoize num_covered
+          memoized_intersect_counts[universe_id][set_id] = num_covered
         # There is no need to cover more than num_left_to_cover
         # elements for this universe
         num_needed_covered = min(num_left_to_cover[universe_id],
@@ -302,6 +337,7 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
         # id_min_ratio covers nothing in this universe
         continue
       s = sets[id_min_ratio][universe_id]
+      prev_universe_size = len(universe)
       if use_arrays:
         for v in s:
           universe.discard(v)
@@ -309,6 +345,10 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
         universe.difference_update(s)
       num_left_to_cover[universe_id] = max(0,
           len(universe) - num_that_can_be_uncovered[universe_id])
+      if len(universe) != prev_universe_size:
+        # The universe was modified, so discard all memoized
+        # intersection counts that involve this universe
+        memoized_intersect_counts[universe_id] = {}
 
   return set_ids_in_cover
 
