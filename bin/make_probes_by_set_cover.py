@@ -10,6 +10,7 @@ import argparse
 from hybseldesign.datasets import ebola_zaire
 from hybseldesign.datasets import ebola2014
 from hybseldesign.datasets import hg19
+from hybseldesign.datasets import marburg
 from hybseldesign.utils import seq_io, version
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
@@ -37,6 +38,8 @@ def main(args):
   blacklisted_genomes = []
   if args.blacklist_hg19:
     blacklisted_genomes += [ hg19.fasta_path() ]
+  if args.blacklist_marburg:
+    blacklisted_genomes += [ marburg.fasta_path() ]
 
   # Setup the filters
   # The filters we use are, in order:
@@ -88,6 +91,9 @@ if __name__ == "__main__":
   parser.add_argument("--blacklist_hg19", dest="blacklist_hg19",
       action="store_true",
       help=("Penalize probes based on how much of hg19 they cover"))
+  parser.add_argument("--blacklist_marburg", dest="blacklist_marburg",
+      action="store_true",
+      help=("Penalize probes based on how much of Marburg they cover"))
   parser.add_argument("-d", "--dataset", type=str, default="ebola_zaire",
       help=("A label for the dataset to use"))
   parser.add_argument("--limit_target_genomes", type=int,
