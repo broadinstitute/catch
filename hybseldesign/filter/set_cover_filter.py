@@ -114,6 +114,10 @@ class SetCoverFilter(BaseFilter):
           for bp in xrange(cover_range[0], cover_range[1]):
             sets[set_id][i].append(bp)
 
+    # Convert each defaultdict to dict
+    for set_id in sets.keys():
+      sets[set_id] = dict(sets[set_id])
+
     return sets
 
   """Returns a collection of costs, in which each cost corresponds

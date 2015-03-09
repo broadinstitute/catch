@@ -286,34 +286,21 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
       # already placed in the cover. Not doing so should yield some
       # runtime improvements.
       num_needed_covered_across_universes = 0
-      for universe_id, universe in universes.iteritems():
-        if universe_id not in sets[set_id]:
-          # There is nothing to cover in this universe
-          continue
+      for universe_id in sets[set_id].keys():
         if set_id in memoized_intersect_counts[universe_id]:
           # We have num_covered memoized
           num_covered = memoized_intersect_counts[universe_id][set_id]
         else:
           s = sets[set_id][universe_id]
+          universe = universes[universe_id]
           if use_arrays:
-            if len(universe) >= len(s):
-              # Compute an intersection by looking up, in universe,
-              # each element of s
-              num_covered = sum([1 for v in s if v in universe])
-            else:
-              # Compute an intersection by looking up, in a set of
-              # s, each element of universe
-              # This may not actually be faster than the above
-              # computation for len(universe) >= len(s). Converting
-              # s to a set takes time, for example. A better approach
-              # would be to do this computation (as opposed to the
-              # above one, which looks up in unvierse) only when
-              # universe is significantly smaller than the size of s
-              # (e.g., k times smaller for some k > 1).
-              s_set = set(s)
-              num_covered = sum([1 for v in universe if v in s_set])
-          else:
-            num_covered = len(s.intersection(universe))
+            # It may seem faster to compute, in the case where s is
+            # array, num_covered as sum([1 for v in s if v in universe])
+            # in order to avoid converting s to an array. However,
+            # it appears that, in practice, converting s to a set and
+            # using set.intersection is faster.
+            s = set(s)
+          num_covered = len(s.intersection(universe))
           # Memoize num_covered
           memoized_intersect_counts[universe_id][set_id] = num_covered
         # There is no need to cover more than num_left_to_cover
