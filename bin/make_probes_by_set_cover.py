@@ -6,16 +6,17 @@ dataset by treating the problem as an instance of set cover.
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import argparse
+import logging
 
 from hybseldesign.datasets import ebola_zaire
 from hybseldesign.datasets import ebola2014
 from hybseldesign.datasets import hg19
 from hybseldesign.datasets import marburg
-from hybseldesign.utils import seq_io, version
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import set_cover_filter
+from hybseldesign.utils import seq_io, version, log
 
 DATASETS = { "ebola_zaire": ebola_zaire,
              "ebola2014": ebola2014 }
@@ -109,8 +110,16 @@ if __name__ == "__main__":
   parser.add_argument("--limit_target_genomes", type=int,
       help=("(Optional) Use only the first N target genomes in the "
             "dataset"))
+  parser.add_argument("--debug", dest="log_level",
+      action="store_const", const=logging.DEBUG,
+      default=logging.WARNING,
+      help=("Debug output"))
+  parser.add_argument("--verbose", dest="log_level",
+      action="store_const", const=logging.INFO,
+      help=("Verbose output"))
   parser.add_argument('--version', '-V', action='version',
       version=version.get_version())
   args = parser.parse_args()
 
+  log.configure_logging(args.log_level)
   main(args)

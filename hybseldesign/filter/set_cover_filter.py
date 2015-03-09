@@ -41,10 +41,7 @@ from hybseldesign.filter.base_filter import BaseFilter
 from hybseldesign.utils import set_cover
 from hybseldesign.utils import seq_io
 
-# Setup logging
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
 
 
 class SetCoverFilter(BaseFilter):
@@ -101,7 +98,7 @@ class SetCoverFilter(BaseFilter):
       sets[id] = defaultdict(lambda: array('I'))
 
     for i, sequence in enumerate(self.target_genomes):
-      logger.info("  Computing coverage across genome %d of %d",
+      logger.info("Computing coverage across genome %d of %d",
           i, len(self.target_genomes))
       probe_cover_ranges = probe.find_probe_covers_in_sequence(
           sequence, kmer_probe_map, k=self.kmer_size,

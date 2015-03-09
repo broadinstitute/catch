@@ -7,10 +7,7 @@ import logging
 import math
 from collections import defaultdict
 
-# Setup logging
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
 
 
 """Approximates the solution to an instance of the set cover problem

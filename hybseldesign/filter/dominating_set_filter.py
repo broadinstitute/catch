@@ -24,10 +24,7 @@ from collections import defaultdict
 from hybseldesign.filter.base_filter import BaseFilter
 from hybseldesign.utils import set_cover
 
-# Setup logging
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
 
 
 class DominatingSetFilter(BaseFilter):
