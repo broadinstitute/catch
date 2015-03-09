@@ -17,10 +17,7 @@ import logging
 
 from hybseldesign.filter.base_filter import BaseFilter
 
-# Setup logging
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
 
 
 class NaiveRedundantFilter(BaseFilter):

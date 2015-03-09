@@ -7,13 +7,14 @@ and RemoveSimilarSequences.jar).
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import argparse
+import logging
 
 from hybseldesign.datasets import ebola_zaire
-from hybseldesign.utils import seq_io, version
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import naive_redundant_filter
+from hybseldesign.utils import seq_io, version, log
 
 
 def main(args):
@@ -61,7 +62,16 @@ if __name__ == "__main__":
       help=("Deem one probe redundant to another if, as one is "
             "shifted relative to the other, the minimum number of "
             "mismatches between them is <= 'mismatch_thres'"))
-  parser.add_argument('--version', '-V', action='version', version=version.get_version())
+  parser.add_argument("--debug", dest="log_level",
+      action="store_const", const=logging.DEBUG,
+      default=logging.WARNING,
+      help=("Debug output"))
+  parser.add_argument("--verbose", dest="log_level",
+      action="store_const", const=logging.INFO,
+      help=("Verbose output"))
+  parser.add_argument('--version', '-V', action='version',
+      version=version.get_version())
   args = parser.parse_args()
 
+  log.configure_logging(args.log_level)
   main(args)
