@@ -100,3 +100,15 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
     if len(curr_seq) > 0:
       yield format_seq(curr_seq)
 
+
+"""Write the sequences in 'probes' to the file 'out_fn'.
+
+This writes one probe sequence per line, without any headers or other
+information.
+"""
+def write_probes(probes, out_fn):
+  with open(out_fn, 'w') as f:
+    for p in probes:
+      f.write(p.seq_str)
+      f.write('\n')
+
