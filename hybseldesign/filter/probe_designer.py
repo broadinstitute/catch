@@ -4,7 +4,11 @@ passing these through a set of one or more given filters.
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
+import logging
+
 from hybseldesign.filter import candidate_probes
+
+logger = logging.getLogger(__name__)
 
 
 class ProbeDesigner:
@@ -43,6 +47,7 @@ class ProbeDesigner:
 
     probes = self.candidate_probes
     for f in self.filters:
+      logger.info("Starting filter %s", f.__class__.__name__)
       f.target_genomes = self.seqs
       probes = f.filter(probes)
     self.final_probes = probes
