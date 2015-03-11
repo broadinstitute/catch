@@ -7,19 +7,14 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import argparse
 import logging
+import importlib
 
-from hybseldesign.datasets import ebola_zaire
-from hybseldesign.datasets import ebola2014
 from hybseldesign.datasets import hg19
-from hybseldesign.datasets import marburg
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import set_cover_filter
 from hybseldesign.utils import seq_io, version, log
-
-DATASETS = { "ebola_zaire": ebola_zaire,
-             "ebola2014": ebola2014 }
 
 # Set the path to the hg19 fasta file (assuming this is a Broad
 # machine)
@@ -28,10 +23,12 @@ hg19.set_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_ass
 
 def main(args):
   # Read the FASTA sequences
-  if args.dataset not in DATASETS:
+  try:
+    dataset = importlib.import_module(
+                 'hybseldesign.datasets.' + args.dataset)
+  except ImportError:
     raise ValueError("Unknown dataset %s" % args.dataset)
-  fasta_path = DATASETS[args.dataset].fasta_path()
-  seqs = seq_io.read_fasta(fasta_path).values()
+  seqs = seq_io.read_fasta(dataset.fasta_path()).values()
 
   if args.limit_target_genomes:
     seqs = seqs[:args.limit_target_genomes]
