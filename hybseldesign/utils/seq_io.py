@@ -3,9 +3,12 @@
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
+import logging
 import numpy as np
 import re
 from collections import OrderedDict
+
+logger = logging.getLogger(__name__)
 
 
 """Reads the FASTA file fn and return a mapping from the name of
@@ -22,6 +25,8 @@ The degenerate bases ('Y','R','W','S','M','K') are replaced with
 'N' iff replace_degenerate is True.
 """
 def read_fasta(fn, data_type='str', replace_degenerate=True):
+  logger.info("Reading fasta file %s", fn)
+
   degenerate_pattern = re.compile('[YRWSMK]')
 
   m = OrderedDict()

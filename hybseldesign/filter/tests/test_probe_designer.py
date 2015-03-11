@@ -4,6 +4,7 @@
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import unittest
+import logging
 
 from hybseldesign import probe
 from hybseldesign.filter import probe_designer
@@ -13,6 +14,10 @@ from hybseldesign.filter import duplicate_filter
 """Tests the probe designer output on contrived input.
 """
 class TestProbeDesigner(unittest.TestCase):
+
+  def setUp(self):
+    # Disable logging
+    logging.disable(logging.INFO)
 
   """A basic test with a duplicate filter and one input sequence.
   Note that this test is dependent on the default values for
@@ -35,4 +40,8 @@ class TestProbeDesigner(unittest.TestCase):
     pb.design()
     self.assertEqual(pb.candidate_probes, desired_candidate_probes)
     self.assertEqual(pb.final_probes, desired_final_probes)
+
+  def tearDown(self):
+    # Re-enable logging
+    logging.disable(logging.NOTSET)
 
