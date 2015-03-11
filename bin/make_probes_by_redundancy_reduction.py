@@ -66,6 +66,10 @@ def main(args):
           replicate_first_version=True)
   pb.design()
 
+  if args.output_probes:
+    # Write the final probes to the file args.output_probes
+    seq_io.write_probes(pb.final_probes, args.output_probes)
+
   # Print the arguments and the number of final probes
   # (The final probes are stored in pb.final_probes if their
   #  sequences are desired)
@@ -94,6 +98,10 @@ if __name__ == "__main__":
   parser.add_argument("--limit_target_genomes", type=int,
       help=("(Optional) Use only the first N target genomes in the "
             "dataset"))
+  parser.add_argument("-o", "--output_probes",
+      help=("(Optional) The file to which all final probes should be "
+            "written; if not specified, the final probes are not "
+            "written to a file"))
   parser.add_argument("--debug", dest="log_level",
       action="store_const", const=logging.DEBUG,
       default=logging.WARNING,
