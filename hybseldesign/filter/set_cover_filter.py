@@ -145,7 +145,7 @@ class SetCoverFilter(BaseFilter):
       # into memory (e.g., only store one chromosome of the human
       # genome at a time)
       for sequence in seq_io.iterate_fasta(fasta_path):
-        logger.info(("  Computing coverage across a blacklisted "
+        logger.info(("Computing coverage across a blacklisted "
                      "sequence"))
         # Blacklist both sequence and its reverse complement
         for reverse_complement in [False, True]:
