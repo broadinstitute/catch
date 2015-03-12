@@ -33,11 +33,16 @@ def main(args):
   if args.limit_target_genomes:
     seqs = seqs[:args.limit_target_genomes]
 
-  blacklisted_genomes = []
-  if args.blacklist_hg19:
-    blacklisted_genomes += [ hg19.fasta_path() ]
-  if args.blacklist_marburg:
-    blacklisted_genomes += [ marburg.fasta_path() ]
+  # Store the FASTA paths of blacklisted genomes
+  blacklisted_genomes_fasta = []
+  if args.blacklist_genomes:
+    for bg in args.blacklist_genomes:
+      try:
+        dataset = importlib.import_module(
+                     'hybseldesign.datasets.' + bg)
+      except ImportError:
+        raise ValueError("Unknown dataset %s" % bg)
+      blacklisted_genomes_fasta += [ dataset.fasta_path() ]
 
   # Setup the filters
   # The filters we use are, in order:
@@ -51,7 +56,7 @@ def main(args):
   #     as an instance of the set cover problem
   scf = set_cover_filter.SetCoverFilter(
           mismatches=args.mismatches, lcf_thres=args.lcf_thres,
-          blacklisted_genomes=blacklisted_genomes,
+          blacklisted_genomes=blacklisted_genomes_fasta,
           coverage_frac=args.coverage_frac)
   #  3) Reverse complement (rc) -- add the reverse complement of
   #     each probe that remains
@@ -100,12 +105,10 @@ if __name__ == "__main__":
             "wish to see the probes generated from only the "
             "duplicate and reverse complement filters, to gauge "
             "the effects of the set cover filter"))
-  parser.add_argument("--blacklist_hg19", dest="blacklist_hg19",
-      action="store_true",
-      help=("Penalize probes based on how much of hg19 they cover"))
-  parser.add_argument("--blacklist_marburg", dest="blacklist_marburg",
-      action="store_true",
-      help=("Penalize probes based on how much of Marburg they cover"))
+  parser.add_argument("--blacklist_genomes", nargs='+',
+      help=("One or more blacklisted genomes; penalize probes based "
+            "on how much of each of these genomes they cover; the "
+            "label should be a dataset (e.g., 'hg19' or 'marburg')"))
   parser.add_argument("-d", "--dataset", type=str, default="ebola_zaire",
       help=("A label for the dataset to use"))
   parser.add_argument("--limit_target_genomes", type=int,
