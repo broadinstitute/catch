@@ -123,12 +123,28 @@ class SetCoverFilter(BaseFilter):
   Specifically, the returned value is a dict mapping set_ids (from 0
   through len(candidate_probes)-1) to numbers, where each set_id
   corresponds to a candidate probe. The cost is a penalty for the
-  probe and is equal to one plus the number of bases across the
-  blacklisted genomes that the probe covers. (The one is added so
-  that, if a probe does not cover any portion of any blacklisted
-  genome, it is not automatically taken. It also ensures that, if
-  there are no blacklisted genomes, the objective is the minimize
-  the number of probes.)
+  probe. The cost of a probe that does not cover any part of any
+  blacklisted genome is 1. The cost of a probe that covers some number
+  of bp of some blacklisted genome(s) is total_num_target_bp plus the
+  number of bp of all target genomes the probe covers, where
+  total_num_target_bp is the total number of bp across all target
+  genomes. In weighted set cover, at each iteration the fraction
+  considered for each set (probe) S is (cost of S) / (number of
+  uncovered elements [bp] covered by S). For a probe with a cost of 1,
+  this fraction is always <= 1 (assuming that S covers at least one
+  uncovered bp, since if it does not then it is not considered). Thus,
+  for probes that do not cover any blacklisted genome, this fraction
+  is always <= 1. For a probe that does cover some part of a
+  blacklisted genome, its cost (numerator) is always >
+  total_num_target_bp. Since the denominator of the fraction is always
+  <= total_num_target_bp, the fraction for such a probe is always > 1.
+  Therefore, weighted set cover effectively does the following: (1)
+  Covers as much of the target genomes as possible while minimizing
+  the number of probes, without using any probe that covers any part
+  of a blacklisted genome. (2) Covers whatever portions of the target
+  genomes remain to be covered by using probes that cover parts of
+  blacklisted genomes, while minimizing the total coverage of the
+  blacklisted genomes.
 
   The output is intended for input to set_cover.approx_multiuniverse
   as the 'costs' input.
@@ -139,6 +155,8 @@ class SetCoverFilter(BaseFilter):
     for id, p in enumerate(candidate_probes):
       probe_id[p] = id
       costs[id] = 1
+
+    total_num_target_bp = sum(len(seq) for seq in self.target_genomes)
 
     for fasta_path in self.blacklisted_genomes:
       # Use a generator to read the FASTA to avoid loading too much
@@ -162,6 +180,10 @@ class SetCoverFilter(BaseFilter):
             set_id = probe_id[p]
             for cover_range in cover_ranges:
               num_bp_covered = cover_range[1] - cover_range[0]
+              if costs[set_id] == 1:
+                # Start the cost of this probe at the total number of
+                # bp across all target genomes
+                costs[set_id] = total_num_target_bp
               costs[set_id] += num_bp_covered
 
     return costs
