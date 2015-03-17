@@ -13,10 +13,14 @@ logger = logging.getLogger(__name__)
 
 class ProbeDesigner:
 
-  """Creates a ProbeDesigner from a list 'seqs' of sequences and an
-  (ordered) list 'filters' of filters.
+  """Creates a ProbeDesigner from a collection 'seqs' of grouped
+  sequences and an (ordered) list 'filters' of filters.
 
-  Each filter should be an instance of a subclass of Filter.
+  seqs is a list [s_1, s_2, s_m] of m groupings of sequences, where
+  each s_i is a list of sequences belong to group i. For example, a
+  group may be a species and each s_i would be a list of sequences
+  corresponding to the target genomes of species i. Each filter
+  should be an instance of a subclass of Filter.
 
   When replicate_first_version is True, candidate probes are
   explicitly designed in a (buggy) way intended to replicate the
@@ -41,9 +45,11 @@ class ProbeDesigner:
       }
     else:
       replicate_args = {}
-    self.candidate_probes = candidate_probes.\
-        make_candidate_probes_from_sequences(self.seqs,
-          **replicate_args)
+    self.candidate_probes = []
+    for seqs_from_group in self.seqs:
+      self.candidate_probes += candidate_probes.\
+          make_candidate_probes_from_sequences(seqs_from_group,
+            **replicate_args)
 
     probes = self.candidate_probes
     for f in self.filters:

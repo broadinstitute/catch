@@ -21,15 +21,17 @@ from hybseldesign.utils import seq_io, version, log
 
 def main(args):
   # Read the FASTA sequences
-  try:
-    dataset = importlib.import_module(
-                 'hybseldesign.datasets.' + args.dataset)
-  except ImportError:
-    raise ValueError("Unknown dataset %s" % args.dataset)
-  seqs = seq_io.read_fasta(dataset.fasta_path()).values()
+  seqs = []
+  for ds in args.dataset:
+    try:
+      dataset = importlib.import_module(
+                   'hybseldesign.datasets.' + ds)
+    except ImportError:
+      raise ValueError("Unknown dataset %s" % ds)
+    seqs += [seq_io.read_fasta(dataset.fasta_path()).values()]
 
   if args.limit_target_genomes:
-    seqs = seqs[:args.limit_target_genomes]
+    seqs = [s[:args.limit_target_genomes] for s in seqs]
 
   # Setup the filters
   # The filters we use are, in order:
@@ -93,8 +95,9 @@ if __name__ == "__main__":
   parser.add_argument("-f", "--main_filter", type=str, default="ds",
       help=("The primary filter to use: 'ds' (dominating set filter) "
             "[default] or 'nr' (naive redundant filter)"))
-  parser.add_argument("-d", "--dataset", type=str, default="ebola_zaire",
-      help=("A label for the dataset to use"))
+  parser.add_argument("-d", "--dataset", nargs='+', required=True,
+      help=("Labels for one or more target datasets (e.g., "
+            "one label per species)"))
   parser.add_argument("--limit_target_genomes", type=int,
       help=("(Optional) Use only the first N target genomes in the "
             "dataset"))

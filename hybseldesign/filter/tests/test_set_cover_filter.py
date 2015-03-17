@@ -36,7 +36,8 @@ class TestSetCoverFilter(unittest.TestCase):
                       selected_probes, k=k,
                       num_kmers_per_probe=10,
                       include_positions=True)
-    for tg in target_genomes:
+    for tg in [s for seqs_from_group in target_genomes \
+          for s in seqs_from_group]:
       probe_cover_ranges = probe.find_probe_covers_in_sequence(
           tg, kmer_probe_map, k=k,
           cover_range_for_probe_in_subsequence_fn=filter.cover_range_fn)
@@ -50,11 +51,10 @@ class TestSetCoverFilter(unittest.TestCase):
       self.assertEquals(start, 0)
       self.assertEquals(end, len(tg))
 
-  def test_full_coverage(self):
-    target_genomes = [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
-                       'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ]
+  def run_full_coverage_test_for_target_genomes(self, target_genomes):
     input = []
-    for tg in target_genomes:
+    for tg in [s for seqs_from_group in target_genomes \
+          for s in seqs_from_group]:
       input += [ tg[i:(i+6)] for i in xrange(len(tg)-6+1) ]
     must_have_output = [ 'OPQRST',
                          'UVWXYZ',
@@ -69,6 +69,48 @@ class TestSetCoverFilter(unittest.TestCase):
     # verify that each of the target genomes is fully covered
     self.verify_target_genome_full_coverage(output,
       target_genomes, 3, 10, f)
+
+  def test_full_coverage(self):
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                         'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    # Test with one grouping of two sequences
+    self.run_full_coverage_test_for_target_genomes(target_genomes)
+    # Test again with two groupings of one sequence each
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF' ],
+                       [ 'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    self.run_full_coverage_test_for_target_genomes(target_genomes)
+
+  """Tests that, when the same species shows twice (with the same
+  target genomes), the output is the same as if it shows once. In
+  this unit test we are not removing duplicate probes before
+  testing the set cover filter; therefore, we should remove duplicates
+  before comparing (since the output when the species shows twice
+  will have more probes than when it shows once).
+  """
+  def test_same_output_with_duplicated_species(self):
+    def get_probes(target_genomes):
+      input = []
+      for tg in [s for seqs_from_group in target_genomes \
+            for s in seqs_from_group]:
+        input += [ tg[i:(i+6)] for i in xrange(len(tg)-6+1) ]
+      must_have_output = [ 'OPQRST',
+                           'UVWXYZ',
+                           'FEDCBA',
+                           'ABCDEF',
+                           'ZYXWVF' ]
+      f, output = self.get_filter_and_output(6, 0, target_genomes,
+          input, 1.0, 3, 10)
+      return output
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                         'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    probes_once = get_probes(target_genomes)
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                         'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ],
+                       [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                         'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    probes_twice = get_probes(target_genomes)
+    # Compare set to ignore duplicates
+    self.assertEqual(set(probes_once), set(probes_twice))
 
   def tearDown(self):
     # Re-enable logging

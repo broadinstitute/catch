@@ -23,15 +23,17 @@ hg19.set_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_ass
 
 def main(args):
   # Read the FASTA sequences
-  try:
-    dataset = importlib.import_module(
-                 'hybseldesign.datasets.' + args.dataset)
-  except ImportError:
-    raise ValueError("Unknown dataset %s" % args.dataset)
-  seqs = seq_io.read_fasta(dataset.fasta_path()).values()
+  seqs = []
+  for ds in args.dataset:
+    try:
+      dataset = importlib.import_module(
+                   'hybseldesign.datasets.' + ds)
+    except ImportError:
+      raise ValueError("Unknown dataset %s" % ds)
+    seqs += [seq_io.read_fasta(dataset.fasta_path()).values()]
 
   if args.limit_target_genomes:
-    seqs = seqs[:args.limit_target_genomes]
+    seqs = [s[:args.limit_target_genomes] for s in seqs]
 
   # Store the FASTA paths of blacklisted genomes
   blacklisted_genomes_fasta = []
@@ -109,8 +111,9 @@ if __name__ == "__main__":
       help=("One or more blacklisted genomes; penalize probes based "
             "on how much of each of these genomes they cover; the "
             "label should be a dataset (e.g., 'hg19' or 'marburg')"))
-  parser.add_argument("-d", "--dataset", type=str, default="ebola_zaire",
-      help=("A label for the dataset to use"))
+  parser.add_argument("-d", "--dataset", nargs='+', required=True,
+      help=("Labels for one or more target datasets (e.g., "
+            "one label per species)"))
   parser.add_argument("--limit_target_genomes", type=int,
       help=("(Optional) Use only the first N target genomes in the "
             "dataset"))

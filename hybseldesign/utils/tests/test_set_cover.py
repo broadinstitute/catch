@@ -291,6 +291,14 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
     self.assertEqual(sc.approx_multiuniverse(sets,
         universe_p=universe_p), desired_output)
 
+  def test_tuple_universe_id(self):
+    sets = { 0: { (0,0): set([1,2]), (1,0): set([2]) },
+             1: { (0,0): set([1,2,3]) } }
+    universe_p = { (0,0): 1.0, (1,0): 1.0 }
+    desired_output = set([0,1])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p), desired_output)
+
   """Verifies that a computed set cover achieves the desired
   coverage of each universe.
   """
