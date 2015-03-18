@@ -51,7 +51,7 @@ class TestSetCoverFilter(unittest.TestCase):
       self.assertEquals(start, 0)
       self.assertEquals(end, len(tg))
 
-  def run_full_coverage_test_for_target_genomes(self, target_genomes):
+  def run_full_coverage_check_for_target_genomes(self, target_genomes):
     input = []
     for tg in [s for seqs_from_group in target_genomes \
           for s in seqs_from_group]:
@@ -74,11 +74,11 @@ class TestSetCoverFilter(unittest.TestCase):
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                          'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
     # Test with one grouping of two sequences
-    self.run_full_coverage_test_for_target_genomes(target_genomes)
+    self.run_full_coverage_check_for_target_genomes(target_genomes)
     # Test again with two groupings of one sequence each
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF' ],
                        [ 'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
-    self.run_full_coverage_test_for_target_genomes(target_genomes)
+    self.run_full_coverage_check_for_target_genomes(target_genomes)
 
   """Tests that, when the same species shows twice (with the same
   target genomes), the output is the same as if it shows once. In
