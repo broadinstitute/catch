@@ -86,7 +86,7 @@ class Probe:
   """Returns a probe that has the string 's' appended to the
   sequence of this probe.
   """
-  def with_prepended_str(self, s):
+  def with_appended_str(self, s):
     s_seq = np.fromstring(s, dtype='S1')
     new_seq = np.concatenate([self.seq, s_seq])
     return Probe(new_seq)
