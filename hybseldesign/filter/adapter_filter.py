@@ -109,6 +109,7 @@ import logging
 
 from hybseldesign import probe
 from hybseldesign.filter.base_filter import BaseFilter
+from hybseldesign.utils import interval
 
 logger = logging.getLogger(__name__)
 
@@ -152,32 +153,9 @@ class AdapterFilter(BaseFilter):
       for cover_range in cover_ranges:
         intervals += [ (cover_range, p) ]
 
-    # Sort all intervals by their endpoint (the "finishing time")
-    # x[0] gives the interval and x[0][1] gives the endpoint
-    intervals.sort(key=lambda x: x[0][1])
-
-    # Scan through the intervals in sorted order and choose
-    # compatible ones with the earliest endpoint
-    last_chosen_interval = None
-    chosen_probes = set()
-    skipped_probes = set()
-    for interval, probe in intervals:
-      is_compatible = False
-      if last_chosen_interval == None:
-        # no intervals have been chosen yet, so interval is
-        # of course compatible
-        is_compatible = True
-      else:
-        # interval is compatible with the chosen intervals iff
-        # its start comes after the finish of the last chosen
-        # interval
-        if interval[0] >= last_chosen_interval[1]:
-          is_compatible = True
-      if is_compatible:
-        last_chosen_interval = interval
-        chosen_probes.add(probe)
-      else:
-        skipped_probes.add(probe)
+    # Perform interval scheduling to choose probes that should be
+    # assigned the 'A' adapter
+    chosen_probes = set(interval.schedule(intervals))
 
     votes = []
     for p in probes:
@@ -188,7 +166,6 @@ class AdapterFilter(BaseFilter):
         if p in aligned_probes:
           # p should have been skipped by the interval scheduling
           # algorithm
-          assert p in skipped_probes
           # vote for 'B'
           vote = (0,1)
         else:
