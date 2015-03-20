@@ -75,6 +75,22 @@ class Probe:
                 dtype='S1')
     return Probe(rc_seq)
 
+  """Returns a probe that has the string 's' prepended to the
+  sequence of this probe.
+  """
+  def with_prepended_str(self, s):
+    s_seq = np.fromstring(s, dtype='S1')
+    new_seq = np.concatenate([s_seq, self.seq])
+    return Probe(new_seq)
+
+  """Returns a probe that has the string 's' appended to the
+  sequence of this probe.
+  """
+  def with_prepended_str(self, s):
+    s_seq = np.fromstring(s, dtype='S1')
+    new_seq = np.concatenate([self.seq, s_seq])
+    return Probe(new_seq)
+
   """Returns the set of k-mers in this probe.
 
   When include_positions is True, the set consists of tuples in
