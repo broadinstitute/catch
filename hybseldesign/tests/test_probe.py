@@ -76,8 +76,8 @@ class TestProbe(unittest.TestCase):
 
   """Test with_appended_str method.
   """
-  def test_with_prepended_str(self):
-    a_appended = self.a.with_prepended_str('TATA')
+  def test_with_appended_str(self):
+    a_appended = self.a.with_appended_str('TATA')
     a_appended_desired = probe.Probe.from_str('ATCGTCGCGGATCGTATA')
     self.assertEqual(a_appended, a_appended_desired)
 
