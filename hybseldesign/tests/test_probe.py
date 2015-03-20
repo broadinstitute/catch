@@ -60,6 +60,27 @@ class TestProbe(unittest.TestCase):
     self.assertEqual(self.a.min_mismatches_within_shift(self.b, 2), 3)
     self.assertEqual(self.b.min_mismatches_within_shift(self.a, 2), 3)
 
+  """Test reverse_complement method.
+  """
+  def test_reverse_complement(self):
+    a_rc = self.a.reverse_complement()
+    a_rc_desired = probe.Probe.from_str('CGATCCGCGACGAT')
+    self.assertEqual(a_rc, a_rc_desired)
+
+  """Test with_prepended_str method.
+  """
+  def test_with_prepended_str(self):
+    a_prepended = self.a.with_prepended_str('TATA')
+    a_prepended_desired = probe.Probe.from_str('TATAATCGTCGCGGATCG')
+    self.assertEqual(a_prepended, a_prepended_desired)
+
+  """Test with_appended_str method.
+  """
+  def test_with_prepended_str(self):
+    a_appended = self.a.with_prepended_str('TATA')
+    a_appended_desired = probe.Probe.from_str('ATCGTCGCGGATCGTATA')
+    self.assertEqual(a_appended, a_appended_desired)
+
   """Test share_some_kmers method.
   """
   def test_share_some_kmers_nonmemoized(self):
