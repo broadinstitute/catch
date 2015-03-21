@@ -228,7 +228,7 @@ class AdapterFilter(BaseFilter):
     # at index i is a tuple (A,B) that corresponds to the probe
     # probes[i] where A gives the 'A' votes for the probe and B gives
     # the 'B' votes
-    cumulative_votes = [(0,0) for _ in xrange(len(input))]
+    cumulative_votes = [(0,0) for _ in xrange(len(probes))]
     for i, sequence in enumerate(self.target_genomes):
       # Compute votes for the adapters for each probe in 'sequence',
       # and also exchange all 'A' votes with 'B' votes and vice-versa.
