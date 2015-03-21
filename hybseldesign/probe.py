@@ -201,7 +201,7 @@ class Probe:
     return self.seq_str
 
   def __repr__(self):
-    return str(self.seq)
+    return self.seq_str
 
   """Make a Probe from a Python str.
   """
