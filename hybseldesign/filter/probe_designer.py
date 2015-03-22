@@ -41,6 +41,8 @@ class ProbeDesigner:
       }
     else:
       replicate_args = {}
+
+    logger.info("Building candidate probes from target sequences")
     self.candidate_probes = candidate_probes.\
         make_candidate_probes_from_sequences(self.seqs,
           **replicate_args)

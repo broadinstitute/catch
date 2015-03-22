@@ -265,7 +265,7 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
   # is obtained (note that [] evaluates to False)
   while [True for universe_id in universes.keys() \
         if num_left_to_cover[universe_id] > 0]:
-    if len(set_ids_in_cover) % 100 == 0:
+    if len(set_ids_in_cover) % 10 == 0:
       logger.info(("Selected %d sets with a total of %d elements "
                    "remaining to be covered"), len(set_ids_in_cover),
                    sum(num_left_to_cover.values()))
