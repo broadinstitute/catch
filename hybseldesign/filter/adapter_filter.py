@@ -145,7 +145,7 @@ class AdapterFilter(BaseFilter):
     probe_cover_ranges = probe.find_probe_covers_in_sequence(
         sequence, kmer_probe_map, k=self.kmer_size,
         cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
-    aligned_probes = probe_cover_ranges.keys()
+    aligned_probes = set(probe_cover_ranges.keys())
     # Make a list of all the intervals covered by all the probes,
     # along with a reference to the probe with the interval
     intervals = []
