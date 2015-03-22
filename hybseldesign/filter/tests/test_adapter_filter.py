@@ -106,7 +106,7 @@ class TestAdapterFilter(unittest.TestCase):
 
     for allowed_mismatches in [0,1]:
       f, output = self.get_filter_and_output(6, allowed_mismatches,
-          target_genomes, input, 3, 10)
+          target_genomes, input, 3, 100)
       desired_output = self.make_probes_with_adapters(
                         ['ABCDEF', 'KLMNOP'], ['FGHIJK', 'FGHXJK'])
       self.assertItemsEqual(output, desired_output)
