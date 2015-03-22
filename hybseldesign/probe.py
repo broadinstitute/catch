@@ -5,6 +5,7 @@ for directly working with them.
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 from collections import defaultdict
+import hashlib
 import numpy as np
 
 from hybseldesign.utils import longest_common_substring
@@ -18,6 +19,7 @@ class Probe:
     self.seq = seq
     self.seq_str = seq.tostring()
     self.is_flanking_n_string = False
+    self.header = None
 
     self.kmers = defaultdict(set)
     self.kmers_rand_choices = defaultdict(lambda : defaultdict(list))
@@ -180,6 +182,24 @@ class Probe:
         if rand_kmer in other.seq_str:
           return True
       return False
+
+  """Returns an identifier of this sequence. The identifier is
+  probably unique among the probes being considered.
+
+  The identifier is computed from a hash of this probe's sequence
+  (self.seq_str); it is the final 'length' hex digits of the
+  hash. Python's hash(..) function could be used, but the size of
+  the hashes it produces depends on the size of the input (longer
+  input yield larger hashes); using the SHA-224 hash function
+  should produce more uniform hash values.
+
+  For example, when length=10, this is equivalent to taking the final
+  40 bits of the SHA-224 digest since each hex digit is 4 bits.
+  Thus, it is the SHA-224 digest modulo 2^40. There are 2^40 (roughly
+  one trillion) possible identifiers for a probe.
+  """
+  def identifier(self, length=10):
+    return hashlib.sha224(self.seq_str).hexdigest()[-length:]
 
   def __hash__(self):
     return hash(self.seq_str)
