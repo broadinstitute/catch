@@ -23,6 +23,11 @@ class TestProbe(unittest.TestCase):
     self.f = probe.Probe.from_str('GTCGCGGAACGGGG')
     self.g = probe.Probe.from_str('GTCGCTGATCGATC')
 
+  def make_random_probe(self, length):
+    bases = ['A','T','C','G']
+    s = "".join(np.random.choice(bases, size=length, replace=True))
+    return probe.Probe.from_str(s)
+
   """Test that probe parses the string correctly.
   """
   def test_parse_str(self):
@@ -80,6 +85,18 @@ class TestProbe(unittest.TestCase):
     a_appended = self.a.with_appended_str('TATA')
     a_appended_desired = probe.Probe.from_str('ATCGTCGCGGATCGTATA')
     self.assertEqual(a_appended, a_appended_desired)
+
+  """Test identifier method.
+
+  This randomly produces 100 probes and checks that their identifiers
+  are all unique. They are not guaranteed to be, but certainly
+  should be.
+  """
+  def test_identifier(self):
+    np.random.seed(1)
+    probes = [self.make_random_probe(100) for _ in xrange(100)]
+    identifiers = set([p.identifier() for p in probes])
+    self.assertEqual(len(identifiers), 100)
 
   """Test share_some_kmers method.
   """
