@@ -82,7 +82,7 @@ def main(args):
 
   if args.output_probes:
     # Write the final probes to the file args.output_probes
-    seq_io.write_probes(pb.final_probes, args.output_probes)
+    seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
   # Print the arguments and the number of final probes
   # (The final probes are stored in pb.final_probes if their
