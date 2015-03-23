@@ -62,10 +62,12 @@ class TestAdapterFilter(unittest.TestCase):
     return probes
 
   def test_one_genome(self):
-    target_genomes = [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ]
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ] ]
     # Create probes of length 6 bp with a stride of 3 bp
-    input = cp.make_candidate_probes_from_sequences(target_genomes,
-        probe_length=6, probe_stride=3)
+    input = []
+    for seqs_from_group in target_genomes:
+      input += cp.make_candidate_probes_from_sequences(
+          seqs_from_group, probe_length=6, probe_stride=3)
 
     f, output = self.get_filter_and_output(6, 0, target_genomes,
         input, 3, 10)
@@ -75,11 +77,13 @@ class TestAdapterFilter(unittest.TestCase):
     self.assertItemsEqual(output, desired_output)
 
   def test_two_genomes(self):
-    target_genomes = [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                       'ZYXWVUTSRQPONMLKJIHGFEDCBA' ]
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ],
+                       [ 'ZYXWVUTSRQPONMLKJIHGFEDCBA' ] ]
     # Create probes of length 6 bp with a stride of 3 bp
-    input = cp.make_candidate_probes_from_sequences(target_genomes,
-        probe_length=6, probe_stride=3)
+    input = []
+    for seqs_from_group in target_genomes:
+      input += cp.make_candidate_probes_from_sequences(
+          seqs_from_group, probe_length=6, probe_stride=3)
 
     f, output = self.get_filter_and_output(6, 0, target_genomes,
         input, 3, 10)
@@ -99,8 +103,8 @@ class TestAdapterFilter(unittest.TestCase):
   be assigned adapter 'B'.
   """
   def test_almost_identical_probe(self):
-    target_genomes = [ 'ABCDEFGHIJKLMNOP',
-                       'ABCDEFGHXJKLMNOP' ]
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOP',
+                         'ABCDEFGHXJKLMNOP' ] ]
     input = ['ABCDEF', 'FGHIJK', 'FGHXJK', 'KLMNOP']
     input = [probe.Probe.from_str(s) for s in input]
 
@@ -124,8 +128,8 @@ class TestAdapterFilter(unittest.TestCase):
   aligning to one genome are offset from the other.
   """
   def test_misaligned(self):
-    target_genomes = [ 'ABCDEFGHIJKLMNOPQR',
-                       'XYZABCDEFGHIJKLMNOPQR' ]
+    target_genomes = [ [ 'ABCDEFGHIJKLMNOPQR',
+                         'XYZABCDEFGHIJKLMNOPQR' ] ]
     input = ['XYZABC', 'ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO',
              'MNOPQR']
     input = [probe.Probe.from_str(s) for s in input]
@@ -151,9 +155,9 @@ class TestAdapterFilter(unittest.TestCase):
   and the other should be assigned adapter 'B'.
   """
   def test_three_genomes(self):
-    target_genomes = [ 'ABCDEFGHEFKLMN',
-                       'ABCDEFKLMN',
-                       'ABCDEFKLMNO' ]
+    target_genomes = [ [ 'ABCDEFGHEFKLMN',
+                         'ABCDEFKLMN',
+                         'ABCDEFKLMNO' ] ]
     input = [ 'ABCDEF', 'EFKLMN' ]
     input = [probe.Probe.from_str(s) for s in input]
 
@@ -169,13 +173,13 @@ class TestAdapterFilter(unittest.TestCase):
     self.assertEqual(votes, [(3,0), (1,2)])
 
   def test_with_mismatches(self):
-    target_genomes = [ 'ABCDEFGHIJKLMNO',
-                       'ABCXEFGXIJKXMNO',
-                       'ABCDEFGYYJKLMNO',
-                       'ABCDEXGHIJKLXNO',
-                       'ABCDEFGHIJKLMNX',
-                       'AXCDEFGHIJKLMNO',
-                       'ABCDEFGHIYYLMNO' ]
+    target_genomes = [ [ 'ABCDEFGHIJKLMNO',
+                         'ABCXEFGXIJKXMNO',
+                         'ABCDEFGYYJKLMNO',
+                         'ABCDEXGHIJKLXNO',
+                         'ABCDEFGHIJKLMNX',
+                         'AXCDEFGHIJKLMNO',
+                         'ABCDEFGHIYYLMNO' ] ]
     input = ['ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO', 'DEFGYY',
              'GYYJKL', 'IYYLMN']
     input = [probe.Probe.from_str(s) for s in input]

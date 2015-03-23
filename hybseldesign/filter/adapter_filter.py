@@ -229,14 +229,13 @@ class AdapterFilter(BaseFilter):
     # probes[i] where A gives the 'A' votes for the probe and B gives
     # the 'B' votes
     cumulative_votes = [(0,0) for _ in xrange(len(probes))]
-    for i, sequence in enumerate(self.target_genomes):
+    for sequence in [seq for seqs_from_group in \
+          self.target_genomes for seq in seqs_from_group]:
       # Compute votes for the adapters for each probe in 'sequence',
       # and also exchange all 'A' votes with 'B' votes and vice-versa.
       # Determine whether or not the exchange matches better with
       # cumulative_votes so far, and update cumulative_votes
       # accordingly.
-      logger.info("Computing adapter votes across genome %d of %d",
-          i, len(self.target_genomes))
       votes = self._votes_in_sequence(probes, sequence,
                 kmer_probe_map)
       votes_flipped = self._flip_AB_votes(votes)
