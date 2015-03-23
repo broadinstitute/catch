@@ -14,6 +14,7 @@ from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import set_cover_filter
+from hybseldesign.filter import adapter_filter
 from hybseldesign.utils import seq_io, version, log
 
 # Set the path to the hg19 fasta file (assuming this is a Broad
@@ -60,14 +61,22 @@ def main(args):
           mismatches=args.mismatches, lcf_thres=args.lcf_thres,
           blacklisted_genomes=blacklisted_genomes_fasta,
           coverage_frac=args.coverage_frac)
-  #  3) Reverse complement (rc) -- add the reverse complement of
+  #  3) Adapter filter (af) -- add adapters to both the 5' and 3'
+  #     ends of each probe
+  af = adapter_filter.AdapterFilter(
+        mismatches=args.mismatches, lcf_thres=args.lcf_thres)
+  #  4) Reverse complement (rc) -- add the reverse complement of
   #     each probe that remains
   rc = reverse_complement_filter.ReverseComplementFilter()
-  filters = [ df, scf, rc ]
+  filters = [ df, scf, af, rc ]
 
   # Don't apply the set cover filter if desired
   if args.skip_set_cover:
     filters.remove(scf)
+
+  # Don't add adapters if desired
+  if args.skip_adapters:
+    filters.remove(af)
 
   # Design the probes
   pb = probe_designer.ProbeDesigner(seqs, filters)
@@ -75,7 +84,7 @@ def main(args):
 
   if args.output_probes:
     # Write the final probes to the file args.output_probes
-    seq_io.write_probes(pb.final_probes, args.output_probes)
+    seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
   # Print the arguments and the number of final probes
   # (The final probes are stored in pb.final_probes if their
@@ -107,6 +116,9 @@ if __name__ == "__main__":
             "wish to see the probes generated from only the "
             "duplicate and reverse complement filters, to gauge "
             "the effects of the set cover filter"))
+  parser.add_argument("--skip_adapters", dest="skip_adapters",
+      action="store_true",
+      help=("Do not add adapters to the ends of probes"))
   parser.add_argument("--blacklist_genomes", nargs='+',
       help=("One or more blacklisted genomes; penalize probes based "
             "on how much of each of these genomes they cover; the "

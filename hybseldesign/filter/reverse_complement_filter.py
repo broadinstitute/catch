@@ -18,6 +18,11 @@ class ReverseComplementFilter(BaseFilter):
   def _filter(self, input):
     output = []
     for p in input:
+      p.header = "probe_%s | from target sequence" % p.identifier()
       output += [ p ]
-      output += [ p.reverse_complement() ]
+
+      p_rc = p.reverse_complement()
+      p_rc.header = "probe_%s | reverse complement of probe_%s" % \
+                      (p_rc.identifier(), p.identifier())
+      output += [ p_rc ]
     return output
