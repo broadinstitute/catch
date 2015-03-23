@@ -101,14 +101,19 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
       yield format_seq(curr_seq)
 
 
-"""Write the sequences in 'probes' to the file 'out_fn'.
+"""Write the sequences in 'probes' to the file 'out_fn' in FASTA
+format.
 
-This writes one probe sequence per line, without any headers or other
-information.
+This writes one probe sequence per line, with a header immediately
+preceding the sequence. If set, the header written is the one in
+probe.Probe.header. If not set, the probe.Probe.identifier() is used.
 """
-def write_probes(probes, out_fn):
+def write_probe_fasta(probes, out_fn):
   with open(out_fn, 'w') as f:
     for p in probes:
-      f.write(p.seq_str)
-      f.write('\n')
+      if p.header:
+        f.write('>' + p.header + '\n')
+      else:
+        f.write('>probe_%s\n' % p.identifier())
+      f.write(p.seq_str + '\n')
 

@@ -16,6 +16,7 @@ from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import naive_redundant_filter
 from hybseldesign.filter import dominating_set_filter
+from hybseldesign.filter import adapter_filter
 from hybseldesign.utils import seq_io, version, log
 
 
@@ -55,10 +56,18 @@ def main(args):
             mismatches=args.mismatches, lcf_thres=args.lcf_thres))
   else:
     raise ValueError("Unknown main filter " + args.main_filter)
-  #  3) Reverse complement (rc) -- add the reverse complement of
+  #  3) Adapter filter (af) -- add adapters to both the 5' and 3'
+  #     ends of each probe
+  af = adapter_filter.AdapterFilter(
+        mismatches=args.mismatches, lcf_thres=args.lcf_thres)
+  #  4) Reverse complement (rc) -- add the reverse complement of
   #     each probe that remains
   rc = reverse_complement_filter.ReverseComplementFilter()
-  filters = [ df, mf, rc ]
+  filters = [ df, mf, af, rc ]
+
+  # Don't add adapters if desired
+  if args.skip_adapters:
+    filters.remove(af)
 
   # Design the probes
   # (including the replicate_first_version argument to execute
@@ -70,7 +79,7 @@ def main(args):
 
   if args.output_probes:
     # Write the final probes to the file args.output_probes
-    seq_io.write_probes(pb.final_probes, args.output_probes)
+    seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
   # Print the arguments and the number of final probes
   # (The final probes are stored in pb.final_probes if their
@@ -101,6 +110,9 @@ if __name__ == "__main__":
   parser.add_argument("--limit_target_genomes", type=int,
       help=("(Optional) Use only the first N target genomes in the "
             "dataset"))
+  parser.add_argument("--skip_adapters", dest="skip_adapters",
+      action="store_true",
+      help=("Do not add adapters to the ends of probes"))
   parser.add_argument("-o", "--output_probes",
       help=("(Optional) The file to which all final probes should be "
             "written; if not specified, the final probes are not "
