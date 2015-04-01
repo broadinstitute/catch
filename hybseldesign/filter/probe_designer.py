@@ -13,21 +13,21 @@ logger = logging.getLogger(__name__)
 
 class ProbeDesigner:
 
-  """Creates a ProbeDesigner from a collection 'seqs' of grouped
-  sequences and an (ordered) list 'filters' of filters.
+  """Creates a ProbeDesigner from a collection 'genomes' of grouped
+  genomes and an (ordered) list 'filters' of filters.
 
-  seqs is a list [s_1, s_2, s_m] of m groupings of sequences, where
-  each s_i is a list of sequences belong to group i. For example, a
-  group may be a species and each s_i would be a list of sequences
-  corresponding to the target genomes of species i. Each filter
-  should be an instance of a subclass of Filter.
+  genomes is a list [g_1, g_2, g_m] of m groupings of genomes, where
+  each g_i is a list of genome.Genomes belonging to group i. For
+  example, a group may be a species and each g_i would be a list of
+  the target genomes of species i. Each filter should be an instance
+  of a subclass of Filter.
 
   When replicate_first_version is True, candidate probes are
   explicitly designed in a (buggy) way intended to replicate the
   first version (Matlab code) of probe design.
   """
-  def __init__(self, seqs, filters, replicate_first_version=False):
-    self.seqs = seqs
+  def __init__(self, genomes, filters, replicate_first_version=False):
+    self.genomes = genomes
     self.filters = filters
     self.replicate_first_version = replicate_first_version
 
@@ -48,15 +48,16 @@ class ProbeDesigner:
 
     logger.info("Building candidate probes from target sequences")
     self.candidate_probes = []
-    for seqs_from_group in self.seqs:
-      self.candidate_probes += candidate_probes.\
-          make_candidate_probes_from_sequences(seqs_from_group,
-            **replicate_args)
+    for genomes_from_group in self.genomes:
+      for g in genomes_from_group:
+        self.candidate_probes += candidate_probes.\
+            make_candidate_probes_from_sequences(g.seqs,
+              **replicate_args)
 
     probes = self.candidate_probes
     for f in self.filters:
       logger.info("Starting filter %s", f.__class__.__name__)
-      f.target_genomes = self.seqs
+      f.target_genomes = self.genomes
       probes = f.filter(probes)
     self.final_probes = probes
 

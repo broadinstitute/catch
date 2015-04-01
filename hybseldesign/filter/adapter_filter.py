@@ -224,13 +224,18 @@ class AdapterFilter(BaseFilter):
         num_kmers_per_probe=self.num_kmers_per_probe,
         include_positions=True)
 
+    def iter_all_seqs():
+      for genomes_from_group in self.target_genomes:
+        for g in genomes_from_group:
+          for seq in g.seqs:
+            yield seq
+
     # Store adapter votes for each probe in a list where the element
     # at index i is a tuple (A,B) that corresponds to the probe
     # probes[i] where A gives the 'A' votes for the probe and B gives
     # the 'B' votes
     cumulative_votes = [(0,0) for _ in xrange(len(probes))]
-    for sequence in [seq for seqs_from_group in \
-          self.target_genomes for seq in seqs_from_group]:
+    for sequence in iter_all_seqs():
       # Compute votes for the adapters for each probe in 'sequence',
       # and also exchange all 'A' votes with 'B' votes and vice-versa.
       # Determine whether or not the exchange matches better with

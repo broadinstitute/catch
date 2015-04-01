@@ -6,6 +6,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 import unittest
 import logging
 
+from hybseldesign import genome
 from hybseldesign import probe
 from hybseldesign.filter import candidate_probes as cp
 from hybseldesign.filter import adapter_filter as af
@@ -61,13 +62,28 @@ class TestAdapterFilter(unittest.TestCase):
                   with_appended_str(af.ADAPTER_B_3END)]
     return probes
 
+  """Returns a nested list of target_genomes in which each
+  genome is an instance of genome.Genome, given a nested list in
+  which the genomes are strings.
+  """
+  def convert_target_genomes(self, target_genomes):
+    r = []
+    for genomes_from_group in target_genomes:
+      rg = []
+      for g in genomes_from_group:
+        rg += [ genome.Genome.from_one_seq(g) ]
+      r += [ rg ]
+    return r
+
   def test_one_genome(self):
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     # Create probes of length 6 bp with a stride of 3 bp
     input = []
-    for seqs_from_group in target_genomes:
-      input += cp.make_candidate_probes_from_sequences(
-          seqs_from_group, probe_length=6, probe_stride=3)
+    for genomes_from_group in target_genomes:
+      for g in genomes_from_group:
+        input += cp.make_candidate_probes_from_sequences(
+            g.seqs, probe_length=6, probe_stride=3)
 
     f, output = self.get_filter_and_output(6, 0, target_genomes,
         input, 3, 10)
@@ -79,11 +95,13 @@ class TestAdapterFilter(unittest.TestCase):
   def test_two_genomes(self):
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ],
                        [ 'ZYXWVUTSRQPONMLKJIHGFEDCBA' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     # Create probes of length 6 bp with a stride of 3 bp
     input = []
-    for seqs_from_group in target_genomes:
-      input += cp.make_candidate_probes_from_sequences(
-          seqs_from_group, probe_length=6, probe_stride=3)
+    for genomes_from_group in target_genomes:
+      for g in genomes_from_group:
+        input += cp.make_candidate_probes_from_sequences(
+            g.seqs, probe_length=6, probe_stride=3)
 
     f, output = self.get_filter_and_output(6, 0, target_genomes,
         input, 3, 10)
@@ -105,6 +123,7 @@ class TestAdapterFilter(unittest.TestCase):
   def test_almost_identical_probe(self):
     target_genomes = [ [ 'ABCDEFGHIJKLMNOP',
                          'ABCDEFGHXJKLMNOP' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     input = ['ABCDEF', 'FGHIJK', 'FGHXJK', 'KLMNOP']
     input = [probe.Probe.from_str(s) for s in input]
 
@@ -130,6 +149,7 @@ class TestAdapterFilter(unittest.TestCase):
   def test_misaligned(self):
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQR',
                          'XYZABCDEFGHIJKLMNOPQR' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     input = ['XYZABC', 'ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO',
              'MNOPQR']
     input = [probe.Probe.from_str(s) for s in input]
@@ -158,6 +178,7 @@ class TestAdapterFilter(unittest.TestCase):
     target_genomes = [ [ 'ABCDEFGHEFKLMN',
                          'ABCDEFKLMN',
                          'ABCDEFKLMNO' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     input = [ 'ABCDEF', 'EFKLMN' ]
     input = [probe.Probe.from_str(s) for s in input]
 
@@ -180,6 +201,7 @@ class TestAdapterFilter(unittest.TestCase):
                          'ABCDEFGHIJKLMNX',
                          'AXCDEFGHIJKLMNO',
                          'ABCDEFGHIYYLMNO' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     input = ['ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO', 'DEFGYY',
              'GYYJKL', 'IYYLMN']
     input = [probe.Probe.from_str(s) for s in input]
