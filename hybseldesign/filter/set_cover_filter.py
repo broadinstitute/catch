@@ -101,23 +101,30 @@ class SetCoverFilter(BaseFilter):
       # Store values in an array of type 'I' to be space efficient
       sets[id] = defaultdict(lambda: array('I'))
 
-    for i, seqs_from_group in enumerate(self.target_genomes):
-      for j, sequence in enumerate(seqs_from_group):
+    for i, genomes_from_group in enumerate(self.target_genomes):
+      for j, gnm in enumerate(genomes_from_group):
         logger.info(("Computing coverage in grouping %d (of %d), "
                      "with target genome %d (of %d)"),
                     i, len(self.target_genomes),
-                    j, len(seqs_from_group))
+                    j, len(genomes_from_group))
         universe_id = (i,j)
-        probe_cover_ranges = probe.find_probe_covers_in_sequence(
-            sequence, kmer_probe_map, k=self.kmer_size,
-            cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
-        # Add the bases of sequence that are covered by all the probes
-        # into sets with universe_id equal to i
-        for p, cover_ranges in probe_cover_ranges.iteritems():
-          set_id = probe_id[p]
-          for cover_range in cover_ranges:
-            for bp in xrange(cover_range[0], cover_range[1]):
-              sets[set_id][universe_id].append(bp)
+        length_so_far = 0
+        for sequence in gnm.seqs:
+          probe_cover_ranges = probe.find_probe_covers_in_sequence(
+              sequence, kmer_probe_map, k=self.kmer_size,
+              cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
+          # Add the bases of sequence that are covered by all the
+          # probes into sets with universe_id equal to (i,j)
+          for p, cover_ranges in probe_cover_ranges.iteritems():
+            set_id = probe_id[p]
+            for cover_range in cover_ranges:
+              for bp in xrange(cover_range[0], cover_range[1]):
+                # bp gives a position in just this sequence
+                # (chromosome), so adding the lengths of all the
+                # sequences previously iterated (length_so_far) onto
+                # bp gives a unique integer position in the genome gnm
+                sets[set_id][universe_id].append(length_so_far + bp)
+          length_so_far += len(sequence)
 
     # Convert each defaultdict to dict
     for set_id in sets.keys():
@@ -164,8 +171,8 @@ class SetCoverFilter(BaseFilter):
       probe_id[p] = id
       costs[id] = 1
 
-    total_num_target_bp = sum(len(seq) for seqs_from_group \
-        in self.target_genomes for seq in seqs_from_group)
+    total_num_target_bp = sum(gnm.size() for genomes_from_group \
+        in self.target_genomes for gnm in genomes_from_group)
 
     for fasta_path in self.blacklisted_genomes:
       # Use a generator to read the FASTA to avoid loading too much

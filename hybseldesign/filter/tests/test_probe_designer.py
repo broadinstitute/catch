@@ -6,6 +6,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 import unittest
 import logging
 
+from hybseldesign import genome
 from hybseldesign import probe
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import duplicate_filter
@@ -25,7 +26,7 @@ class TestProbeDesigner(unittest.TestCase):
   of 50 bp.
   """
   def test_one_filter(self):
-    seqs = [[ 'A'*100 + 'B'*100 + 'A'*100 ]]
+    seqs = [[ genome.Genome.from_one_seq('A'*100 + 'B'*100 + 'A'*100) ]]
     desired_candidate_probes = \
         [ 'A'*100, 'A'*50+'B'*50, 'B'*100, 'B'*50+'A'*50,
           'A'*100 ]
@@ -49,7 +50,9 @@ class TestProbeDesigner(unittest.TestCase):
   of 50 bp.
   """
   def test_two_groupings(self):
-    seqs = [['A'*200, 'B'*150], ['C'*300]]
+    seqs = [[genome.Genome.from_one_seq('A'*200),
+             genome.Genome.from_one_seq('B'*150)],
+            [genome.Genome.from_one_seq('C'*300)]]
     desired_candidate_probes = \
         [ 'A'*100, 'A'*100, 'A'*100, 'B'*100, 'B'*100,
           'C'*100, 'C'*100, 'C'*100, 'C'*100, 'C'*100 ]

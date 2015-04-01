@@ -6,6 +6,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 import unittest
 import logging
 
+from hybseldesign import genome
 from hybseldesign.utils import seq_io
 from hybseldesign.datasets import ebola2014
 
@@ -49,6 +50,32 @@ class TestEbola2014FASTARead(unittest.TestCase):
     for seq in seq_io.iterate_fasta(ebola2014.fasta_path()):
       generator_seqs += [seq]
     self.assertEqual(generator_seqs, self.seqs)
+
+  def tearDown(self):
+    # Re-enable logging
+    logging.disable(logging.NOTSET)
+
+
+class TestDatasetGenomeRead(unittest.TestCase):
+  
+  def setUp(self):
+    # Disable logging
+    logging.disable(logging.INFO)
+
+  """Tests that the genomes obtained from reading the ebola2014
+  dataset are the same as those obtained from directly reading the
+  FASTA.
+
+  This is effectively executing most of the same code as
+  seq_io.read_dataset_genomes() but does check that it correctly
+  enters the condition of reading just one sequence per genome.
+  """
+  def test_single_chr_dataset(self):
+    genomes = seq_io.read_dataset_genomes(ebola2014)
+    desired_genomes = [ genome.Genome.from_one_seq(s) for s in \
+                          seq_io.read_fasta(ebola2014.fasta_path()).\
+                          values() ]
+    self.assertEqual(genomes, desired_genomes)
 
   def tearDown(self):
     # Re-enable logging

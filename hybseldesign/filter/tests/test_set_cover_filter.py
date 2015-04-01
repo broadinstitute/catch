@@ -6,6 +6,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 import unittest
 import logging
 
+from hybseldesign import genome
 from hybseldesign import probe
 from hybseldesign.filter import set_cover_filter as scf
 from hybseldesign.utils import interval
@@ -36,26 +37,28 @@ class TestSetCoverFilter(unittest.TestCase):
                       selected_probes, k=k,
                       num_kmers_per_probe=10,
                       include_positions=True)
-    for tg in [s for seqs_from_group in target_genomes \
-          for s in seqs_from_group]:
-      probe_cover_ranges = probe.find_probe_covers_in_sequence(
-          tg, kmer_probe_map, k=k,
-          cover_range_for_probe_in_subsequence_fn=filter.cover_range_fn)
-      all_cover_ranges = []
-      for cover_ranges in probe_cover_ranges.values():
-        for cv in cover_ranges:
-          all_cover_ranges += [cv]
-      all_cover_ranges = interval.merge_overlapping(all_cover_ranges)
-      self.assertEquals(len(all_cover_ranges), 1)
-      start, end = all_cover_ranges[0][0], all_cover_ranges[0][1]
-      self.assertEquals(start, 0)
-      self.assertEquals(end, len(tg))
+    for tg in [g for genomes_from_group in target_genomes \
+          for g in genomes_from_group]:
+      for seq in tg.seqs:
+        probe_cover_ranges = probe.find_probe_covers_in_sequence(
+            seq, kmer_probe_map, k=k,
+            cover_range_for_probe_in_subsequence_fn=filter.cover_range_fn)
+        all_cover_ranges = []
+        for cover_ranges in probe_cover_ranges.values():
+          for cv in cover_ranges:
+            all_cover_ranges += [cv]
+        all_cover_ranges = interval.merge_overlapping(all_cover_ranges)
+        self.assertEquals(len(all_cover_ranges), 1)
+        start, end = all_cover_ranges[0][0], all_cover_ranges[0][1]
+        self.assertEquals(start, 0)
+        self.assertEquals(end, len(seq))
 
   def run_full_coverage_check_for_target_genomes(self, target_genomes):
     input = []
-    for tg in [s for seqs_from_group in target_genomes \
-          for s in seqs_from_group]:
-      input += [ tg[i:(i+6)] for i in xrange(len(tg)-6+1) ]
+    for tg in [g for genomes_from_group in target_genomes \
+          for g in genomes_from_group]:
+      for seq in tg.seqs:
+        input += [ seq[i:(i+6)] for i in xrange(len(seq)-6+1) ]
     must_have_output = [ 'OPQRST',
                          'UVWXYZ',
                          'FEDCBA',
@@ -70,14 +73,29 @@ class TestSetCoverFilter(unittest.TestCase):
     self.verify_target_genome_full_coverage(output,
       target_genomes, 3, 10, f)
 
+  """Returns a nested list of target_genomes in which each
+  genome is an instance of genome.Genome, given a nested list in
+  which the genomes are strings.
+  """
+  def convert_target_genomes(self, target_genomes):
+    r = []
+    for genomes_from_group in target_genomes:
+      rg = []
+      for g in genomes_from_group:
+        rg += [ genome.Genome.from_one_seq(g) ]
+      r += [ rg ]
+    return r
+
   def test_full_coverage(self):
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                          'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     # Test with one grouping of two sequences
     self.run_full_coverage_check_for_target_genomes(target_genomes)
     # Test again with two groupings of one sequence each
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF' ],
                        [ 'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     self.run_full_coverage_check_for_target_genomes(target_genomes)
 
   """Tests that, when the same species shows twice (with the same
@@ -90,9 +108,10 @@ class TestSetCoverFilter(unittest.TestCase):
   def test_same_output_with_duplicated_species(self):
     def get_probes(target_genomes):
       input = []
-      for tg in [s for seqs_from_group in target_genomes \
-            for s in seqs_from_group]:
-        input += [ tg[i:(i+6)] for i in xrange(len(tg)-6+1) ]
+      for tg in [g for genomes_from_group in target_genomes \
+            for g in genomes_from_group]:
+        for seq in tg.seqs:
+          input += [ seq[i:(i+6)] for i in xrange(len(seq)-6+1) ]
       must_have_output = [ 'OPQRST',
                            'UVWXYZ',
                            'FEDCBA',
@@ -103,11 +122,13 @@ class TestSetCoverFilter(unittest.TestCase):
       return output
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                          'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     probes_once = get_probes(target_genomes)
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                          'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ],
                        [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                          'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
+    target_genomes = self.convert_target_genomes(target_genomes)
     probes_twice = get_probes(target_genomes)
     # Compare set to ignore duplicates
     self.assertEqual(set(probes_once), set(probes_twice))
