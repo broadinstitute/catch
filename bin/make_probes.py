@@ -24,17 +24,18 @@ hg19.set_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_ass
 
 def main(args):
   # Read the genomes from FASTA sequences
-  genomes = []
+  genomes_grouped = []
   for ds in args.dataset:
     try:
       dataset = importlib.import_module(
                    'hybseldesign.datasets.' + ds)
     except ImportError:
       raise ValueError("Unknown dataset %s" % ds)
-    genomes += [seq_io.read_dataset_genomes(dataset)]
+    genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
 
   if args.limit_target_genomes:
-    genomes = [g[:args.limit_target_genomes] for g in genomes]
+    genomes_grouped = [genomes[:args.limit_target_genomes] \
+                        for genomes in genomes_grouped]
 
   # Store the FASTA paths of blacklisted genomes
   blacklisted_genomes_fasta = []
@@ -79,7 +80,7 @@ def main(args):
     filters.remove(af)
 
   # Design the probes
-  pb = probe_designer.ProbeDesigner(genomes, filters)
+  pb = probe_designer.ProbeDesigner(genomes_grouped, filters)
   pb.design()
 
   if args.output_probes:
