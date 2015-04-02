@@ -55,18 +55,20 @@ class SetCoverFilter(BaseFilter):
   that should be blacklisted (i.e., probes are penalized by the
   amount they cover these genomes).
 
-  'coverage_frac' is a float in [0,1] that determines the fraction
-  of each of the target genomes that must be covered by the selected
-  probes.
+  'coverage' is either a float in [0,1] or an int > 1. When it is a
+  float in [0,1], it determines the fraction of each of the target
+  genomes that must be covered by the selected probes. When it is an
+  int > 1, it determines the number of bp of each of the target
+  genomes that must be covered by the selected probes.
   """
   def __init__(self, mismatches=0, lcf_thres=100,
-      blacklisted_genomes=[], coverage_frac=1.0,
+      blacklisted_genomes=[], coverage=1.0,
       kmer_size=15, num_kmers_per_probe=10):
     self.cover_range_fn = \
         probe.probe_covers_sequence_by_longest_common_substring(
             mismatches=mismatches, lcf_thres=lcf_thres)
     self.blacklisted_genomes = blacklisted_genomes
-    self.coverage_frac = coverage_frac
+    self.coverage = coverage
     self.kmer_size = kmer_size
     self.num_kmers_per_probe = num_kmers_per_probe
 
@@ -205,17 +207,31 @@ class SetCoverFilter(BaseFilter):
     return costs
 
   """Returns a dict mapping each universe_id (representing a target
-  genome) to self.coverage_frac, the fraction of the target genome
-  that must be covered.
+  genome) to the fraction of the target genome that must be covered,
+  as determined from self.coverage.
 
   The output is intended for input to set_cover.approx_multiuniverse
   as the 'universe_p' input.
   """
   def _make_universe_p(self):
     universe_p = {}
-    for i in xrange(len(self.target_genomes)):
-      for j in xrange(len(self.target_genomes[i])):
-        universe_p[(i,j)] = self.coverage_frac
+    if self.coverage <= 1.0:
+      # self.coverage should explicitly be the fraction of each
+      # target genome to cover
+      logger.info(("Building universe_p directly from desired "
+                   "fractional coverage"))
+      for i in xrange(len(self.target_genomes)):
+        for j in xrange(len(self.target_genomes[i])):
+          universe_p[(i,j)] = self.coverage
+    else:
+      # self.coverage should be an int representing the number of
+      # bp of each target genome to cover; convert it into a
+      # fraction using the size of each target genome
+      logger.info(("Building universe_p from desired number of bp "
+                   "to cover"))
+      for i in xrange(len(self.target_genomes)):
+        for j, gnm in enumerate(self.target_genomes[i]):
+          universe_p[(i,j)] = float(self.coverage) / gnm.size()
     return universe_p
 
   def _filter(self, input):
