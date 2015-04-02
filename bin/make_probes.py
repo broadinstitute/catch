@@ -61,7 +61,7 @@ def main(args):
   scf = set_cover_filter.SetCoverFilter(
           mismatches=args.mismatches, lcf_thres=args.lcf_thres,
           blacklisted_genomes=blacklisted_genomes_fasta,
-          coverage_frac=args.coverage_frac)
+          coverage=args.coverage)
   #  3) Adapter filter (af) -- add adapters to both the 5' and 3'
   #     ends of each probe
   af = adapter_filter.AdapterFilter(
@@ -91,10 +91,10 @@ def main(args):
   # (The final probes are stored in pb.final_probes if their
   #  sequences are desired)
   if args.limit_target_genomes:
-    print args.mismatches, args.lcf_thres, args.coverage_frac, \
+    print args.mismatches, args.lcf_thres, args.coverage, \
         args.limit_target_genomes, len(pb.final_probes)
   else:
-    print args.mismatches, args.lcf_thres, args.coverage_frac, \
+    print args.mismatches, args.lcf_thres, args.coverage, \
         len(pb.final_probes)
 
 
@@ -108,9 +108,25 @@ if __name__ == "__main__":
             "sequence if the two share a substring with at most "
             "'mismatches' mismatches that has length >= 'lcf_thres' "
             "bp"))
-  parser.add_argument("-c", "--coverage_frac", type=float, default=1.0,
-      help=("A float in [0,1] giving the fraction of each target "
-            "genome that must be covered by the selected probes"))
+  def check_coverage(val):
+    fval = float(val)
+    ival = int(fval)
+    if fval >= 0 and fval <= 1:
+      # a float in [0,1] giving fractional coverage
+      return fval
+    elif fval > 1 and fval == ival:
+      # an int > 1 giving number of bp to cover
+      return ival
+    else:
+      raise argparse.ArgumentTypeError(("%s is an invalid coverage "
+              "value") % val)
+  parser.add_argument("-c", "--coverage", type=check_coverage,
+      default=1.0,
+      help=("If this is a float in [0,1], it gives the fraction of "
+            "each target genome that must be covered by the selected "
+            "probes; if this is an int > 1, it gives the number of "
+            "bp of each target genome that must be covered by the "
+            "selected probes"))
   parser.add_argument("--skip_set_cover", dest="skip_set_cover",
       action="store_true",
       help=("Skip the set cover filter; this is useful when we "
