@@ -299,6 +299,95 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
     self.assertEqual(sc.approx_multiuniverse(sets,
         universe_p=universe_p), desired_output)
 
+  def test_one_universe_rank(self):
+    sets = { 0: { 0: set([1,2,3]) },
+             1: { 0: set([1,2,3,4]) },
+             2: { 0: set([1,2,3]) },
+             3: { 0: set([1,2,3]) } }
+    ranks = { 0: 5, 1: 10, 2: 1, 3: 10 }
+    desired_output = set([1,2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        ranks=ranks), desired_output)
+
+  def test_two_universes_ranks(self):
+    sets = { 0: { 0: set([1,2,3,4]), 1: set([1]) },
+             1: { 0: set([1,2,3]) },
+             2: { 0: set([4]), 1: set([1]) },
+             3: { 0: set([2]) } }
+    ranks = { 0: 100, 1: 3, 2: 2, 3: 1 }
+    desired_output = set([1,2,3])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        ranks=ranks), desired_output)
+
+  def test_cost_and_ranks1(self):
+    sets = { 0: { 0: set([1,2,3,4,5]) },
+             1: { 0: set([1,2,3]) },
+             2: { 0: set([3,4]) },
+             3: { 0: set([1,2,3,4]) } }
+    ranks = { 0: 2, 1: 1, 2: 1, 3: 1 }
+    costs = { 0: 1, 1: 1, 2: 1, 3: 10 }
+    desired_output = set([0,1,2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        costs=costs, ranks=ranks), desired_output)
+
+  def test_cost_and_ranks2(self):
+    sets = { 0: { 0: set([1,2,3,4]) },
+             1: { 0: set([1,2,3]) },
+             2: { 0: set([3,4]) },
+             3: { 0: set([1,2,3,4]) } }
+    ranks = { 0: 2, 1: 1, 2: 1, 3: 1 }
+    costs = { 0: 1, 1: 1, 2: 1, 3: 10 }
+    desired_output = set([1,2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        costs=costs, ranks=ranks), desired_output)
+
+  def test_partial_coverage_with_ranks(self):
+    sets = { 0: { 0: set([1,2,3]) },
+             1: { 0: set([4,5,6]) },
+             2: { 0: set([7,8,9]) },
+             3: { 0: set([10,11,12]) } }
+
+    universe_p = { 0: 0.25 }
+    ranks = { 0: 2, 1: 1, 2: 2, 3: 2 }
+    desired_output = set([1])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p, ranks=ranks), desired_output)
+
+    universe_p = { 0: 0.5 }
+    ranks = { 0: 3, 1: 1, 2: 3, 3: 2 }
+    desired_output = set([1,3])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p, ranks=ranks), desired_output)
+
+  def test_two_universe_partial_coverage_with_ranks(self):
+    sets = { 0: { 0: set([1,2,3]), 1: set([1,2,3]) },
+             1: { 0: set([4,5,6]) },
+             2: { 0: set([7,8,9]), 1: set([1]) } }
+
+    universe_p = { 0: 0.1, 1: 0.1 }
+    ranks = { 0: 10, 1: 5, 2: 1 }
+    desired_output = set([2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p, ranks=ranks), desired_output)
+
+    universe_p = { 0: 0.1, 1: 0.5 }
+    ranks = { 0: 10, 1: 5, 2: 1 }
+    desired_output = set([0,2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p, ranks=ranks), desired_output)
+
+    universe_p = { 0: 0.5, 1: 0.1 }
+    ranks = { 0: 10, 1: 5, 2: 1 }
+    desired_output = set([1,2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p, ranks=ranks), desired_output)
+
+    universe_p = { 0: 0.5, 1: 0.5 }
+    ranks = { 0: 10, 1: 5, 2: 1 }
+    desired_output = set([0,1,2])
+    self.assertEqual(sc.approx_multiuniverse(sets,
+        universe_p=universe_p, ranks=ranks), desired_output)
+
   """Verifies that a computed set cover achieves the desired
   coverage of each universe.
   """
@@ -374,7 +463,7 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                       for universe_id in xrange(num_universes) }
       # Compute the set cover
       output = sc.approx_multiuniverse(sets, costs, universe_p,
-          use_arrays)
+          use_arrays=use_arrays)
       self.verify_partial_cover(sets, universe_p, output)
       weight_fracs += [self.weight_frac(costs, output)]
       outputs += [output]

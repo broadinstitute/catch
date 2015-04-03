@@ -173,6 +173,33 @@ element "42" from universe 2 does not necessarily cover the element
 "42" from universe 1 (unless a chosen set contains "42" from
 universe 2 as well as "42" from universe 1).
 
+'ranks' is a dict mapping set identifiers to a rank (integer) for the
+set. The rank of a set makes it easy to define different levels of
+penalties on sets. If there are two sets A and B such that ranks[A] <
+ranks[B], then A will always be considered before B -- i.e., if
+coverage is needed and A provides that coverage, A will be chosen
+before B even if A provides less coverage than B would provide. When
+two sets have the same rank, then the costs of those sets are
+considered. In a sense, the ranks of two sets is given higher priority
+than the costs of those sets or the number of elements they cover; the
+ranks define different groups such that as much coverage as possible
+is sought from sets with lesser rank before considering sets with
+higher rank. Note that the rank of a set can thought of as giving a
+sufficiently high cost to the set.  In fact, ranks are not at all
+necessary, as they can be emulated entirely using costs. We choose
+some sufficiently large constant C; C should be at least as large as
+the total number of elements across all the universes (e.g., 2^64).
+Then, if we wish to assign some set a nonnegative rank r, we could
+instead take the cost of the set and multiply that cost by C^r prior
+to calling this function. That would have the same effect of delaying
+the consideration of the set until all sets with smaller ranks have
+been considered. However, while correct in theory, the method of using
+costs to emulate ranks is not practical. For example, if C=2^64 and
+r=100 for some set, then the cost of that set with r=100 would be its
+previous cost multiplied by (2^64)^100. While Python can compute this
+number, it cannot do floating point arithmetic with it and thus cannot
+consider its ratio in the weighted set cover approximation algorithm.
+
 When 'use_arrays' is True, the values inside the input 'sets' are
 expected to be stored in a Python array rather than in a Python set.
 Python sets require a considerable amount of overhead and, though
@@ -198,7 +225,7 @@ approx(..) function could be greatly shortened by simply calling
 this function -- we choose to implement the versions separately.
 """
 def approx_multiuniverse(sets, costs=None, universe_p=None,
-    use_arrays=False):
+    ranks=None, use_arrays=False):
   if costs == None:
     # Give each set a default cost of 1
     costs = { set_id: 1 for set_id in sets.keys() }
@@ -206,6 +233,10 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
     for c in costs.values():
       if c < 0:
         raise ValueError("All costs must be nonnegative")
+    for set_id in sets.keys():
+      if set_id not in costs:
+        raise ValueError("costs is missing a value for set %d"
+                         % set_id)
 
   # Create the universes from given sets
   universes = defaultdict(set)
@@ -231,6 +262,21 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
       if universe_id not in universe_p:
         raise ValueError(("universe_p is missing a value for "
                           "universe %d" % universe_id))
+
+  if ranks == None:
+    # Give each set a default rank of 1; since all sets have the
+    # same rank, this is effectively the same as not using ranks
+    # at all
+    ranks = { set_id: 1 for set_id in sets.keys() }
+  else:
+    for set_id in sets.keys():
+      if set_id not in ranks:
+        raise ValueError("ranks is missing a value for set %d"
+                         % set_id)
+  # Track the current index (curr_rank_index) as we step through all
+  # of the ranks (rank_vals)
+  rank_vals = sorted(set(ranks.values()))
+  curr_rank_index = 0
 
   num_that_can_be_uncovered = {}
   num_left_to_cover = {}
@@ -282,6 +328,20 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
       # none of it), so there is no reason to iterate over the sets
       # already placed in the cover. Not doing so should yield some
       # runtime improvements.
+      if ranks[set_id] != rank_vals[curr_rank_index]:
+        # Skip this set because its rank is not the current rank
+        # being considered.
+        # We could (correctly) use '>' instead of '!='. But doing so
+        # would also consider any sets whose rank is less than the
+        # current rank being considered (rank_vals[curr_rank_index]).
+        # Because the rank being considered is strictly increasing,
+        # these sets should have already been considered at a previous
+        # point. Since the rank increased without these sets having
+        # been put into the cover, it must have been the case that
+        # they did not cover any elements that needed to be covered;
+        # this would still hold true for these sets, so there is no
+        # reason to consider them again.
+        continue
       num_needed_covered_across_universes = 0
       for universe_id in sets[set_id].keys():
         if set_id in memoized_intersect_counts[universe_id]:
@@ -313,6 +373,10 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
       if ratio < min_ratio:
         id_min_ratio = set_id
         min_ratio = ratio
+    if id_min_ratio == None:
+      # Increase the rank being considered and try again
+      curr_rank_index += 1
+      continue
     # id_min_ratio goes into the set cover
     set_ids_in_cover.add(id_min_ratio)
     set_ids_not_in_cover.remove(id_min_ratio)
