@@ -60,6 +60,9 @@ def main(args):
   #     as an instance of the set cover problem
   scf = set_cover_filter.SetCoverFilter(
           mismatches=args.mismatches, lcf_thres=args.lcf_thres,
+          mismatches_tolerant=args.mismatches_tolerant,
+          lcf_thres_tolerant=args.lcf_thres_tolerant,
+          identify=args.identify,
           blacklisted_genomes=blacklisted_genomes_fasta,
           coverage=args.coverage)
   #  3) Adapter filter (af) -- add adapters to both the 5' and 3'
@@ -108,6 +111,24 @@ if __name__ == "__main__":
             "sequence if the two share a substring with at most "
             "'mismatches' mismatches that has length >= 'lcf_thres' "
             "bp"))
+  parser.add_argument("-mt", "--mismatches_tolerant", type=int,
+      help=("(Optional) A more tolerant value for '--mismatches'; "
+            "this should be greater than the value of '--mismatches'. "
+            "Allows for capturing more possible hybridizations "
+            "(i.e., more sensitivity) when designing probes for "
+            "identification or when genomes are blacklisted."))
+  parser.add_argument("-lt", "--lcf_thres_tolerant", type=int,
+      help=("(Optional) A more tolerant value for '--lcf_thres'; "
+            "this should be less than the value of '--lcf_thres'. "
+            "Allows for capturing more possible hybridizations "
+            "(i.e., more sensitivity) when designing probes for "
+            "identification or when genomes are blacklisted."))
+  parser.add_argument("-i", "--identify", dest="identify",
+      action="store_true",
+      help=("Design probes meant to make it possible to identify "
+            "nucleic acid from a particular input dataset against "
+            "the other datasets; when set, the coverage should "
+            "generally be small"))
   def check_coverage(val):
     fval = float(val)
     ival = int(fval)
