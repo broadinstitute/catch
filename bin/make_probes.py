@@ -19,7 +19,7 @@ from hybseldesign.utils import seq_io, version, log
 
 # Set the path to the hg19 fasta file (assuming this is a Broad
 # machine)
-hg19.set_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_assembly19.fasta")
+hg19.add_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_assembly19.fasta")
 
 
 def main(args):
@@ -46,7 +46,11 @@ def main(args):
                      'hybseldesign.datasets.' + bg)
       except ImportError:
         raise ValueError("Unknown dataset %s" % bg)
-      blacklisted_genomes_fasta += [ dataset.fasta_path() ]
+      if dataset.is_multi_chr():
+        for fp in dataset.fasta_paths:
+          blacklisted_genomes_fasta += [ fp ]
+      else:
+        blacklisted_genomes_fasta += [ dataset.fasta_path ]
 
   # Setup the filters
   # The filters we use are, in order:

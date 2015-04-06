@@ -5,11 +5,10 @@ per bacteria (i.e., a sample of n=1 for each pathogen).
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
-from os.path import join
-from os.path import dirname
-
-FASTA_RELATIVE_PATH = "data/all_deer_tick_borne.fasta"
+import sys
+from hybseldesign.datasets import GenomesDatasetSingleChrom
 
 
-def fasta_path():
-  return join(dirname(__file__), FASTA_RELATIVE_PATH)
+ds = GenomesDatasetSingleChrom(__name__, __file__)
+ds.set_fasta_path("data/all_deer_tick_borne.fasta", relative=True)
+sys.modules[__name__] = ds

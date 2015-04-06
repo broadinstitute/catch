@@ -4,17 +4,10 @@
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import sys
+from hybseldesign.datasets import GenomesDatasetMultiChrom
 
 
-def set_fasta_path(absolute_path):
-  module = sys.modules[__name__]
-  setattr(module, "FASTA_ABSOLUTE_PATH", absolute_path)
+chrs = [str(x) for x in range(1, 23)] + ["X", "Y", "MT"]
+ds = GenomesDatasetMultiChrom(__name__, __file__, chrs)
+sys.modules[__name__] = ds
 
-
-def fasta_path():
-  try:
-    FASTA_ABSOLUTE_PATH
-  except NameError:
-    raise NameError("FASTA path not set")
-  else:
-    return FASTA_ABSOLUTE_PATH
