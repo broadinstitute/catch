@@ -17,42 +17,36 @@ logger = logging.getLogger(__name__)
 as a list of genome.Genome.
 """
 def read_dataset_genomes(dataset):
-  try:
-    dataset.CHRS
-    read_by_chrs = True
-  except AttributeError:
-    read_by_chrs = False
-
   genomes = []
 
-  if read_by_chrs:
+  if dataset.is_multi_chr():
     # The genomes in this dataset have more than one chromosome.
     # The dataset should have one or more paths to FASTA files
-    # (dataset.fasta_paths()), where each file gives one genome
+    # (dataset.fasta_paths), where each file gives one genome
     # (sample) and the sequences in that file correspond to the
     # different chromosomes. The header of each sequence should be
-    # a chromosome in dataset.CHRS.
+    # a chromosome in dataset.chrs.
     logger.debug("Reading dataset %s broken up by chromosome",
-        dataset.__name__)
-    for fn in dataset.fasta_paths():
+        dataset.dataset_name)
+    for fn in dataset.fasta_paths:
       seq_map = read_fasta(fn)
       seqs = OrderedDict()
-      for chr in dataset.CHRS:
+      for chr in dataset.chrs:
         if chr not in seq_map:
           raise ValueError(("Chromosome %s is not in the FASTA file "
                             "%s for dataset %s, but should be") %
-                            (chr, fn, dataset.__name__))
+                            (chr, fn, dataset.dataset_name))
         seqs[chr] = seq_map[chr]
       genomes += [ genome.Genome.from_chrs(seqs) ]
   else:
     # There is just one sequence (chromosome) for each genome in
     # this dataset. The dataset should have a path to just one FASTA
-    # file (dataset.fasta_path()), and the sequences in this file
+    # file (dataset.fasta_path), and the sequences in this file
     # should correspond to the different genomes. The headers of each
     # sequence are ignored.
     logger.debug("Reading dataset %s with one chromosome per genome",
-        dataset.__name__)
-    seqs = read_fasta(dataset.fasta_path()).values()
+        dataset.dataset_name)
+    seqs = read_fasta(dataset.fasta_path).values()
     for seq in seqs:
       genomes += [ genome.Genome.from_one_seq(seq) ]
 
