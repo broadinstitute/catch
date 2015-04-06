@@ -19,7 +19,7 @@ class TestEbola2014FASTARead(unittest.TestCase):
     # Disable logging
     logging.disable(logging.INFO)
 
-    self.seqs_map = seq_io.read_fasta(ebola2014.fasta_path())
+    self.seqs_map = seq_io.read_fasta(ebola2014.fasta_path)
     self.seqs = self.seqs_map.values()
 
   """Test that there are 99 sequences.
@@ -47,7 +47,7 @@ class TestEbola2014FASTARead(unittest.TestCase):
   """
   def test_generator(self):
     generator_seqs = []
-    for seq in seq_io.iterate_fasta(ebola2014.fasta_path()):
+    for seq in seq_io.iterate_fasta(ebola2014.fasta_path):
       generator_seqs += [seq]
     self.assertEqual(generator_seqs, self.seqs)
 
@@ -73,7 +73,7 @@ class TestDatasetGenomeRead(unittest.TestCase):
   def test_single_chr_dataset(self):
     genomes = seq_io.read_dataset_genomes(ebola2014)
     desired_genomes = [ genome.Genome.from_one_seq(s) for s in \
-                          seq_io.read_fasta(ebola2014.fasta_path()).\
+                          seq_io.read_fasta(ebola2014.fasta_path).\
                           values() ]
     self.assertEqual(genomes, desired_genomes)
 
