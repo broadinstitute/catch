@@ -27,7 +27,7 @@ def read_dataset_genomes(dataset):
     # different chromosomes. The header of each sequence should be
     # a chromosome in dataset.chrs.
     logger.debug("Reading dataset %s broken up by chromosome",
-        dataset.dataset_name)
+        dataset.__name__)
     for fn in dataset.fasta_paths:
       seq_map = read_fasta(fn)
       seqs = OrderedDict()
@@ -35,7 +35,7 @@ def read_dataset_genomes(dataset):
         if chr not in seq_map:
           raise ValueError(("Chromosome %s is not in the FASTA file "
                             "%s for dataset %s, but should be") %
-                            (chr, fn, dataset.dataset_name))
+                            (chr, fn, dataset.__name__))
         seqs[chr] = seq_map[chr]
       genomes += [ genome.Genome.from_chrs(seqs) ]
   else:
@@ -45,7 +45,7 @@ def read_dataset_genomes(dataset):
     # should correspond to the different genomes. The headers of each
     # sequence are ignored.
     logger.debug("Reading dataset %s with one chromosome per genome",
-        dataset.dataset_name)
+        dataset.__name__)
     seqs = read_fasta(dataset.fasta_path).values()
     for seq in seqs:
       genomes += [ genome.Genome.from_one_seq(seq) ]
