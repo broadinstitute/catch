@@ -58,11 +58,6 @@ class GenomesDatasetSingleChrom(GenomesDataset):
       path = join(dirname(self.__file__), path)
     self.fasta_path = path
 
-  def fasta_path(self):
-    if self.fasta_path == None:
-      raise ValueError("The FASTA path has not yet been set")
-    return self.fasta_path
-
 
 """This is used when the genome held by this dataset has more than one
 chromosome.  Each FASTA file offers just one sample/individual genome
@@ -102,9 +97,4 @@ class GenomesDatasetMultiChrom(GenomesDataset):
     if relative:
       path = join(dirname(self.__file__), path)
     self.fasta_paths += [path]
-
-  def fasta_paths(self):
-    if len(self.fasta_paths) == 0:
-      raise ValueError("No FASTA paths have been added yet")
-    return self.fasta_paths
 
