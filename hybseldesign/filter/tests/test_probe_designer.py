@@ -12,20 +12,21 @@ from hybseldesign.filter import probe_designer
 from hybseldesign.filter import duplicate_filter
 
 
-"""Tests the probe designer output on contrived input.
-"""
 class TestProbeDesigner(unittest.TestCase):
+
+  """Tests the probe designer output on contrived input.
+  """
 
   def setUp(self):
     # Disable logging
     logging.disable(logging.INFO)
 
-  """A basic test with a duplicate filter and one input sequence.
-  Note that this test is dependent on the default values for
-  generating candidate probes: probe length of 100 bp with a stride
-  of 50 bp.
-  """
   def test_one_filter(self):
+    """A basic test with a duplicate filter and one input sequence.
+    Note that this test is dependent on the default values for
+    generating candidate probes: probe length of 100 bp with a stride
+    of 50 bp.
+    """
     seqs = [[ genome.Genome.from_one_seq('A'*100 + 'B'*100 + 'A'*100) ]]
     desired_candidate_probes = \
         [ 'A'*100, 'A'*50+'B'*50, 'B'*100, 'B'*50+'A'*50,
@@ -42,14 +43,14 @@ class TestProbeDesigner(unittest.TestCase):
     self.assertEqual(pb.candidate_probes, desired_candidate_probes)
     self.assertEqual(pb.final_probes, desired_final_probes)
 
-  """Tests two groupings of input sequences in which the first
-  grouping has two sequences and the second grouping has one
-  sequence.
-  Note that this test is dependent on the default values for
-  generating candidate probes: probe length of 100 bp with a stride
-  of 50 bp.
-  """
   def test_two_groupings(self):
+    """Tests two groupings of input sequences in which the first
+    grouping has two sequences and the second grouping has one
+    sequence.
+    Note that this test is dependent on the default values for
+    generating candidate probes: probe length of 100 bp with a stride
+    of 50 bp.
+    """
     seqs = [[genome.Genome.from_one_seq('A'*200),
              genome.Genome.from_one_seq('B'*150)],
             [genome.Genome.from_one_seq('C'*300)]]

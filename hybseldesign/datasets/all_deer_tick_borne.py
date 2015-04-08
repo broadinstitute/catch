@@ -1,4 +1,6 @@
-"""A dataset with the full genomes of all deer tick borne pathogens
+"""Dataset with all deer tick borne pathogens.
+
+A dataset with the full genomes of all deer tick borne pathogens
 (41 in total). These are mostly bacterial genomes with one genome
 per bacteria (i.e., a sample of n=1 for each pathogen).
 """

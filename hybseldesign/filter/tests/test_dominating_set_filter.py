@@ -11,9 +11,10 @@ from hybseldesign.filter import dominating_set_filter as dsf
 from hybseldesign.filter import naive_redundant_filter as nrf
 
 
-"""Tests the dominating set filter output on contrived input.
-"""
 class TestDominatingSetFilter(unittest.TestCase):
+
+  """Tests the dominating set filter output on contrived input.
+  """
 
   def setUp(self):
     # Disable logging

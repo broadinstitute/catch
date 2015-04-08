@@ -8,9 +8,10 @@ import unittest
 from hybseldesign.utils import interval
 
 
-"""Tests the merge_overlapping function.
-"""
 class TestMergeOverlapping(unittest.TestCase):
+
+  """Tests the merge_overlapping function.
+  """
 
   def compare(self, input, desired_output):
     self.assertEqual(interval.merge_overlapping(input),
@@ -38,9 +39,10 @@ class TestMergeOverlapping(unittest.TestCase):
     self.compare([(1,5), (3,5), (5,8), (10,12), (15,18), (17,20)],
                   [(1,8), (10,12), (15,20)])
 
-"""Tests the schedule function.
-"""
 class TestSchedule(unittest.TestCase):
+
+  """Tests the schedule function.
+  """
 
   def compare(self, input, desired_output):
     self.assertEqual(interval.schedule(input),

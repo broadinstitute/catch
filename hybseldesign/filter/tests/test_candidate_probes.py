@@ -10,9 +10,10 @@ from hybseldesign.datasets import ebola2014
 from hybseldesign.filter import candidate_probes
 
 
-"""Tests explicitly the generated candidate probes on contrived
-inputs."""
 class TestCandidateProbesOnContrivedInput(unittest.TestCase):
+
+  """Tests explicitly the generated candidate probes from contrived input.
+  """
 
   def test_no_n(self):
     p = candidate_probes.make_candidate_probes_from_sequence(
@@ -61,10 +62,10 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
     self.assertItemsEqual(p, ['ATCGNC', 'TCGNCG'] + \
         ['ATCGNC', 'TCGNCG', 'TCGATA', 'TCGATA', 'CGATAT'])
 
-  """Tests the version with bugs, intended to replicate the original
-  candidate probe designer.
-  """
   def test_buggy(self):
+    """Tests the version with bugs, intended to replicate the original
+    candidate probe designer.
+    """
     p = candidate_probes.make_candidate_probes_from_sequences(
               ['ATCGNCGNNTCG', 'ATCGNCGNNTCGATAT'],
               probe_length=6, probe_stride=3, min_n_string_length=2,
@@ -76,9 +77,10 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
         ['TCGNCG', 'TCGNCG', 'TCGATA'] )
 
 
-"""Tests the candidate probes from the Ebola 2014 dataset.
-"""
 class TestCandidateProbesOnEbola2014(unittest.TestCase):
+
+  """Tests the candidate probes from the Ebola 2014 dataset.
+  """
 
   def setUp(self):
     seqs = seq_io.read_fasta(ebola2014.fasta_path).values()
@@ -87,14 +89,14 @@ class TestCandidateProbesOnEbola2014(unittest.TestCase):
           probe_length=100, probe_stride=50,
           min_n_string_length=2)
 
-  """Test that all probes are 100 bp.
-  """
   def test_probe_length(self):
+    """Test that all probes are 100 bp.
+    """
     for probe in self.probes:
       self.assertEqual(len(probe.seq), 100)
 
-  """Test that no probes have a string of two or more 'N's.
-  """
   def test_n_string(self):
+    """Test that no probes have a string of two or more 'N's.
+    """
     for probe in self.probes:
       self.assertNotIn('NN', probe.seq.tostring())

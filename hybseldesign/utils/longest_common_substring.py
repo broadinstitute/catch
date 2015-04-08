@@ -1,5 +1,4 @@
-"""Functions for computing the longest common substring between two
-sequences, a problem that is potentially relevant to probe design.
+"""Functions for computing the longest common substring between two sequences.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -9,23 +8,29 @@ from collections import deque
 import numpy as np
 
 
-"""Computes the longest common substring with k mismatches.
-
-The two sequences, a and b, can be numpy arrays or Python strings.
-The algorithm runs in O(|a|*|b|) time and requires O(k) space.
-It returns, in order, the length of the longest common substring,
-the starting position of the substring in a, and the starting
-position of the substring in b.
-
-The implementation is of an algorithm published in the 2014 paper
-"Longest common substrings with k mismatches"
-  by Flouri, Giaquinta, Kobert, and Ukkonen
-  (http://arxiv.org/pdf/1409.1694v1.pdf)
-It is an implementation of the pseudocode in Figure 1 of the paper.
-Note that the pseudocode is meant for k>0; the code below
-includes a modification to support k=0.
-"""
 def k_lcf(a, b, k):
+  """Computes the longest common substring with k mismatches.
+
+  The algorithm runs in O(|a|*|b|) time and requires O(k) space.
+  The implementation is of an algorithm published in the 2014 paper
+  "Longest common substrings with k mismatches"
+    by Flouri, Giaquinta, Kobert, and Ukkonen
+    (http://arxiv.org/pdf/1409.1694v1.pdf)
+  It is an implementation of the pseudocode in Figure 1 of the paper.
+  Note that the pseudocode is meant for k>0; the code below
+  includes a modification to support k=0.
+
+  Args:
+      a: sequence; either numpy array or Python string
+      b: sequence; either numpy array or Python string
+      k: find the longest common substring with this number of
+          mismatches
+
+  Returns:
+      a tuple (l, s_a, s_b) where l is the length of the longest
+      common substring, s_a is the starting position of the substring
+      in a, and s_b is the starting position of the substring in b
+  """
   n = len(a)
   m = len(b)
   ell, r_a, r_b = 0, 0, 0
@@ -51,27 +56,37 @@ def k_lcf(a, b, k):
   return ell, r_a, r_b
 
 
-"""Computes the longest common substring with k mismatches around a
-a shared anchor substring.
-
-The two sequences are a and b. They must be "anchored" around the
-substring between anchor_start and anchor_end (exclusive). That is,
-it must be true that
-  a[anchor_start:anchor_end] == b[anchor_start:anchor_end].
-The longest common substring found will always contain this substring
-(i.e., a[anchor_start:anchor:end]) as a substring of itself. Thus,
-what is returned may not in fact be the longest common substring with
-k mismatches between a and b; rather, it is the longest common
-substring with k mismatches that contains the given anchor. The
-algorithm works by expanding outward from the shared anchor. It runs
-in O(|a|+|b|+k) time and requires O(|a|+|b|) space. The function
-returns, in order, the length of the longest common substring found
-and the starting index of the longest common substring. Because
-this substring is found around a shared anchor of a and b, the
-starting index is the same in a and b. (For example, when k=0,
-the returned tuple (l,s) indicates that a[s:(s+l)] == b[s:(s+l)].)
-"""
 def k_lcf_around_anchor(a, b, anchor_start, anchor_end, k):
+  """Compute longest common substring around a shared anchor substring.
+
+  The longest common substring found will always contain the anchor
+  substring (i.e., a[anchor_start:anchor:end]) as a substring of
+  itself. Thus, what is returned may not in fact be the longest common
+  substring with k mismatches between a and b; rather, it is the
+  longest common substring with k mismatches that contains the given
+  anchor. 
+
+  The algorithm works by expanding outward from the shared anchor. It
+  runs in O(|a|+|b|+k) time and requires O(|a|+|b|) space.
+
+  Args:
+      a: sequence; either numpy array or Python string
+      b: sequence; either numpy array or Python string
+      anchor_start/anchor_end: a and b must be "anchored" around
+          the substring between anchor_start and anchor_end (exclusve);
+          that is, it must be true that
+              a[anchor_start:anchor_end] == b[anchor_start:anchor_end]
+      k: find the longest common substring with this number of
+          mismatches
+
+  Returns:
+      a tuple (l, s) where l is the length of the longest common
+      substring found and s is the starting index of the longest
+      common substring. Because this substring is found around a
+      shared anchor of a and b, the starting index is the same in
+      a and b. (For example, when k=0, the returned tuple (l,s)
+      indicates that a[s:(s+l)] == b[s:(s+l)].)
+  """
   # Make a and b the same length
   if len(a) > len(b):
     # Ignore the end of a

@@ -1,5 +1,4 @@
-"""Designs probes by generating a set of candidate probes and
-passing these through a set of one or more given filters.
+"""Designs probes with a filtering approach.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -13,31 +12,35 @@ logger = logging.getLogger(__name__)
 
 class ProbeDesigner:
 
-  """Creates a ProbeDesigner from a collection 'genomes' of grouped
-  genomes and an (ordered) list 'filters' of filters.
+  """Generates a set of candidate probes and filters them.
 
-  genomes is a list [g_1, g_2, g_m] of m groupings of genomes, where
-  each g_i is a list of genome.Genomes belonging to group i. For
-  example, a group may be a species and each g_i would be a list of
-  the target genomes of species i. Each filter should be an instance
-  of a subclass of Filter.
-
-  When replicate_first_version is True, candidate probes are
-  explicitly designed in a (buggy) way intended to replicate the
-  first version (Matlab code) of probe design.
+  There is an (ordered) list of one or more provided filters.
   """
+
   def __init__(self, genomes, filters, replicate_first_version=False):
+    """
+    Args:
+        genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
+            each g_i is a list of genome.Genomes belonging to group i.
+            For example, a group may be a species and each g_i would be
+            a list of the target genomes of species i.
+        filters: an (ordered) list of filters, each of which should be
+            an instance of a subclass of BaseFilter
+        replicate_first_version: when True, candidate probes are
+            explicitly designed in a (buggy) way intended to replicate
+            the first version (Matlab code) of probe design
+    """
     self.genomes = genomes
     self.filters = filters
     self.replicate_first_version = replicate_first_version
 
-  """Generates the set of candidate probes and runs these through
-  the provided filters.
-
-  Stores the candidate probes in self.candidate_probes and the
-  probes processed by the filters in self.final_probes.
-  """
   def design(self):
+    """Design probes using the provided filters.
+
+    Generates the set of candidate probes and runs these through the
+    filters. Stores the candidate probes in self.candidate_probes and
+    the probes processed by the filters in self.final_probes.
+    """
     if self.replicate_first_version:
       replicate_args = {
                 'insert_bugs': True,

@@ -12,9 +12,10 @@ from array import array
 from hybseldesign.utils import set_cover as sc
 
 
-"""Tests approx function.
-"""
 class TestSetCoverApprox(unittest.TestCase):
+
+  """Tests approx function.
+  """
 
   def test_complete_unweighted(self):
     input = { 0: set([1,2]),
@@ -137,9 +138,10 @@ class TestSetCoverApprox(unittest.TestCase):
     self.assertEqual(sc.approx(input), set([0]))
 
 
-"""Tests approx_multiuniverse function.
-"""
 class TestSetCoverApproxMultiuniverse(unittest.TestCase):
+
+  """Tests approx_multiuniverse function.
+  """
 
   def setUp(self):
     # Disable logging
@@ -389,11 +391,20 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
     self.assertEqual(sc.approx_multiuniverse(sets,
         universe_p=universe_p, ranks=ranks), desired_output)
 
-  """Verifies that a computed set cover achieves the desired
-  coverage of each universe.
-  """
   def verify_partial_cover(self, sets, universe_p,
       output):
+    """Verify the coverage achieved in each universe.
+
+    Args:
+        sets: the 'sets' input to set cover
+        universe_p: the 'universe_p' input to set cover (i.e., the
+            desired coverage)
+        output: the output of set_cover.approx_multiuniverse
+
+    Returns:
+        whether the computed set cover (output) achieves the desired
+        coverage in each universe
+    """
     universes = defaultdict(set)
     for sets_by_universe in sets.values():
       for universe_id, s in sets_by_universe.iteritems():
@@ -408,10 +419,19 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
       num_covered = len(covered_elements.intersection(universe))
       self.assertGreaterEqual(num_covered, desired_num_covered)
 
-  """Returns the ratio of the sum of the weights of the sets in a
-  computed set cover to the sum of the weights of all the sets.
-  """
   def weight_frac(self, costs, output):
+    """Return ratio of weights of computed set cover to all weights.
+
+    Args:
+        costs: the 'costs' input to set cover (i.e., how much
+            cost to assign to each set)
+        output: the output of set_cover.approx_multiuniverse
+
+    Returns:
+        the ration of the sum of the weights of the sets in
+        the computed set cover (output) to the sum of the
+        weights of all the sets
+    """
     sum_of_all_weights = np.sum(costs.values())
     sum_of_weights_of_selected_sets = \
         np.sum([costs[set_id] for set_id in output])
@@ -422,13 +442,20 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
     output_array = self.run_random(True)
     self.assertEqual(output_set, output_array)
 
-  """Generates random instances of set cover, computes the solution,
-  and verifies that the solution achieves the desired coverage. Also
-  verifies that, on average, the solution achieves a reasonable
-  reduction in the sum of weights of chosen sets versus choosing
-  all sets.
-  """
   def run_random(self, use_arrays):
+    """Run tests with randomly generated instances of set cover.
+
+    This generates random instances of set cover, computes the
+    solution, and verifies that the solution achieves the
+    desired coverage. It also verifies that, on average, the
+    solution achieves a reasonable reduction in the sum of weights
+    of chosen sets versus choosing all sets.
+
+    Args:
+        use_arrays: when True, solve set cover where the input
+            sets are actually stored as arrays (for space
+            efficiency reasons)
+    """ 
     np.random.seed(1)
     weight_fracs = []
     outputs = []

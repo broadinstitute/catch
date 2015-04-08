@@ -10,76 +10,79 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 
-"""Approximates the solution to an instance of the set cover problem
-using the well-known greedy algorithm.
-
-The following is a description of the problem and solution to the
-most basic case, in which sets are unweighted and we seek to cover
-the entire universe:
-We are given are universe U of (hashable) objects and a collection
-of m subsets S_1, S_2, ..., S_m of U whose union equals U. We wish
-to approximate the smallest number of these subets whose union is U
-(i.e., "covers" the universe U). Pseudocode of the greedy algorithm
-is as follows:
-  C <- {}
-  while the universe is not covered (U =/= {}):
-    Pick the set S_i that covers the most of U (i.e., maximizes
-      | S_i \intersect U |)
-    C <- C \union { S_i }
-    U <- U - S_i
-  return C
-The collection of subsets C is the approximate set cover and a
-valid set cover is always returned. The loop goes through min(|U|,m)
-iterations and picking S_i at each iteration takes O(m*D) time where
-D is the cardinality of the largest subset. The returned solution
-is a ceil(ln(D))-approximation. In the worst-case, where D=|U|, this
-is a ceil(ln(|U|))-approximation. Inapproximability results show
-that it is NP-hard to approximate the problem to within c*ln(|U|)
-for any 0 < c < 1. Thus, this is a very good approximation given
-what is possible.
-
-This generalizes the above case to support weighted, partial set
-cover. There are two primary changes to the above pseudocode that
-support this:
- - Rather than looping while the universe is not covered, we instead
-   loop until we have covered as much as the universe as we desire
-   to cover (where that amount is determined by the parameter
-   indicating the fraction of the universe to cover). This change
-   alone supports 'partial cover'.
- - Rather than picking the set S_i that covers the most of U, we
-   instead pick the set S_i that minimizes the ratio of the cost
-   of S_i (call it c_i) to the amount of the remaining universe, U,
-   that S_i covers. Let r be the number of elements that have yet
-   to be covered in order to obtain the desired partial cover; there
-   is no reason to favor a set that covers more than r. Thus, in
-   particular, we pick the set S_i that minimizes the quotient
-   [ c_i / min(r, | S_i \intersect U |) ].
-As shown by Petr Slavik in the paper "Improved performance of the
-greedy algorithm for the minimum set cover and minimum partial cover
-problems", the obtained solution is a ceil(ln(D))-approximation,
-where D is the cardinality of the largest subset. It also obtains a
-ceil(ln(p*|U|))-approximation where p is the fraction of the universe
-we wish to cover. When p=1, D <= |U| and therefore the
-ceil(ln(D))-approximation is the stronger one. But when p<1, it is
-possible that D > p*|U| and hence the ceil(ln(p*|U|))-approximation
-would be stronger. Note that in the weighted case, the solution
-seeks to minimize the sum of the weights of the chosen sets and
-the approximation is with respect to this.
-
-The input 'sets' is a dict mapping set identifiers to sets. The
-optional input 'costs' is a dict mapping set identifiers to the
-costs (or weights) of the set; the default is for every set to have
-a cost of 1, making this equivalent to the unweighted problem. The
-optional input 'p' is a float in [0,1] that specifies the fraction
-of the universe we must cover; the default is p=1, making this
-equivalent to the problem in which the entire universe is covered.
-The output is a set consisting of the identifiers of the sets chosen
-to be in the set cover. For example, if the sets input is
-  { 0: S_1, 1: S_2, 2: S_3 }
-where each S_i is a set, and the sets S_1 and S_3 are chosen to be
-in the set cover, then the output is {0,2}.
-"""
 def approx(sets, costs=None, p=1.0):
+  """Approximates the solution to an instance of the set cover problem.
+
+  This solves the problem using the well-known greedy algorithm.
+  The following is a description of the problem and solution to the
+  most basic case, in which sets are unweighted and we seek to cover
+  the entire universe:
+  We are given are universe U of (hashable) objects and a collection
+  of m subsets S_1, S_2, ..., S_m of U whose union equals U. We wish
+  to approximate the smallest number of these subets whose union is U
+  (i.e., "covers" the universe U). Pseudocode of the greedy algorithm
+  is as follows:
+    C <- {}
+    while the universe is not covered (U =/= {}):
+      Pick the set S_i that covers the most of U (i.e., maximizes
+        | S_i \intersect U |)
+      C <- C \union { S_i }
+      U <- U - S_i
+    return C
+  The collection of subsets C is the approximate set cover and a
+  valid set cover is always returned. The loop goes through min(|U|,m)
+  iterations and picking S_i at each iteration takes O(m*D) time where
+  D is the cardinality of the largest subset. The returned solution
+  is a ceil(ln(D))-approximation. In the worst-case, where D=|U|, this
+  is a ceil(ln(|U|))-approximation. Inapproximability results show
+  that it is NP-hard to approximate the problem to within c*ln(|U|)
+  for any 0 < c < 1. Thus, this is a very good approximation given
+  what is possible.
+
+  This generalizes the above case to support weighted, partial set
+  cover. There are two primary changes to the above pseudocode that
+  support this:
+   - Rather than looping while the universe is not covered, we instead
+     loop until we have covered as much as the universe as we desire
+     to cover (where that amount is determined by the parameter
+     indicating the fraction of the universe to cover). This change
+     alone supports 'partial cover'.
+   - Rather than picking the set S_i that covers the most of U, we
+     instead pick the set S_i that minimizes the ratio of the cost
+     of S_i (call it c_i) to the amount of the remaining universe, U,
+     that S_i covers. Let r be the number of elements that have yet
+     to be covered in order to obtain the desired partial cover; there
+     is no reason to favor a set that covers more than r. Thus, in
+     particular, we pick the set S_i that minimizes the quotient
+     [ c_i / min(r, | S_i \intersect U |) ].
+  As shown by Petr Slavik in the paper "Improved performance of the
+  greedy algorithm for the minimum set cover and minimum partial cover
+  problems", the obtained solution is a ceil(ln(D))-approximation,
+  where D is the cardinality of the largest subset. It also obtains a
+  ceil(ln(p*|U|))-approximation where p is the fraction of the universe
+  we wish to cover. When p=1, D <= |U| and therefore the
+  ceil(ln(D))-approximation is the stronger one. But when p<1, it is
+  possible that D > p*|U| and hence the ceil(ln(p*|U|))-approximation
+  would be stronger. Note that in the weighted case, the solution
+  seeks to minimize the sum of the weights of the chosen sets and
+  the approximation is with respect to this.
+
+  Args:
+      sets: dict mapping set identifiers to sets
+      costs: dict mapping set identifiers to the costs (or weights)
+          of the set; the default is for every set to have a cost
+          of 1, making this equivalent to the unweighted problem
+      p: float in [0,1] that specifies the fraction of the universe
+          we must cover; the default is p=1, making this equivalent
+          to the problem in which the entire universe is covered
+
+  Returns:
+      a set consisting of the identifiers of the sets chosen to be
+      in the set cover. For example, if the sets input is
+        { 0: S_1, 1: S_2, 2: S_3 }
+      where each S_i is a set, and the sets S_1 and S_3 are
+      chosen to be in the set cover, then the output is {0,2}.
+  """
   if p < 0 or p > 1:
     raise ValueError("p must be in [0,1]")
   if costs == None:
@@ -141,91 +144,107 @@ def approx(sets, costs=None, p=1.0):
   return set_ids_in_cover
 
 
-"""Approximates the solution to an instance of a version of the
-set cover problem in which there are multiple universes and we
-seek to find a collection of sets whose union covers a specified
-fraction of each given universe.
-
-The input 'sets' is a dict mapping set identifiers to other dicts,
-which then map universe identifiers to sets of elements. That is,
-consider all the elements in some set set_id. sets[set_id] is a dict
-in which all the elements in set_id are split up by the universe
-they are a part of; sets[set_id][universe_id] is a set containing
-the elements in set_id that come from universe universe_id. The
-optional input 'costs' is a dict mapping set identifiers to the
-costs (or weights) of the set; the default is for every set to have
-a cost of 1, making this equivalent to the unweighted problem. The
-optional input 'universe_p' is a dict mapping universe identifiers
-to floats in [0,1] that specifiy the fraction of the corresponding
-universe we must cover; the default is for the coverage fraction of
-each universe to be 1.0, making this equivalent to the problem in
-which there is a single universe (the union of all given universes)
-that must be completely covered.  The output is a set consisting of
-the identifiers of the sets chosen to be in the set cover. For
-example, if the sets input is
-  { 0: S_1, 1: S_2, 2: S_3 }
-where each S_i is a set, and the sets S_1 and S_3 are chosen to be
-in the set cover, then the output is {0,2}.
-
-Note that elements with the same value from different universes are
-effectively treated as different elements. For example, covering the
-element "42" from universe 2 does not necessarily cover the element
-"42" from universe 1 (unless a chosen set contains "42" from
-universe 2 as well as "42" from universe 1).
-
-'ranks' is a dict mapping set identifiers to a rank (integer) for the
-set. The rank of a set makes it easy to define different levels of
-penalties on sets. If there are two sets A and B such that ranks[A] <
-ranks[B], then A will always be considered before B -- i.e., if
-coverage is needed and A provides that coverage, A will be chosen
-before B even if A provides less coverage than B would provide. When
-two sets have the same rank, then the costs of those sets are
-considered. In a sense, the ranks of two sets is given higher priority
-than the costs of those sets or the number of elements they cover; the
-ranks define different groups such that as much coverage as possible
-is sought from sets with lesser rank before considering sets with
-higher rank. Note that the rank of a set can thought of as giving a
-sufficiently high cost to the set.  In fact, ranks are not at all
-necessary, as they can be emulated entirely using costs. We choose
-some sufficiently large constant C; C should be at least as large as
-the total number of elements across all the universes (e.g., 2^64).
-Then, if we wish to assign some set a nonnegative rank r, we could
-instead take the cost of the set and multiply that cost by C^r prior
-to calling this function. That would have the same effect of delaying
-the consideration of the set until all sets with smaller ranks have
-been considered. However, while correct in theory, the method of using
-costs to emulate ranks is not practical. For example, if C=2^64 and
-r=100 for some set, then the cost of that set with r=100 would be its
-previous cost multiplied by (2^64)^100. While Python can compute this
-number, it cannot do floating point arithmetic with it and thus cannot
-consider its ratio in the weighted set cover approximation algorithm.
-
-When 'use_arrays' is True, the values inside the input 'sets' are
-expected to be stored in a Python array rather than in a Python set.
-Python sets require a considerable amount of overhead and, though
-the use of array is less time-efficient here, it can lead to
-substantial memory savings depending on the type of data.
-
-This is a generalization of the partial, weighted set cover problem
-whose solution is approximated by approx(..). (For any input to that
-function, simply create a single universe (e.g., with id 0) whose
-elements consist of the union of all the input sets, and then create
-a new input sets to this function in which each original set set_id
-is instead found in sets[set_id][0].) Indeed, this function and
-approx(..) are very similar, with this one simply generalizing to
-allow for multiple universes. However, whereas approx(..) achieves a
-provable guarantee on the approximation factor, it is not clear
-whether the straightforward generalization implemented in this
-function achieves the same factor; therefore, there may be room for
-improvement in this function. Furthermore, the generalization to
-multiple universes will yield a slight increase in runtime (constant
-factors) compared to working directly with the more traditional
-notion of a single universe. For these reasons -- although the
-approx(..) function could be greatly shortened by simply calling
-this function -- we choose to implement the versions separately.
-"""
 def approx_multiuniverse(sets, costs=None, universe_p=None,
     ranks=None, use_arrays=False):
+  """Approximates the solution to a "multiuniverse" set problem.
+
+  We define the "multiuniverse" set problem to be a version of the
+  set cover problem in which there are multiple universes and we
+  seek to find a collection of sets whose union covers a specified
+  fraction of each given universe. The sets can contain elements
+  from different universes; the input sets provide, for each set,
+  which elements in which universes the set covers.
+
+  Note that elements with the same value from different universes are
+  effectively treated as different elements. For example, covering the
+  element "42" from universe 2 does not necessarily cover the element
+  "42" from universe 1 (unless a chosen set contains "42" from
+  universe 2 as well as "42" from universe 1).
+
+  Args:
+      sets: dict mapping set identifiers to other dicts, which then
+          map universe identifiers to sets of elements. That is,
+          consider all the elements in some set set_id. sets[set_id]
+          is a dict in which all the elements in set_id are split up
+          by the universe they are a part of;
+          sets[set_id][universe_id] is a set containing the elements
+          in set_id that come from universe universe_id
+      costs: dict mapping set identifiers to the costs (or weights)
+          of the set; the default is for every set to have a cost of
+          1, making this equivalent to the unweighted problem
+      universe_p: dict mapping universe identifiers to floats in
+          [0,1] that specifiy the fraction of the corresponding
+          universe we must cover; the default is for the coverage
+          fraction of each universe to be 1.0, making this equivalent
+          to the problem in which there is a single universe (the
+          union of all given universes) that must be completely
+          covered
+      ranks: dict mapping set identifiers to a rank (integer) for the
+          set. The rank of a set makes it easy to define different
+          levels of penalties on sets. If there are two sets A and B
+          such that ranks[A] < ranks[B], then A will always be
+          considered before B -- i.e., if coverage is needed and A
+          provides that coverage, A will be chosen before B even if A
+          provides less coverage than B would provide. When two sets
+          have the same rank, then the costs of those sets are
+          considered. In a sense, the ranks of two sets is given
+          higher priority than the costs of those sets or the number
+          of elements they cover; the ranks define different groups
+          such that as much coverage as possible is sought from sets
+          with lesser rank before considering sets with higher rank.
+          [See implementation note below.]
+      use_arrays: when True, the values inside the input 'sets' are
+          expected to be stored in a Python array rather than in a
+          Python set. Python sets require a considerable amount of
+          overhead and, though the use of array is less time-efficient
+          here, it can lead to substantial memory savings depending on
+          the type of data.
+
+  Returns:
+      a set consisting of the identifiers of the sets chosen to be
+      in the set cover. For example, if the sets input is
+        { 0: S_1, 1: S_2, 2: S_3 }
+      where each S_i is a set, and the sets S_1 and S_3 are chosen
+      to be in the set cover, then the output is {0,2}.
+
+  Implementation notes:
+    - The rank of a set can thought of as giving a sufficiently high
+      cost to the set.  In fact, ranks are not at all necessary, as
+      they can be emulated entirely using costs. We choose some
+      sufficiently large constant C; C should be at least as large as
+      the total number of elements across all the universes (e.g.,
+      2^64).  Then, if we wish to assign some set a nonnegative rank
+      r, we could instead take the cost of the set and multiply that
+      cost by C^r prior to calling this function. That would have the
+      same effect of delaying the consideration of the set until all
+      sets with smaller ranks have been considered. However, while
+      correct in theory, the method of using costs to emulate ranks is
+      not practical. For example, if C=2^64 and r=100 for some set,
+      then the cost of that set with r=100 would be its previous cost
+      multiplied by (2^64)^100. While Python can compute this number,
+      it cannot do floating point arithmetic with it and thus cannot
+      consider its ratio in the weighted set cover approximation
+      algorithm.
+    - This is a generalization of the partial, weighted set cover
+      problem whose solution is approximated by approx(..). (For any
+      input to that function, simply create a single universe (e.g.,
+      with id 0) whose elements consist of the union of all the input
+      sets, and then create a new input sets to this function in which
+      each original set set_id is instead found in sets[set_id][0].)
+      Indeed, this function and approx(..) are very similar, with this
+      one simply generalizing to allow for multiple universes.
+      However, whereas approx(..) achieves a provable guarantee on the
+      approximation factor, it is not clear whether the
+      straightforward generalization implemented in this function
+      achieves the same factor; therefore, there may be room for
+      improvement in this function. Furthermore, the generalization to
+      multiple universes will yield a slight increase in runtime
+      (constant factors) compared to working directly with the more
+      traditional notion of a single universe. For these reasons --
+      although the approx(..) function could be greatly shortened by
+      simply calling this function -- we choose to implement the
+      versions separately.
+  """
   if costs == None:
     # Give each set a default cost of 1
     costs = { set_id: 1 for set_id in sets.keys() }

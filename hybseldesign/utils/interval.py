@@ -4,17 +4,19 @@
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
-"""Merges a list of possibly overlapping intervals.
-
-Each interval in 'intervals' is a tuple of the form (start, end).
-This returns a list of intervals in which overlapping ones are
-merged. For example, the input [(1,5), (3,7), (9,12)] yields
-[(1,7), (9,12)].
-
-Intervals that are touching (e.g., (1,3) and (3,1)) are merged into
-one.
-"""
 def merge_overlapping(intervals):
+  """Merge a list of possibly overlapping intervals.
+
+  Args:
+      intervals: list of intervals, each of which is a tuple of the
+          form (start, end)
+
+  Returns: 
+      list of intervals in which overlapping ones are merged. For
+      example, the input [(1,5), (3,7), (9,12)] yields
+      [(1,7), (9,12)]. Intervals that are touching (e.g., (1,3) and
+      (3,1)) are merged into one.
+  """
   if len(intervals) == 0:
     return []
 
@@ -32,17 +34,22 @@ def merge_overlapping(intervals):
 
   return intervals_merged
 
-"""Performs the greedy interval scheduling problem to schedule the
-maximum number of compatible (non-overlapping) intervals.
 
-Each element of 'intervals' is a tuple (x,y) in which x is a tuple
-of the form (start, end) and y is a reference to an object
-represented by the interval.
-
-The returned value is a list of the objects corresponding to the
-chosen intervals (i.e., the 'y' for each chosen element).
-"""
 def schedule(intervals):
+  """Schedule the maximum number of compatible intervals.
+
+  This uses to greedy interval scheduling algorithm to find (schedule)
+  the maximum number of compatible (non-overlapping) intervals.
+
+  Args:
+      intervals: list of intervals, each of which is a tuple (x,y)
+      in which x is a tuple of the form (start, end) and y is a
+      reference to an object represented by the interval.
+
+  Returns:
+      list of the objects corresponding to the chosen intervals
+      (i.e., the 'y' for each chosen element)
+  """
   # Sort all intervals by their endpoint (the "finishing time")
   # x[0] gives the interval and x[0][1] gives the endpoint
   intervals = sorted(intervals, key=lambda x: x[0][1])

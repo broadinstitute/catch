@@ -1,5 +1,7 @@
-"""Reduces a set of candidate probes by treating the problem as an
-instance of the dominating set problem.
+"""Chooses candidate probes using a dominating set approach.
+
+In particular, reduces a set of candidate probes by treating the problem
+as an instance of the dominating set problem.
 
 Each probe is treated as a vertex in the graph. If two probes are
 redundant (i.e., are deemed similar by a specified criterion) then
@@ -14,6 +16,14 @@ and calling the utils.set_cover.approx function to compute an
 approximate set cover. Because there is an L-reduction between
 set cover and dominating set, the approximation guarantees from set
 cover apply to the solution here.
+
+While it is helpful to think of treating the problem as an instance
+of dominating set, we instead directly build the desired instance
+of set cover. Also, rather than working directly with probes we
+instead construct the set cover with integers representing the
+probes (where each integer is the index of the probe in the input
+list). Redundancy (i.e., an edge between two vertices) is determined
+by self.are_redundant_fn.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -29,10 +39,15 @@ logger = logging.getLogger(__name__)
 
 class DominatingSetFilter(BaseFilter):
 
-  """are_redundant_fn is a function that takes as input two probes
-  and returns True iff the two are deemed redundant.
+  """Filter that selects candidate probes with a dominating set approach.
   """
+
   def __init__(self, are_redundant_fn=None):
+    """
+    Args:
+        are_redundant_fn: function that takes as input two probes
+            and returns True iff the two are deemed redundant
+    """
     if are_redundant_fn == None:
       # Use the shift and mismatch count method by default, with
       # parameters ensuring that two probes are deemed redundant
@@ -42,20 +57,9 @@ class DominatingSetFilter(BaseFilter):
                           shift=0, mismatch_thres=0)
     self.are_redundant_fn = are_redundant_fn
 
-  """Treat the problem as an instance of dominating set and reduce
-  it to an instance of set cover.
-
-  While it is helpful to think of treating the problem as an instance
-  of dominating set, we instead directly build the desired instance
-  of set cover. Also, rather than working directly with probes we
-  instead construct the set cover with integers representing the
-  probes (where each integer is the index of the probe in the input
-  list).
-
-  Add an edge between two vertices if they are redundant, where
-  redundancy is determined by self.are_redundant_fn.
-  """
   def _filter(self, input):
+    """Return a subset of the input probes.
+    """
     # Ensure that the input is a list
     input = list(input)
 

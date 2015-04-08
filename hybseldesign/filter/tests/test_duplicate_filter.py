@@ -9,9 +9,10 @@ from hybseldesign import probe
 from hybseldesign.filter import duplicate_filter
 
 
-"""Tests the duplicate filter output on contrived input.
-"""
 class TestDuplicateFilter(unittest.TestCase):
+
+  """Tests the duplicate filter output on contrived input.
+  """
 
   def test_basic(self):
     input = ['ATCGTCGCGG',

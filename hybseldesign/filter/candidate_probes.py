@@ -1,5 +1,7 @@
-"""Functions for generating lists of many (likely redundant) probes,
-termed candidate probes, from a sequence or list of sequences.
+"""Functions for generating lists of candidate probes from sequences.
+
+These functions compute lists of many (likely redundant) probes, termed
+candidate probes, from a sequence of list of sequences.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -13,22 +15,29 @@ from hybseldesign import probe
 from hybseldesign.datasets import ebola2014
 
 
-"""Generates and returns a list of candidate probes from the sequence
-seq.
-
-The probes are probe_length bp long and separated by probe_stride bp.
-Possible probes that would contains strings of min_n_string_length or
-more N's are discarded and, instead, new probes flanking the string
-are added.
-
-insert_bugs adds bugs to the code in order to replicate past software
-(the first version of probe design, as Matlab code) and its reuslts.
-
-It is possible (especially when there are strings of N's) that
-duplicate probes are returned.
-"""
 def make_candidate_probes_from_sequence(seq, probe_length=100,
     probe_stride=50, min_n_string_length=2, insert_bugs=False):
+  """Generate a list of candidate probes from a sequence.
+
+  It is possible (especially when there are strings of N's) that
+  duplicate probes are returned.
+
+  Args:
+      seq: sequence as a string or np.array from which to generate
+          candidate probes
+      probe_length: generate candidate probes with this number of bp
+      probe_stride: generate probes from seq separated by this number
+           of bp
+      min_n_string_length: possible probes that would contain strings
+          of this number or more N's are discarded and, instead, new
+          probes flanking the string are added
+      insert_bugs: add bugs to the code in order to replicate past
+          software (the first version of probe design, as Matlab code)
+          and its results
+
+  Returns:
+      list of candidate probes as instances of probe.Probe
+  """
   if probe_length > len(seq):
     raise ValueError("Invalid probe_length " + str(probe_length))
 
@@ -117,15 +126,34 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
   return probes
 
 
-"""Generates and returns a list of probes from a list of sequences
-seqs.
-
-It is possible (perhaps even likely depending on where
-the sequences come from) that duplicate probes are returned.
-"""
 def make_candidate_probes_from_sequences(seqs, probe_length=100,
     probe_stride=50, min_n_string_length=2, insert_bugs=False,
     move_all_n_string_flanking_probes_to_end=False):
+  """Generate a list of candidate probes from a list of sequences.
+
+  It is possible (perhaps even likely depending on where
+  the sequences come from) that duplicate probes are returned.
+
+  Args:
+      seqs: list of sequences, each as a string or np.array from which
+          to generate candidate probes
+      probe_length: generate candidate probes with this number of bp
+      probe_stride: generate probes from each sequence separated by this
+           number of bp
+      min_n_string_length: possible probes that would contain strings
+          of this number or more N's are discarded and, instead, new
+          probes flanking the string are added
+      insert_bugs: add bugs to the code in order to replicate past
+          software (the first version of probe design, as Matlab code)
+          and its results
+      move_all_n_string_flanking_probes_to_end: takes all probes that
+          were generated because they flank a string of N's, and moves
+          these to the end of the returned list; this is necessary to
+          replicate past code and results
+
+  Returns:
+      list of candidate probes as instances of probe.Probe
+  """
   if type(seqs) != list:
     raise ValueError("seqs must be a list of sequences")
   if len(seqs) == 0:

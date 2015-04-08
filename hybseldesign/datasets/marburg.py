@@ -1,4 +1,6 @@
-"""A dataset with 78 Marburg samples.
+"""Dataset with Marburg sequences.
+
+A dataset with 78 Marburg samples.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'

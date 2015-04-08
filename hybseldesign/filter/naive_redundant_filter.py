@@ -1,6 +1,8 @@
-"""Reduces a set of candidate probes in a naive way: by iterating
-through the set and, for each candidate probe P, removing all others
-that satisfy a specified similarity criterion with P (i.e., are
+"""Chooses candidate probes using a naive approach.
+
+In particular, reduces a set of candidate probes in a naive way: by
+iterating through the set and, for each candidate probe P, removing all
+others that satisfy a specified similarity criterion with P (i.e., are
 deemed redundant to P).
 
 Note that this is just a heuristic with no guarantee to minimize the
@@ -22,10 +24,15 @@ logger = logging.getLogger(__name__)
 
 class NaiveRedundantFilter(BaseFilter):
 
-  """are_redundant_fn is a function that takes as input two probes
-  and returns True iff the two are deemed redundant.
+  """Filter that selects candidate probes with a naive approach.
   """
+
   def __init__(self, are_redundant_fn=None):
+    """
+    Args:
+        are_redundant_fn: function that takes as input two probes
+            and returns True iff the two are deemed redundant
+    """
     if are_redundant_fn == None:
       # Use the shift and mismatch count method by default, with
       # parameters ensuring that two probes are deemed redundant
@@ -35,18 +42,18 @@ class NaiveRedundantFilter(BaseFilter):
                           shift=0, mismatch_thres=0)
     self.are_redundant_fn = are_redundant_fn
 
-  """For each probe P, removes all subsequent probes that are redundant
-  to P, where redundancy is determined by self.are_redundant_fn.
-
-  It is necessary to keep track of probes to delete by their
-  index (in probe_indices_to_delete) rather than by storing the
-  probe itself (e.g., in probes_to_delete). The reason is that
-  if there are two probes that are identical they will have the
-  same hash and be considered equal by __eq__; if only one is
-  intended to be deleted (i.e., the latter one in the list of input),
-  they will both be deleted accidentally.
-  """
   def _filter(self, input):
+    """Return a subset of the input probes.
+    """
+    # For each probe P, removes all subsequent probes that are redundant
+    # to P, where redundancy is determined by self.are_redundant_fn.
+    # It is necessary to keep track of probes to delete by their
+    # index (in probe_indices_to_delete) rather than by storing the
+    # probe itself (e.g., in probes_to_delete). The reason is that
+    # if there are two probes that are identical they will have the
+    # same hash and be considered equal by __eq__; if only one is
+    # intended to be deleted (i.e., the latter one in the list of input),
+    # they will both be deleted accidentally.
     probe_indices_to_delete = set()
     for i in xrange(len(input)):
       if i % 100 == 0:
@@ -69,23 +76,30 @@ class NaiveRedundantFilter(BaseFilter):
               if i not in probe_indices_to_delete]
 
 
-"""Returns a function that determines whether two probes are
-redundant based on the minimum number of mismatches as one probe
-is shifted relative to the other.
-
-One probe is shifted between -shift and +shift relative to the
-other. If the smallest number of mismatches encountered is
-is <= mismatch_thres, then are_redundant outputs True; otherwise
-it outputs False.
-
-When the quick option is set to True and mismatch_thres is low,
-the function returned determines redundancy in a way that directly
-looks at the mismatch threshold in an attempt to reduce the number
-of comparisons; it may be faster in some cases. However, it is less
-tested.
-"""
 def redundant_shift_and_mismatch_count(shift=0,
     mismatch_thres=0, quick=True, quick_mismatch_cutoff=10):
+  """Return a function for determining probe redundancy.
+
+  The returned function determines whether two probes are redundant
+  based on the minimum number of mismatches as one probe is shifted
+  relative to the other.
+
+  Args:
+      shift: one probe is shifted between -shift and +shift relative
+          to the other
+      mismatch_thres: if the smallest number of mismatches encountered
+          during shifting is <= this value, then the returned function
+          returns True; otherwise it returns False
+      quick: when this is True and mismatch_thres is low (less than
+          quick_mismatch_cutoff), the returned function determines
+          redundancy in a way that directly looks at the mismatch
+          threshold in an attempt to reduce the number of comparisons
+      quick_mismatch_cutoff: see quick
+
+  Returns:
+      function that returns True or False depending on whether two
+      probes are redundant
+  """
   # The 'quick' are_redundant function will become slower than
   # the shorter one below as mismatch_thres grows larger, so
   # arbitrarily set a cutoff (quick_mismatch_cutoff) and only
@@ -125,23 +139,31 @@ def redundant_shift_and_mismatch_count(shift=0,
   return are_redundant
 
 
-"""Returns a function that determines whether two probes are
-redundant based on the length of the longest common substring
-with less than or equal to 'mismatches' mismatches.
-
-If the length of the longest common substring with at most
-'mismatches' mismatches is >= lcf_thres, then are_redundant outputs
-True; otherwise it outputs False.
-
-When prune_with_heuristic is True, a heuristic (probe.shares_some_kmers)
-is called to determine whether the two probes might be redundant.
-If it outputs that they are likely not, then are_redundant outputs
-False and the longest common substring (a costly operation) is
-not computed. Both false positives and false negatives are possible,
-but should be rare.
-"""
 def redundant_longest_common_substring(mismatches=0,
     lcf_thres=100, prune_with_heuristic=True):
+  """Return a function for determining probe redundancy.
+
+  The returned function determines whether two probes are redundant
+  based on the length of the longest common substring with less than
+  or equal to 'mismatches' mismatches.
+
+  Args:
+      mismatches/lcf_thres: if the length of the longest common
+          substring with at most 'mismatches' mismatches is >=
+          'lcf_thres', then the returned function returns True;
+          otherwise it returns False
+      prune_with_heuristic: when True, a heuristic
+          (probe.shares_some_kmers) is called to determine whether the
+          two probes might be redundant. If it outputs that they are
+          likely not, then the returned function outputs False and the
+          longest common substring (a costly operation) is not computed.
+          Both false positives and false negatives are possible, but
+          should be rare.
+
+  Returns:
+      function that returns True or False depending on whether two
+      probes are redundant
+  """
   def are_redundant(probe_a, probe_b):
     if prune_with_heuristic:
       if not probe_a.shares_some_kmers(probe_b):

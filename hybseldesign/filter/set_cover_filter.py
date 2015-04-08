@@ -1,5 +1,7 @@
-"""Selects a subset of candidate probes by treating the problem as an
-instance of the set cover problem.
+"""Chooses candidate probes using a set cover approach.
+
+In particular, reduces a set of candidate probes by treating the problem
+as an instance of the set cover problem.
 
 Each candidate probe is treated as a set whose elements consist of the
 bases of the target genomes that the probe 'covers' (i.e., should
@@ -57,40 +59,42 @@ logger = logging.getLogger(__name__)
 
 class SetCoverFilter(BaseFilter):
 
-  """A (portion of a) probe is said to cover a portion of a sequence
-  if the longest common substring with at most 'mismatches'
-  mismatches between the probe and the sequence is at least
-  'lcf_thres' bases long.
-
-  'mismatches_tolerant' and 'lcf_thres_tolerant' are more tolerant
-  values corresponding to 'mismatches' and 'lcf_thres'. It should
-  generally be true that 'mismatches_tolerant' > 'mismatches' and
-  'lcf_thres_tolerant' < 'lcf_thres'. These values are used in
-  determining the overlap that a candidate probe has with different
-  groupings when the identification option is enabled. They are also
-  used when determining the coverage of each candidate probe with the
-  blacklisted genomes. They are meant to capture more potential
-  hybridizations (i.e., be more sensitive). When not set, they are
-  by default equal to 'mismatches' and 'lcf_thres'.
-
-  'identify' is a bool that, when True, indicates that probes should
-  be designed with the identification option enabled. By default, it
-  is False.
-
-  'blacklisted_genomes' is a list of paths to FASTA files of genomes
-  that should be blacklisted (i.e., probes are penalized by the
-  amount they cover these genomes).
-
-  'coverage' is either a float in [0,1] or an int > 1. When it is a
-  float in [0,1], it determines the fraction of each of the target
-  genomes that must be covered by the selected probes. When it is an
-  int > 1, it determines the number of bp of each of the target
-  genomes that must be covered by the selected probes.
+  """Filter that selects candidate probes using a set cover approach.
   """
+
   def __init__(self, mismatches=0, lcf_thres=100,
       mismatches_tolerant=None, lcf_thres_tolerant=None,
       identify=False, blacklisted_genomes=[], coverage=1.0,
       kmer_size=15, num_kmers_per_probe=10):
+    """
+    Args:
+        mismatches/lcf_thres: consider a probe to hybridize to a sequence
+            if a stretch of 'lcf_thres' or more bp aligns with
+            'mismatches' or fewer mismatched bp; used to compute whether
+            a probe "covers" a portion of a sequence
+        mismatches_tolerant/lcf_thres_tolerant: more tolerant
+            values corresponding to 'mismatches' and 'lcf_thres'. It should
+            generally be true that 'mismatches_tolerant' > 'mismatches' and
+            'lcf_thres_tolerant' < 'lcf_thres'. These values are used in
+            determining the overlap that a candidate probe has with
+            different groupings when the identification option is enabled.
+            They are also used when determining the coverage of each
+            candidate probe with the blacklisted genomes. They are meant
+            to capture more potential hybridizations (i.e., be more
+            sensitive). When not set, they are by default equal to
+            'mismatches' and 'lcf_thres'.
+        identity: when True, indicates that probes should be designed
+            with the identification option enabled (default is False)
+        blacklisted_genomes: list of paths to FASTA files of genomes
+            that should be blacklisted (i.e., probes are penalized by the
+            amount they cover these genomes).
+        coverage: either a float in [0,1] or an int > 1. When it is a
+            float in [0,1], it determines the fraction of each of the
+            target genomes that must be covered by the selected probes.
+            When it is an int > 1, it determines the number of bp of each
+            of the target genomes that must be covered by the selected
+            probes.
+    """
     self.cover_range_fn = \
         probe.probe_covers_sequence_by_longest_common_substring(
             mismatches, lcf_thres)
@@ -117,30 +121,37 @@ class SetCoverFilter(BaseFilter):
     self.kmer_size = kmer_size
     self.num_kmers_per_probe = num_kmers_per_probe
 
-  """Returns a collection of sets, in which each set corresponds to
-  a candidate probe and contains the bases of the target genomes
-  covered by the candidate probe.
-
-  Specifically, the returned value is a dict mapping set_ids (from 0
-  through len(candidate_probes)-1) to dicts, where the dict for a
-  particular set_id maps universe_ids to sets. set_id corresponds to a
-  candidate probe in candidate_probes and universe_id is a tuple that
-  corresponds to a target genome in a grouping from
-  self.target_genomes. The j'th target genome from the i'th grouping
-  in self.target_genomes is given universe_id equal to (i,j). That is,
-  i ranges from 0 through len(self.target_genomes)-1 (i.e., the number
-  of groupings) and j ranges from 0 through (n_i)-1 where n_i is the
-  number of target genomes in the i'th group. In the returned value
-  (sets), sets[set_id][universe_id] is a set of all the bases (as
-  integers) covered by probe set_id in the target genome universe_id.
-
-  The target genomes must be in grouped lists inside the list
-  self.target_genomes.
-
-  The output is intended for input to set_cover.approx_multiuniverse
-  as the 'sets' input.
-  """
   def _make_sets(self, candidate_probes, kmer_probe_map):
+    """Return a collection of sets to use in set cover.
+
+    In the returned collection of sets, each set corresponds to a
+    candidate probe and contains the bases of the target genomes
+    covered by the candidate probe. The target genomes must be in
+    grouped lists inside the list self.target_genomes.
+
+    The output is intended for input to set_cover.approx_multiuniverse
+    as the 'sets' input.
+
+    Args:
+        candidate_probes: list of candidate probes
+        kmer_probe_map: dict mapping kmers to probes
+
+    Returns:
+        a dict mapping set_ids (from 0 through
+        len(candidate_probes)-1) to dicts, where the dict for a
+        particular set_id maps universe_ids to sets. set_id
+        corresponds to a candidate probe in candidate_probes and
+        universe_id is a tuple that corresponds to a target genome in
+        a grouping from self.target_genomes. The j'th target genome
+        from the i'th grouping in self.target_genomes is given
+        universe_id equal to (i,j). That is, i ranges from 0 through
+        len(self.target_genomes)-1 (i.e., the number of groupings) and
+        j ranges from 0 through (n_i)-1 where n_i is the number of
+        target genomes in the i'th group. In the returned value
+        (sets), sets[set_id][universe_id] is a set of all the bases
+        (as integers) covered by probe set_id in the target genome
+        universe_id.
+    """
     probe_id = {}
     sets = {}
     for id, p in enumerate(candidate_probes):
@@ -179,23 +190,29 @@ class SetCoverFilter(BaseFilter):
 
     return sets
 
-  """Returns the total number of bp captured within 'sequence' by
-  each probe in 'candidate_probes' (for only the probes that capture
-  at least one bp).
-
-  Uses self.coverage_range_tolerant_fn for determining coverage (i.e.,
-  the coverage is determined in a relatively tolerant way so that
-  more potential hybridizations are included).
-  When 'rc_too' is True, the returned values also include bp that
-  are captured in the reverse complement of 'sequence'.
-
-  The returned value is a dict mapping each candidate probe to the
-  number of bp it covers, for only the candidate probes that
-  cover at least one bp. Candidate probes that do not cover any
-  bp are not included as keys in the returned dict.
-  """
   def _compute_tolerant_bp_covered_within_sequence(self,
       candidate_probes, kmer_probe_map, sequence, rc_too=True):
+    """Compute number of bp captured in sequence by each input probe.
+
+    Uses self.coverage_range_tolerant_fn for determining coverage (i.e.,
+    the coverage is determined in a relatively tolerant way so that
+    more potential hybridizations are included).
+
+    Args:
+        candidate_probes: list of candidate probes for which to
+            determine coverage
+        kmer_probe_map: dict mapping kmers to probes
+        sequence: sequence as a string in which to determine the
+            coverage of the probes
+        rc_too: when True, the returned values also include bp that
+            are captured in the reverse complement of sequence
+
+    Returns:
+        dict mapping each candidate probe to the number of bp it
+        covers, for only the candidate probes that cover at least
+        one bp; candidate probes that do not cover any bp are not
+        included as keys in the returned dict
+    """
     reverse_complement = [False]
     if rc_too:
       reverse_complement += [True]
@@ -218,20 +235,24 @@ class SetCoverFilter(BaseFilter):
 
     return dict(num_bp_covered)
 
-  """Returns the number of target genome groupings that are "hit"
-  by each candidate probe.
-
-  A probe is said to "hit" a grouping of target genomes if it covers
-  at least one bp of at least one target genome in the grouping.
-  This decides whether a probe covers part of a target genome in
-  a tolerant way (i.e., using self.cover_range_tolerant_fn) so that
-  more potential hits are counted.
-
-  The returned value is a dict mapping each candidate probe to the
-  number of groupings it hits.
-  """
   def _count_num_groupings_hit(self, candidate_probes,
       kmer_probe_map):
+    """Compute number of genome groupings hit by each candidate probe.
+
+    A probe is said to "hit" a grouping of target genomes if it covers
+    at least one bp of at least one target genome in the grouping.
+    This decides whether a probe covers part of a target genome in
+    a tolerant way (i.e., using self.cover_range_tolerant_fn) so that
+    more potential hits are counted.
+
+    Args:
+        candidate_probes: list of candidate probes
+        kmer_probe_map: dict mapping kmers to probes
+
+    Returns:
+        dict mapping each candidate probe to the number of target
+        genome groupings it hits
+    """
     num_groupings_hit = { p: 0 for p in candidate_probes }
     for i, genomes_from_group in enumerate(self.target_genomes):
       logger.info(("Computing coverage in grouping %d (of %d) to "
@@ -263,22 +284,27 @@ class SetCoverFilter(BaseFilter):
 
     return num_groupings_hit
 
-  """Returns the total number of bp covered within blacklisted
-  genomes by each candidate probe.
-
-  This decides whether a candidate probe captures a portion of a
-  blacklisted genome in a tolerant way (i.e., using
-  self.cover_range_tolerant_fn) so that more potential hybridizations
-  are counted. Also, the total number of bp includes bases of
-  the reverse complement of each blacklisted genome that are covered
-  by a probe, so that both a blacklisted genome and its reverse
-  complement are blacklisted.
-
-  The returned value is a dict mapping each candidate probe to the
-  number of bp it covers in the blacklisted genomes.
-  """
   def _count_blacklisted_bp_covered(self, candidate_probes,
       kmer_probe_map):
+    """Compute number of blacklisted genome bp covered by each probe.
+
+    This decides whether a candidate probe captures a portion of a
+    blacklisted genome in a tolerant way (i.e., using
+    self.cover_range_tolerant_fn) so that more potential hybridizations
+    are counted. Also, the total number of bp includes bases of
+    the reverse complement of each blacklisted genome that are covered
+    by a probe, so that both a blacklisted genome and its reverse
+    complement are blacklisted.
+
+    Args:
+        candidate_probes: list of candidate probes
+        kmer_probe_map: dict mapping kmers to probes
+
+    Returns:
+        dict mapping each candidate probe to the total number of bp
+        it covers in the blacklisted genomes and their reverse
+        complements
+    """
     total_num_bp = { p: 0 for p in candidate_probes }
     for fasta_path in self.blacklisted_genomes:
       # Use a generator to read the FASTA to avoid loading too much
@@ -294,53 +320,61 @@ class SetCoverFilter(BaseFilter):
           total_num_bp[p] += num_bp[p]
     return total_num_bp
 
-  """Returns a rank for each candidate probe.
-
-  The "rank" of a candidate probe is a level of penalty for that
-  probe, where higher ranks are more penalized. A set cover is sought
-  that uses as many candidate probes from rank i as possible before
-  considering probes with rank i+1. There are two considerations in
-  computing ranks:
-    - When identification is turned on (i.e., self.identify is True),
-      the number of species that a probe "hits". Fewer hit species
-      yields a smaller rank.
-    - The number of bases in blacklisted genomes that the probe
-      covers. Fewer covered bases yields a smaller rank.
-  A probe that covers any part of a blacklisted genome will always
-  receive a higher rank than a probe that does not. (This is achieved
-  by first computing ranks using tuples of the form (x,y) where x=0
-  for any probe that does not cover a blacklisted genome and x=1
-  for a probe that does; y determines relative rank among those probes
-  with the same x value. The tuple ranks are then converted into
-  integer ranks by sorting the tuples.) When identification is
-  enabled, a probe that hits more than one grouping (e.g., species)
-  will always receive a higher rank than a probe that only hits one
-  grouping (and does not cover any blacklisted genomes). 
-
-  When identification is not turned on, weighted set cover
-  effectively does the following: (1) Covers as much of the target
-  genomes as possible while minimizing the number of probes, without
-  using any probe that covers any part of a blacklisted genome. (2)
-  Covers whatever portions of the target genomes remain to be covered
-  by using probes that cover parts of blacklisted genomes, while
-  first seeking probes that cover less of the blacklisted genomes
-  (i.e., even if probe B covers much more of the target genomes
-  than probe A, A will be chosen before B if B covers a tiny bit
-  more of the blacklisted genomes than A).
-  When identification is turned on, weighted set cover: (1) Covers
-  as much of the target genomes as possible while minimizing the
-  number of probes, only using probes that hit one grouping. (2)
-  Covers whatever portions of the target genomes remain to be covered
-  while minimizing the number of probes, only using probes that hit
-  two groupings, etc. (3) Considers probes that cover parts of
-  blacklisted genomes, if there remains more of the target genomes to
-  cover.
-
-  The returned value is a dict mapping set_ids (each corresponding
-  to a candidate probe) to integers. It is intended for input to
-  set_cover.approx_multiuniverse.
-  """
   def _make_ranks(self, candidate_probes, kmer_probe_map):
+    """Return a rank for each candidate probe to use in set cover.
+
+    The "rank" of a candidate probe is a level of penalty for that
+    probe, where higher ranks are more penalized. A set cover is sought
+    that uses as many candidate probes from rank i as possible before
+    considering probes with rank i+1. There are two considerations in
+    computing ranks:
+      - When identification is turned on (i.e., self.identify is True),
+        the number of species that a probe "hits". Fewer hit species
+        yields a smaller rank.
+      - The number of bases in blacklisted genomes that the probe
+        covers. Fewer covered bases yields a smaller rank.
+    A probe that covers any part of a blacklisted genome will always
+    receive a higher rank than a probe that does not. (This is achieved
+    by first computing ranks using tuples of the form (x,y) where x=0
+    for any probe that does not cover a blacklisted genome and x=1
+    for a probe that does; y determines relative rank among those probes
+    with the same x value. The tuple ranks are then converted into
+    integer ranks by sorting the tuples.) When identification is
+    enabled, a probe that hits more than one grouping (e.g., species)
+    will always receive a higher rank than a probe that only hits one
+    grouping (and does not cover any blacklisted genomes). 
+
+    When identification is not turned on, weighted set cover
+    effectively does the following: (1) Covers as much of the target
+    genomes as possible while minimizing the number of probes, without
+    using any probe that covers any part of a blacklisted genome. (2)
+    Covers whatever portions of the target genomes remain to be covered
+    by using probes that cover parts of blacklisted genomes, while
+    first seeking probes that cover less of the blacklisted genomes
+    (i.e., even if probe B covers much more of the target genomes
+    than probe A, A will be chosen before B if B covers a tiny bit
+    more of the blacklisted genomes than A).
+    When identification is turned on, weighted set cover: (1) Covers
+    as much of the target genomes as possible while minimizing the
+    number of probes, only using probes that hit one grouping. (2)
+    Covers whatever portions of the target genomes remain to be covered
+    while minimizing the number of probes, only using probes that hit
+    two groupings, etc. (3) Considers probes that cover parts of
+    blacklisted genomes, if there remains more of the target genomes to
+    cover.
+
+    The output is intended for input to set_cover.approx_multiuniverse
+    as the 'ranks' input.
+
+    Args:
+        candidate_probes: list of candidate probes
+        kmer_probe_map: dict mapping kmers to probes
+
+    Returns:
+        dict mapping set_ids (0 through len(candidate_probes)-1, each
+        corresponding to a candidate probe) to a rank (integer) for
+        that candidate probe
+    """
     if self.identify:
       # Find the number of target genome groupings (e.g., species)
       # that each probe "hits". (A probe "hits" a grouping if it
@@ -384,31 +418,41 @@ class SetCoverFilter(BaseFilter):
 
     return ranks
 
-  """Returns a cost for each candidate probe.
+  def _make_costs(self, candidate_probes):
+    """Return a cost for each candidate probe to use in set cover.
 
-  The ranks computed by self._make_ranks(..) effectively serve as
-  costs for this application. (That is, a rank can be thought of as a
-  sufficiently large cost.) This returns a cost of 1 for each
-  candidate probe, so that the only factor distinguishing any two
-  probes with the same rank is the number of bp of the target genomes
-  they cover -- i.e., costs do not play a factor among probes with
-  the same rank.
+    The ranks computed by self._make_ranks(..) effectively serve as
+    costs for this application. (That is, a rank can be thought of as a
+    sufficiently large cost.) This returns a cost of 1 for each
+    candidate probe, so that the only factor distinguishing any two
+    probes with the same rank is the number of bp of the target genomes
+    they cover -- i.e., costs do not play a factor among probes with
+    the same rank.
 
-  The returned value is a dict mapping set_ids (each corresponding
-  to a candidate probe) to integers. It is intended for input to
-  set_cover.approx_multiuniverse.
-  """
-  def _make_costs(self, input):
-    return { set_id: 1 for set_id in xrange(len(input)) }
+    The output is intended for input to set_cover.approx_multiuniverse
+    as the 'costs' input.
 
-  """Returns a dict mapping each universe_id (representing a target
-  genome) to the fraction of the target genome that must be covered,
-  as determined from self.coverage.
+    Args:
+        candidate_probes: list of candidate probes
 
-  The output is intended for input to set_cover.approx_multiuniverse
-  as the 'universe_p' input.
-  """
+    Returns:
+      dict mapping set_ids (0 through len(candidate_probes)-1, each
+      corresponding to a candidate probe) to a cost (integer) for that
+      candidate probe; currently the cost is always 1
+    """
+    return { set_id: 1 for set_id in xrange(len(candidate_probes)) }
+
   def _make_universe_p(self):
+    """Return a required coverage for each universe to use in set cover.
+
+    The output is intended for input to set_cover.approx_multiunvierse
+    as the 'universe_p' input.
+
+    Returns:
+        dict mapping each universe_id (representing a target genome) to
+        the fraction of the target genome that must be covered, as
+        determined from self.coverage
+    """
     universe_p = {}
     if self.coverage <= 1.0:
       # self.coverage should explicitly be the fraction of each
@@ -430,6 +474,8 @@ class SetCoverFilter(BaseFilter):
     return universe_p
 
   def _filter(self, input):
+    """Return a subset of the input probes.
+    """
     # Ensure that the input is a list
     input = list(input)
 

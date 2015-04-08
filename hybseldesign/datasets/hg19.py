@@ -1,4 +1,4 @@
-"""The human genome 19 dataset.
+"""Dataset of the human genome 19.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
