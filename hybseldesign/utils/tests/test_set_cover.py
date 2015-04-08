@@ -7,6 +7,7 @@ import unittest
 import logging
 import numpy as np
 from collections import defaultdict
+from array import array
 
 from hybseldesign.utils import set_cover as sc
 
@@ -462,8 +463,19 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
       universe_p = { universe_id: np.random.random() \
                       for universe_id in xrange(num_universes) }
       # Compute the set cover
-      output = sc.approx_multiuniverse(sets, costs, universe_p,
-          use_arrays=use_arrays)
+      if use_arrays:
+        sets_as_arrays = {}
+        for set_id in sets.keys():
+          sets_as_arrays[set_id] = {}
+          for universe_id in sets[set_id].keys():
+            sets_as_arrays[set_id][universe_id] = array('I')
+            for el in sets[set_id][universe_id]:
+              sets_as_arrays[set_id][universe_id].append(el)
+        output = sc.approx_multiuniverse(sets_as_arrays, costs,
+            universe_p, use_arrays=True)
+      else:
+        output = sc.approx_multiuniverse(sets, costs, universe_p,
+            use_arrays=False)
       self.verify_partial_cover(sets, universe_p, output)
       weight_fracs += [self.weight_frac(costs, output)]
       outputs += [output]
