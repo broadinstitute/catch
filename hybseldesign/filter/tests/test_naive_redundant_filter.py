@@ -10,10 +10,10 @@ from hybseldesign import probe
 from hybseldesign.filter import naive_redundant_filter as nrf
 
 
-"""Tests the shift and mismatch method for determining whether two
-probes are redundant.
-"""
 class TestNaiveRedundantFilterShiftAndMismatchCount(unittest.TestCase):
+
+  """Tests the shift/mismatch method for determining if probes are redundant.
+  """
 
   def setUp(self):
     # Disable logging

@@ -13,10 +13,15 @@ from hybseldesign import genome
 logger = logging.getLogger(__name__)
 
 
-"""Reads the genomes of the given dataset, and returns these
-as a list of genome.Genome.
-"""
 def read_dataset_genomes(dataset):
+  """Read genomes of the given dataset.
+
+  Args:
+      dataset: instance of datasets.GenomesDataset
+
+  Returns:
+      list of genome.Genome
+  """
   genomes = []
 
   if dataset.is_multi_chr():
@@ -53,20 +58,24 @@ def read_dataset_genomes(dataset):
   return genomes
 
 
-"""Reads the FASTA file fn and return a mapping from the name of
-each sequence to the sequence itself, where the sequence is
-stored as a native Python string ('str') or numpy array ('np')
-as determined by data_type.
-
-The mapping returned is ordered by the order in which the sequence
-is encountered in the FASTA file. This helps in particular with
-replicating past results, where the input order could affect the
-output.
-
-The degenerate bases ('Y','R','W','S','M','K') are replaced with
-'N' iff replace_degenerate is True.
-"""
 def read_fasta(fn, data_type='str', replace_degenerate=True):
+  """Read a FASTA file.
+
+  Args:
+      fn: path to FASTA file to read
+      data_type: determines whether to store a sequence as
+          a native Python string ('str') or as a numpy array
+          ('np')
+      replace_degenerate: when True, replace the degenerate
+          bases ('Y','R','W','S','M','K') with 'N'
+
+  Returns:
+      dict mapping the name of each sequence to the sequence
+      itself. The mapping is ordered by the order in which
+      the sequence is encountered in the FASTA file; this
+      helps in particular with replicating past results,
+      where the input order could affect the output.
+  """
   logger.info("Reading fasta file %s", fn)
 
   degenerate_pattern = re.compile('[YRWSMK]')
@@ -104,15 +113,23 @@ def read_fasta(fn, data_type='str', replace_degenerate=True):
   return m_converted
 
 
-"""A generator that scans through the FASTA file fn and, upon
-completing the read of a sequence, yields that sequence, where
-the sequence is stored as a native Python string ('str') or numpy
-array ('np') as determined by data_type.
-
-The degenerate bases ('Y','R','W','S','M','K') are replaced with
-'N' iff replace_degenerate is True.
-"""
 def iterate_fasta(fn, data_type='str', replace_degenerate=True):
+  """Scan through a FASTA file and yield each sequence.
+
+  This is a generator that scans through a given FASTA file and,
+  upon completing the read of a sequence, yields that sequence.
+
+  Args:
+      fn: path to FASTA file to read
+      data_type: determines whether to store a sequence as
+          a native Python string ('str') or as a numpy array
+          ('np')
+      replace_degenerate: when True, replace the degenerate
+          bases ('Y','R','W','S','M','K') with 'N'
+
+  Yields:
+      each sequence in the FASTA file
+  """
   degenerate_pattern = re.compile('[YRWSMK]')
 
   def format_seq(seq):
@@ -143,14 +160,17 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
       yield format_seq(curr_seq)
 
 
-"""Write the sequences in 'probes' to the file 'out_fn' in FASTA
-format.
-
-This writes one probe sequence per line, with a header immediately
-preceding the sequence. If set, the header written is the one in
-probe.Probe.header. If not set, the probe.Probe.identifier() is used.
-"""
 def write_probe_fasta(probes, out_fn):
+  """Write probe sequences to a FASTA file.
+
+  This writes one probe sequence per line, with a header immediately
+  preceding the sequence. If set, the header written is the one in
+  probe.Probe.header. If not set, the probe.Probe.identifier() is used.
+
+  Args:
+      probes: list of instances of probe.Probe
+      out_fn: path to FASTA file to write
+  """
   with open(out_fn, 'w') as f:
     for p in probes:
       if p.header:

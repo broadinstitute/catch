@@ -9,9 +9,10 @@ from hybseldesign import probe
 from hybseldesign.filter import reverse_complement_filter
 
 
-"""Tests the reverse complement filter output on contrived input.
-"""
 class TestReverseComplementFilter(unittest.TestCase):
+
+  """Tests the reverse complement filter output on contrived input.
+  """
 
   def test_basic(self):
     input = ['ATCGTCGCGG',

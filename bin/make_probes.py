@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-"""Script that runs hybseldesign to design probes for a given
-dataset by treating the problem as an instance of set cover.
-"""
+"""Design probes by treating the problem as an instance of set cover."""
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -17,8 +15,7 @@ from hybseldesign.filter import set_cover_filter
 from hybseldesign.filter import adapter_filter
 from hybseldesign.utils import seq_io, version, log
 
-# Set the path to the hg19 fasta file (assuming this is a Broad
-# machine)
+# Set the path to the hg19 fasta file (assuming this is a Broad machine)
 hg19.add_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_assembly19.fasta")
 
 
@@ -56,12 +53,12 @@ def main(args):
   # The filters we use are, in order:
   #  1) Duplicate filter (df) -- condense all candidate probes that
   #     are identical down to one; this is not necessary for
-  #     correctness, as the set cover filter achieves the same
-  #     task implicitly, but it does significantly lower runtime by
+  #     correctness, as the set cover filter achieves the same task
+  #     implicitly, but it does significantly lower runtime by
   #     decreasing the input size to the set cover filter
   df = duplicate_filter.DuplicateFilter()
-  #  2) Set cover filter (scf) -- solve the problem by treating it
-  #     as an instance of the set cover problem
+  #  2) Set cover filter (scf) -- solve the problem by treating it as
+  #     an instance of the set cover problem
   scf = set_cover_filter.SetCoverFilter(
           mismatches=args.mismatches, lcf_thres=args.lcf_thres,
           mismatches_tolerant=args.mismatches_tolerant,
@@ -69,12 +66,12 @@ def main(args):
           identify=args.identify,
           blacklisted_genomes=blacklisted_genomes_fasta,
           coverage=args.coverage)
-  #  3) Adapter filter (af) -- add adapters to both the 5' and 3'
-  #     ends of each probe
+  #  3) Adapter filter (af) -- add adapters to both the 5' and 3' ends
+  #     of each probe
   af = adapter_filter.AdapterFilter(
         mismatches=args.mismatches, lcf_thres=args.lcf_thres)
-  #  4) Reverse complement (rc) -- add the reverse complement of
-  #     each probe that remains
+  #  4) Reverse complement (rc) -- add the reverse complement of each
+  #     probe that remains
   rc = reverse_complement_filter.ReverseComplementFilter()
   filters = [ df, scf, af, rc ]
 
@@ -145,8 +142,7 @@ if __name__ == "__main__":
     else:
       raise argparse.ArgumentTypeError(("%s is an invalid coverage "
               "value") % val)
-  parser.add_argument("-c", "--coverage", type=check_coverage,
-      default=1.0,
+  parser.add_argument("-c", "--coverage", type=check_coverage, default=1.0,
       help=("If this is a float in [0,1], it gives the fraction of "
             "each target genome that must be covered by the selected "
             "probes; if this is an int > 1, it gives the number of "
@@ -176,8 +172,7 @@ if __name__ == "__main__":
             "written; if not specified, the final probes are not "
             "written to a file"))
   parser.add_argument("--debug", dest="log_level",
-      action="store_const", const=logging.DEBUG,
-      default=logging.WARNING,
+      action="store_const", const=logging.DEBUG, default=logging.WARNING,
       help=("Debug output"))
   parser.add_argument("--verbose", dest="log_level",
       action="store_const", const=logging.INFO,

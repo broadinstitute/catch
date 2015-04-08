@@ -1,4 +1,6 @@
-"""A dataset with 12 Powassan samples. This is a subset of the
+"""Dataset with Powassan sequences.
+
+A dataset with 12 Powassan samples. This is a subset of the
 genomes in the all_deer_tick_borne dataset.
 """
 

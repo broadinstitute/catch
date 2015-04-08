@@ -8,10 +8,10 @@ import unittest
 from hybseldesign.utils import longest_common_substring as lcf
 
 
-"""Tests the longest common substring with k mismatches
-implementation.
-"""
 class TestLCSWithKMismatches(unittest.TestCase):
+
+  """Tests the k_lcf function.
+  """
 
   def test_different(self):
     a = 'ABC'
@@ -71,10 +71,10 @@ class TestLCSWithKMismatches(unittest.TestCase):
     self.assertEqual(lcf.k_lcf(a,b,4), (15,7,1))
 
 
-"""Tests the longest common substring with k mismatches
-centered around an anchor function.
-"""
 class TestLCSAroundAnchorWithKMismatches(unittest.TestCase):
+
+  """Tests the k_lcf_around_anchor function.
+  """
 
   def test_just_anchor(self):
     a = 'ABCDEFGHIJKLM'

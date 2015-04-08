@@ -1,4 +1,6 @@
-"""A dataset with 53 Ebola samples taken from places that do not
+"""Dataset with Ebola sequences from outside Zaire.
+
+A dataset with 53 Ebola samples taken from places that do not
 include Zaire. These samples do not include those in the ebola2014
 dataset.
 """

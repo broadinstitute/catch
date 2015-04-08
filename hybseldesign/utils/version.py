@@ -1,5 +1,5 @@
-''' This gets the git version into python-land
-'''
+"""Gets the git version into python-land.
+"""
 
 __author__ = "dpark@broadinstitute.org"
 __version__ = None
@@ -7,8 +7,11 @@ __version__ = None
 import subprocess, os, os.path
  
 def get_module_path() :
-    '''Return the absolute path of the top-level project, assumed to be the
-       parent of the directory containing this script.'''
+    """Return the absolute path of the top-level project.
+
+    It is assumed to be the parent of the directory containing
+    this script.
+    """
     # abspath converts relative to absolute path; expanduser interprets ~
     path = __file__                  # path to this script
     path = os.path.expanduser(path)  # interpret ~

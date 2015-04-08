@@ -1,5 +1,7 @@
-"""Filters input probes by returning each input probe as well as its
-reverse complement.
+"""Returns reverse complements (and originals) of each probe.
+
+This acts as a filter on the probes by returning each input probe as
+well as its reverse complement.
 
 The number of output probes is twice the number of input probes.
 In the output, the reverse complements are interspersed with
@@ -15,7 +17,12 @@ from hybseldesign.filter.base_filter import BaseFilter
 
 class ReverseComplementFilter(BaseFilter):
 
+  """Filter that adds reverse complements to list of probes.
+  """
+
   def _filter(self, input):
+    """Return input probes and their reverse complements.
+    """
     output = []
     for p in input:
       p.header = "probe_%s | from target sequence" % p.identifier()

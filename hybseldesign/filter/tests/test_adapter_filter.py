@@ -13,9 +13,10 @@ from hybseldesign.filter import adapter_filter as af
 from hybseldesign.utils import interval
 
 
-"""Tests the adapter filter output on contrived input.
-"""
 class TestAdapterFilter(unittest.TestCase):
+
+  """Tests the adapter filter output on contrived input.
+  """
 
   def setUp(self):
     # Disable logging
@@ -29,10 +30,17 @@ class TestAdapterFilter(unittest.TestCase):
     f.filter(input_probes)
     return (f, f.output_probes)
 
-  """Assert that 'probe' (and instance of Probe) starts and ends
-  with either an 'A' or 'B' adapter, as specified by 'adapter'.
-  """
   def assert_has_adapter(self, probe, adapter):
+    """Assert that probe has a particular adapter.
+
+    Args:
+        probe: probe to check
+        adapter: check if 'probe' has this adapter
+
+    Returns:
+        whether 'probe' starts and ends with either an 'A' or 'B'
+        adapter, as specified by 'adapter'
+    """
     if adapter == 'A':
       start = af.ADAPTER_A_5END
       end = af.ADAPTER_A_3END
@@ -44,13 +52,19 @@ class TestAdapterFilter(unittest.TestCase):
     self.assertTrue(self.probe.seq_str.startswith(start))
     self.assertTrue(self.probe.seq_str.endswith(end))
 
-  """Make probes with both 'A' and 'B' adapters.
-
-  'probe_str_a' is a list of strings of the sequences of probes
-  that should receive an 'A' adapter, and likewise for
-  'probe_str_b'.
-  """
   def make_probes_with_adapters(self, probe_str_a, probe_str_b):
+    """Make probes with both 'A' and 'B' adapters.
+
+    Args:
+        probe_str_a: list of strings of the sequences of probes that
+            should receive an 'A' adapter
+        probe_str_b: list of strings of the sequences of probes that
+            should receive a 'B' adapter
+
+    Returns:
+        list of probes (instances of probe.Probe) from the input
+        with the corresponding adapters added
+    """
     probes = []
     for p_str in probe_str_a:
       probes += [probe.Probe.from_str(p_str).\
@@ -62,11 +76,18 @@ class TestAdapterFilter(unittest.TestCase):
                   with_appended_str(af.ADAPTER_B_3END)]
     return probes
 
-  """Returns a nested list of target_genomes in which each
-  genome is an instance of genome.Genome, given a nested list in
-  which the genomes are strings.
-  """
   def convert_target_genomes(self, target_genomes):
+    """Convert genomes to instances of genome.Genome.
+
+    Args:
+        target_genomes: nested list of genomes, as strings, to be
+            converted
+
+    Returns:
+        nested list of genomes, with the same structure as the input,
+        in which each genome is an instance of genome.Genome instead
+        of a string
+    """
     r = []
     for genomes_from_group in target_genomes:
       rg = []
@@ -112,15 +133,15 @@ class TestAdapterFilter(unittest.TestCase):
                        'WVUTSR', 'QPONML', 'KJIHGF', 'FEDCBA'])
     self.assertItemsEqual(output, desired_output)
 
-  """Test four probes that align like:
-     ------    ------
-          ------
-          ------
-  where the bottom two are the same up to one mismatch. The top
-  two probes should be assigned adapter 'A' and the bottom two should
-  be assigned adapter 'B'.
-  """
   def test_almost_identical_probe(self):
+    """Test four probes that align like:
+       ------    ------
+            ------
+            ------
+    where the bottom two are the same up to one mismatch. The top
+    two probes should be assigned adapter 'A' and the bottom two should
+    be assigned adapter 'B'.
+    """
     target_genomes = [ [ 'ABCDEFGHIJKLMNOP',
                          'ABCDEFGHXJKLMNOP' ] ]
     target_genomes = self.convert_target_genomes(target_genomes)
@@ -143,10 +164,10 @@ class TestAdapterFilter(unittest.TestCase):
         # Both middle probes should align to both genomes
         self.assertEqual(votes, [(2,0), (0,2), (0,2), (2,0)])
 
-  """Test probes that align to two genomes, but in which the ones
-  aligning to one genome are offset from the other.
-  """
   def test_misaligned(self):
+    """Test probes that align to two genomes, but in which the ones
+    aligning to one genome are offset from the other.
+    """
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQR',
                          'XYZABCDEFGHIJKLMNOPQR' ] ]
     target_genomes = self.convert_target_genomes(target_genomes)
@@ -170,11 +191,11 @@ class TestAdapterFilter(unittest.TestCase):
     votes = f._make_votes_across_target_genomes(input)
     self.assertEqual(votes, [(0,1), (2,0), (0,2), (2,0), (0,2), (2,0)])
 
-  """Test probes that align adjacent to each other in one genome,
-  but overlapping in two others. One should be assigned adapter 'A'
-  and the other should be assigned adapter 'B'.
-  """
   def test_three_genomes(self):
+    """Test probes that align adjacent to each other in one genome,
+    but overlapping in two others. One should be assigned adapter 'A'
+    and the other should be assigned adapter 'B'.
+    """
     target_genomes = [ [ 'ABCDEFGHEFKLMN',
                          'ABCDEFKLMN',
                          'ABCDEFKLMNO' ] ]

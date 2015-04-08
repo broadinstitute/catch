@@ -1,4 +1,6 @@
-"""A dataset with 140 Ebola samples taken from Zaire.
+"""Dataset with Ebola sequences from within Zaire.
+
+A dataset with 140 Ebola samples taken from Zaire.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'

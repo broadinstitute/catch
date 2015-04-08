@@ -14,9 +14,10 @@ from hybseldesign.filter import set_cover_filter as scf
 from hybseldesign.utils import interval
 
 
-"""Tests the set cover filter output on contrived input.
-"""
 class TestSetCoverFilter(unittest.TestCase):
+
+  """Tests the set cover filter output on contrived input.
+  """
 
   def setUp(self):
     # Disable logging
@@ -88,11 +89,18 @@ class TestSetCoverFilter(unittest.TestCase):
     self.verify_target_genome_coverage(output,
       target_genomes, 3, 10, f, 1.0)
 
-  """Returns a nested list of target_genomes in which each
-  genome is an instance of genome.Genome, given a nested list in
-  which the genomes are strings.
-  """
   def convert_target_genomes(self, target_genomes):
+    """Convert genomes to instances of genome.Genome.
+
+    Args:
+        target_genomes: nested list of genomes, as strings, to be
+            converted
+
+    Returns:
+        nested list of genomes, with the same structure as the input,
+        in which each genome is an instance of genome.Genome instead
+        of a string
+    """
     r = []
     for genomes_from_group in target_genomes:
       rg = []
@@ -132,14 +140,14 @@ class TestSetCoverFilter(unittest.TestCase):
         identify=identify, blacklisted_genomes=blacklisted_genomes)
     return f, output
 
-  """Tests that, when the same species shows twice (with the same
-  target genomes), the output is the same as if it shows once. In
-  this unit test we are not removing duplicate probes before
-  testing the set cover filter; therefore, we should remove duplicates
-  before comparing (since the output when the species shows twice
-  will have more probes than when it shows once).
-  """
   def test_same_output_with_duplicated_species(self):
+    """Tests that, when the same species shows twice (with the same
+    target genomes), the output is the same as if it shows once. In
+    this unit test we are not removing duplicate probes before
+    testing the set cover filter; therefore, we should remove duplicates
+    before comparing (since the output when the species shows twice
+    will have more probes than when it shows once).
+    """
     target_genomes = [ [ 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                          'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF' ] ]
     target_genomes = self.convert_target_genomes(target_genomes)

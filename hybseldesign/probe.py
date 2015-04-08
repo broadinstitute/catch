@@ -1,5 +1,4 @@
-"""Structure(s) storing probes, as well as methods and functions
-for directly working with them.
+"""Structure(s) and functions for directly working with probes.
 """
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -12,10 +11,16 @@ from hybseldesign.utils import longest_common_substring
 from hybseldesign.utils import interval
 
 
-"""Immutable sequence representing a probe/bait.
-"""
 class Probe:
+
+  """Immutable sequence representing a probe/bait.
+  """
+
   def __init__(self, seq):
+    """
+    Args:
+        seq: np.array representing the sequence of a probe
+    """
     self.seq = seq
     self.seq_str = seq.tostring()
     self.is_flanking_n_string = False
@@ -24,20 +29,30 @@ class Probe:
     self.kmers = defaultdict(set)
     self.kmers_rand_choices = defaultdict(lambda : defaultdict(list))
 
-  """Counts the number of mismatches between self and other.
-
-  They must be the same length.
-  """
   def mismatches(self, other):
+    """Count number of mismatches with other.
+
+    Args:
+        other: another Probe, which must be of the same length as self
+
+    Returns:
+        number of mismatches between self and other
+    """
     return self.mismatches_at_offset(other, 0)
   
-  """Counts the number of mismatches between self and other after
-  other is shifted by offset bp.
-
-  offset can be negative (corresponding to other being shifted left)
-  or positive (corresponding to other being shifted right).
-  """
   def mismatches_at_offset(self, other, offset):
+    """Count number of mismatches with other given shift.
+
+    Args:
+        other: another Probe, which must be of the same length as self
+        offset: number of bp by which to shift 'other'; can be negative
+            (corresponding to 'other' being shifted left) or
+            positive (corresponding to 'other' being shifted right)
+
+    Returns:
+        number of mismatches between self and 'other' after 'other' is
+        shifted by 'offset' bp
+    """
     if len(self.seq) != len(other.seq):
       raise ValueError("Sequences must be of same length")
     if abs(offset) >= len(other.seq):
@@ -49,57 +64,89 @@ class Probe:
     else:
       return np.sum(self.seq[offset:] != other.seq[:-offset])
 
-  """Counts the minimum number of mismatches between self and other
-  as other is shifted with an offset between -max_shift and
-  +max_shift relative to self.
-  """
   def min_mismatches_within_shift(self, other, max_shift):
+    """Compute minimum number of mismatches while shifting.
+
+    Args:
+        other: another Probe, which must be of the same length as self
+        max_shift: number of bp by which to shift 'other' (in both
+            directions)
+
+    Returns:
+        the minimum number of mismatches between self and 'other' as
+        'other' is shifted with an offset between -max_shift and
+        +max_shift relative to self
+    """
     return min(self.mismatches_at_offset(other, offset) \
                 for offset in xrange(-max_shift, max_shift+1))
 
-  """Returns the length of the longest common substring with at most
-  k mismatches between self and other.
-  """
   def longest_common_substring_length(self, other, k):
+    """Compute length of longest common substring with other.
+
+    Args:
+        other: another Probe
+        k: maximum number of mismatches to tolerate in a common
+            substring
+
+    Returns:
+        length of the longest common substring with at most k
+        mismatches between self and other
+    """
     l, _, _ = longest_common_substring.k_lcf(self.seq, other.seq, k)
     return l
 
-  """Returns a probe that is the reverse-complement of this
-  probe.
-
-  Using rc_map.get(b, b) ensures that this can process bases
-  like 'N'. It returns the base itself (e.g., 'N') if it is
-  not either 'A', 'T', 'C', or 'G'.
-  """
   def reverse_complement(self):
+    """Create reverse complement of this probe.
+
+    Returns:
+        a Probe that is the reverse complement of this probe
+    """
     rc_map = {'A':'T', 'T':'A', 'C':'G', 'G':'C'}
+    # Using rc_map.get(b, b) ensures that this can process bases
+    # like 'N'. It returns the base itself (e.g., 'N') if it is
+    # not either 'A', 'T', 'C', or 'G'.
     rc_seq = np.array([rc_map.get(b, b) for b in self.seq[::-1]],
                 dtype='S1')
     return Probe(rc_seq)
 
-  """Returns a probe that has the string 's' prepended to the
-  sequence of this probe.
-  """
   def with_prepended_str(self, s):
+    """Create a probe with 's' prepended to this probe.
+
+    Args:
+        s: string to prepend
+
+    Returns:
+        a Probe with 's' prepended to the sequence of this probe
+    """
     s_seq = np.fromstring(s, dtype='S1')
     new_seq = np.concatenate([s_seq, self.seq])
     return Probe(new_seq)
 
-  """Returns a probe that has the string 's' appended to the
-  sequence of this probe.
-  """
   def with_appended_str(self, s):
+    """Create a probe with 's' appended to this probe.
+
+    Args:
+        s: string to append
+
+    Returns:
+        a Probe with 's' appended to the sequence of this probe
+    """
     s_seq = np.fromstring(s, dtype='S1')
     new_seq = np.concatenate([self.seq, s_seq])
     return Probe(new_seq)
 
-  """Returns the set of k-mers in this probe.
-
-  When include_positions is True, the set consists of tuples in
-  which the first element is a kmer and the second is its position
-  in the probe.
-  """
   def construct_kmers(self, k, include_positions=False):
+    """Return the set of k-mers in this probe.
+
+    Args:
+        k: the number of bp in a k-mer
+        include_positions: when True, the set consists of tuples in
+            which the first element is a k-mer and the second is its
+            position in the probe
+
+    Returns:
+        set of all k-mers of length k in this probe
+    """
     kmers = set()
     for i in xrange(len(self.seq)-k+1):
       kmer = self.seq_str[i:(i+k)]
@@ -109,43 +156,60 @@ class Probe:
         kmers.add(kmer)
     return kmers
 
-  """A heuristic that outputs whether it is likely that self and
-  other share at least one k-mer. Note that, depending on the
-  sequences being compared and the parameter values, false negatives
-  are a very real possibility.
-
-  False negatives are possible (indeed even likely for two sequences
-  with very few k-mers in common) and their probability of occurring
-  depends on the number of k-mers in common and on num_kmers_to_test.
-
-  This heuristic is intended primarily for determining whether it
-  is possible that two sequences are 'redundant'. If two sequences
-  are 'redundant', they ought to (by definition) share many k-mers
-  and therefore this heuristic should have a small probability
-  of giving outputting False (a false negative). If two sequences
-  are not 'redundant', they should have few or no k-mers in common
-  and therefore this heuristic should have a small probability of
-  outputting True (a false positive). [In this paragraph, the notion
-  of a false positive/negative relates to whether the sequences are
-  'redundant', whereas in the earlier paragraph it relates to whether
-  they share at least one k-mer.]
-
-  In the case where two sequences are 'redundant', assume they have
-  N k-mers in common. The probability of this outputting False
-  (falsely indicating that the two are likely not redundant) is the
-  probability that this heuristic does not select any of those N
-  k-mers. That is:
-    ( 1 - N/(len(seq)-k+1) )^{num_kmers_to_test}
-
-  In the case where two sequences are not 'redundant', assume they
-  are each produced at random with uniformity and independence across
-  possible k-mers. The probability of this outputting True (falsely
-  indicating that the two might be redundant) is the probability that
-  this heuristic finds at least one k-mer in common. That is:
-    1 - ( (1-(1/4)^k )^{len(seq)-k+1} )^{num_kmers_to_test}
-  """
   def shares_some_kmers(self, other, k=10, num_kmers_to_test=10,
       memoize_kmers=True):
+    """Determine whether this probe likely shares one or more k-mers with other.
+
+    This heuristic outputs whether it is likely that self and
+    other share at least one k-mer. Note that, depending on the
+    sequences being compared and the parameter values, false negatives
+    are a very real possibility.
+
+    False negatives are possible (indeed even likely for two sequences
+    with very few k-mers in common) and their probability of occurring
+    depends on the number of k-mers in common and on num_kmers_to_test.
+
+    This heuristic is intended primarily for determining whether it
+    is possible that two sequences are 'redundant'. If two sequences
+    are 'redundant', they ought to (by definition) share many k-mers
+    and therefore this heuristic should have a small probability
+    of giving outputting False (a false negative). If two sequences
+    are not 'redundant', they should have few or no k-mers in common
+    and therefore this heuristic should have a small probability of
+    outputting True (a false positive). [In this paragraph, the notion
+    of a false positive/negative relates to whether the sequences are
+    'redundant', whereas in the earlier paragraph it relates to whether
+    they share at least one k-mer.]
+
+    In the case where two sequences are 'redundant', assume they have
+    N k-mers in common. The probability of this outputting False
+    (falsely indicating that the two are likely not redundant) is the
+    probability that this heuristic does not select any of those N
+    k-mers. That is:
+      ( 1 - N/(len(seq)-k+1) )^{num_kmers_to_test}
+
+    In the case where two sequences are not 'redundant', assume they
+    are each produced at random with uniformity and independence across
+    possible k-mers. The probability of this outputting True (falsely
+    indicating that the two might be redundant) is the probability that
+    this heuristic finds at least one k-mer in common. That is:
+      1 - ( (1-(1/4)^k )^{len(seq)-k+1} )^{num_kmers_to_test}
+
+    Args:
+        other: another Probe
+        k: the number of bp in a k-mer
+        num_kmers_to_test: the number of k-mers to randomly pick from
+            one probe and lookup in the other (i.e., the number of
+            times to sample)
+        memoize_kmers: save the randomly selected k-mers for self and
+            for other; randomly selected k-mers is costly, so this is
+            useful when this function is called repeatedly on the same
+            probe(s)
+
+    Returns:
+        True or False depending on whether this probe likely shares
+        one or more k-mers with other
+    """
     if memoize_kmers:
       # Construct the k-mers for self and other if they have
       # not yet been constructed for the given k
@@ -183,22 +247,27 @@ class Probe:
           return True
       return False
 
-  """Returns an identifier of this sequence. The identifier is
-  probably unique among the probes being considered.
-
-  The identifier is computed from a hash of this probe's sequence
-  (self.seq_str); it is the final 'length' hex digits of the
-  hash. Python's hash(..) function could be used, but the size of
-  the hashes it produces depends on the size of the input (longer
-  input yield larger hashes); using the SHA-224 hash function
-  should produce more uniform hash values.
-
-  For example, when length=10, this is equivalent to taking the final
-  40 bits of the SHA-224 digest since each hex digit is 4 bits.
-  Thus, it is the SHA-224 digest modulo 2^40. There are 2^40 (roughly
-  one trillion) possible identifiers for a probe.
-  """
   def identifier(self, length=10):
+    """Return an identifier for this probe, based on its sequence.
+
+    The identifier is probably unique among all the probes being
+    considered.
+
+    The identifier is computed from a hash of this probe's sequence
+    (self.seq_str); it is the final 'length' hex digits of the
+    hash. Python's hash(..) function could be used, but the size of
+    the hashes it produces depends on the size of the input (longer
+    input yield larger hashes); using the SHA-224 hash function
+    should produce more uniform hash values.
+
+    For example, when length=10, this is equivalent to taking the final
+    40 bits of the SHA-224 digest since each hex digit is 4 bits.
+    Thus, it is the SHA-224 digest modulo 2^40. There are 2^40 (roughly
+    one trillion) possible identifiers for a probe.
+
+    Returns:
+        a (probably) unique identifier for this probe, as a string
+    """
     return hashlib.sha224(self.seq_str).hexdigest()[-length:]
 
   def __hash__(self):
@@ -223,31 +292,46 @@ class Probe:
   def __repr__(self):
     return self.seq_str
 
-  """Make a Probe from a Python str.
-  """
   @staticmethod
-  def from_str(seqStr):
-    return Probe(np.fromstring(seqStr, dtype='S1'))
+  def from_str(seq_str):
+    """Construct a Probe from a string.
+
+    Args:
+        seq_str: sequence as a Python string
+
+    Returns:
+        instance of Probe, whose sequence is seq_str
+    """
+    return Probe(np.fromstring(seq_str, dtype='S1'))
 
 
-"""Constructs a map from k-mers to the probes that contain those
-k-mers.
-
-Given a collection of probes, this finds the k-mers (of length k)
-in each probe and randomly selects num_kmers_per_probe from each.
-Then, it builds a map from the randomly selected k-mers to a set
-of probes from which the k-mer is located. If more than one probe
-share a k-mer that is randomly selected from those probes, then
-each of those probes are in the set mapped to by the shared k-mer.
-When include_positions is True, the set mapped to by each k-mer
-consists of a 2-element tuple in which the first element is the
-probe containing the k-mer and the second is the position of the
-k-mer in the probe. If a k-mer appears more than once in a probe
-and is randomly selected more than once, the probe may appear
-in more than one tuple mapped to by that k-mer.
-"""
 def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10,
     include_positions=False):
+  """Construct map from k-mers to probes that contain these k-mers.
+
+  Given a collection of probes, this finds the k-mers (of length k)
+  in each probe and randomly selects num_kmers_per_probe from each.
+  Then, it builds a map from the randomly selected k-mers to a set
+  of probes from which the k-mer is located. If more than one probe
+  share a k-mer that is randomly selected from those probes, then
+  each of those probes are in the set mapped to by the shared k-mer.
+
+  Args:
+      probes: list of probes from which to construct the map
+      k: the number of bp in a k-mer
+      num_kmers_per_probe: the number of k-mers to add to the map
+          (as keys) for each probe
+      include_positions: when True, the set mapped to by each k-mer
+          key consists of tuples in which the first element is a probe
+          containing the k-mer and the second is the k-mer's position
+          in the probe; if a k-mer appears more than once in a probe
+          and it is randomly selected more than once, that probe may
+          appear in more than one tuple mapped to by that k-mer
+
+  Returns:
+      dict mapping k-mers to sets of probes that contains those
+      k-mers
+  """
   kmer_probe_map = defaultdict(set)
   for probe in probes:
     kmers = list(probe.construct_kmers(k, include_positions))
@@ -266,49 +350,63 @@ def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10,
   return dict(kmer_probe_map)
 
 
-"""Finds the ranges in sequence that each probe in a given set of
-probes "covers" (i.e., should hybridize to), where coverage is
-determined by a given function.
-
-The probes in the values of kmer_probe_map make up the set of probes
-for which we seek coverage. kmer_probe_map must map k-mers (of length
-k) to a set of tuples, in which each tuple contains a probe
-whose sequence contains the k-mer as well as the position of the
-k-mer in the probe. This works by scanning through sequence, reading
-the k-mer at each position, and looking this up in kmer_probe_map to
-retrieve a set of probes that are "candidates" for covering sequence
-around the current position. This aligns each candidate probe to
-sequence around the shared k-mer and then calls
-cover_range_for_probe_in_sequence_fn to determine whether the probe
-"covers" sequence in this region, where coverage is determined by
-that function. If that function returns None, there is no coverage,
-and otherwise it returns the range covered by the probe. The
-output of this function is a dict mapping probes to the set of
-ranges that each "covers".
-
-Note that kmer_probe_map is generated in a manner that randomly
-selects a subset of the k-mers from each probe. Thus, this algorithm
-is a Monte Carlo algorithm and may yield false negatives. That is,
-it is possible that when scanning through the sequence we encounter
-a region that a probe ought to cover, but none of the k-mers in
-that region map to the probe in kmer_probe_map. This should be
-unlikely as long as kmer_probe_map is generated with a small enough
-k and large enough num_kmers_per_probe. (There is a balance: as k
-decreases and num_kmers_per_probe increases there is a larger set
-of "candidate" probes for covering a region, and the runtime of this
-function increases.) Assume that there is a region that should be
-covered by some probe of length L and that the region and the probe
-share N k-mers. (Note that as k decreases, N should increase.) The
-probability that this function does not detect the coverage is the
-probability that none of those N k-mers in the probe are selected
-when generating kmer_probe_map. That is:
-    ( 1 - N/(L-k+1) )^{num_kmers_per_probe}
-where num_kmers_per_probe is a parameter used when constructing
-kmer_probe_map.
-"""
 def find_probe_covers_in_sequence(sequence,
     kmer_probe_map, k=15,
     cover_range_for_probe_in_subsequence_fn=None):
+  """Find ranges in sequence that a collection of probes cover.
+
+  Probes are from the values of kmer_probe_map. A probe is said
+  to "cover" (i.e., hybridize to) a region as determined by the
+  function cover_range_for_probe_in_subsequence_fn.
+
+  This works by scanning through sequence, reading the k-mer at each
+  position, and looking this up in kmer_probe_map to retrieve a set of
+  probes that are "candidates" for covering sequence around the current
+  position. This aligns each candidate probe to sequence around the
+  shared k-mer and then calls cover_range_for_probe_in_sequence_fn to
+  determine whether the probe "covers" sequence in this region, where
+  coverage is determined by that function.
+
+  Note that kmer_probe_map is generated in a manner that randomly
+  selects a subset of the k-mers from each probe. Thus, this algorithm
+  is a Monte Carlo algorithm and may yield false negatives. That is,
+  it is possible that when scanning through the sequence we encounter
+  a region that a probe ought to cover, but none of the k-mers in
+  that region map to the probe in kmer_probe_map. This should be
+  unlikely as long as kmer_probe_map is generated with a small enough
+  k and large enough num_kmers_per_probe. (There is a balance: as k
+  decreases and num_kmers_per_probe increases there is a larger set
+  of "candidate" probes for covering a region, and the runtime of this
+  function increases.) Assume that there is a region that should be
+  covered by some probe of length L and that the region and the probe
+  share N k-mers. (Note that as k decreases, N should increase.) The
+  probability that this function does not detect the coverage is the
+  probability that none of those N k-mers in the probe are selected
+  when generating kmer_probe_map. That is:
+      ( 1 - N/(L-k+1) )^{num_kmers_per_probe}
+  where num_kmers_per_probe is a parameter used when constructing
+  kmer_probe_map.
+
+  Args:
+      sequence: sequence (as a string) in which to find ranges that
+          probes cover
+      kmer_probe_map: dict mapping kmers to probes; must map k-mers
+          (of length k) to a set of tuples, in which each tuple
+          contains a probe whose sequence contains the k-mer as well
+          as the position of the k-mer in the probe.
+      k: extract k-mers of this length from sequence and look them up
+          in kmer_probe_map to find probes that may cover the
+          subsequence around the extracted k-mer
+      cover_range_for_probe_in_subsequence_fn: function that
+          determines whether a probe "covers" a part of a subsequence
+          of sequence; if it returns None, there is no coverage;
+          otherwise it returns the range of the subsequence covered
+          by the probe
+
+  Returns:
+      dict mapping probes to the set of ranges (each range is a tuple
+      of the form (start, end)) that each probe "covers"
+  """
   if cover_range_for_probe_in_subsequence_fn == None:
     # By default, determine a cover range using a longest common
     # substring with its default parameters
@@ -398,26 +496,37 @@ def find_probe_covers_in_sequence(sequence,
   return dict(probe_cover_ranges_merged)
 
 
-"""Returns a function that, given a probe and sequence anchored at
-a shared k-mer, returns the portion of the sequence covered by the
-probe, where coverage is determined by longest common substring.
-
-The returned function lcf takes a probe sequence (probe.seq) and a
-sequence (intended to be the same length), as well as the indices
-of a shared k-mer around which both are anchored/aligned. That is,
-it should be true that
-  probe_seq[kmer_start:kmer_end] == sequence[kmer_start:kmer_end].
-lcf computes the longest common substring based around this anchor
-that has at most 'mismatches' mismatches. If lcf is below the
-specified length (lcf_thres) for the probe to be "covering" a
-portion of sequence, then lcf returns None. Otherwise, we say that
-a portion (namely, the common substring) of the probe covers
-sequence, and lcf returns the range (shared by both the probe
-sequence and sequence) of sequence that the probe covers, where
-the range is the bounds of the longest common substring.
-"""
 def probe_covers_sequence_by_longest_common_substring(mismatches=0,
     lcf_thres=100):
+  """Return a function that determines coverage of a probe in a sequence.
+
+  The returned function lcf takes a probe sequence (probe.seq) and a
+  sequence (intended to be the same length), as well as the indices
+  of a shared k-mer around which both are anchored/aligned. That is,
+  it should be true that
+    probe_seq[kmer_start:kmer_end] == sequence[kmer_start:kmer_end].
+  lcf computes the longest common substring based around this anchor
+  that has at most 'mismatches' mismatches. If lcf is below the
+  specified length (lcf_thres) for the probe to be "covering" a
+  portion of sequence, then lcf returns None. Otherwise, we say that
+  a portion (namely, the common substring) of the probe covers
+  sequence, and lcf returns the range (shared by both the probe
+  sequence and sequence) of sequence that the probe covers, where
+  the range is the bounds of the longest common substring.
+
+  Args:
+      mismatches/lcf_thres: if the length of the longest common
+          substring with at most 'mismatches' mismatches is >=
+          'lcf_thres', then the returned function (lcf) outputs the
+          bounds of the longest common substring; otherwise it outputs
+          None, indicating that the provided probe that does cover
+          the provided sequence
+
+  Returns:
+      function that, given a probe and sequence anchored at a shared
+      k-mer, returns whether the probe covers part of the sequence and,
+      if so, which part
+  """
   def lcf(probe_seq, sequence, kmer_start, kmer_end):
     l, start = longest_common_substring.k_lcf_around_anchor(
         probe_seq, sequence, kmer_start, kmer_end, mismatches)

@@ -10,9 +10,10 @@ from collections import defaultdict
 from hybseldesign import probe
 
 
-"""Tests methods in the Probe class.
-"""
 class TestProbe(unittest.TestCase):
+
+  """Tests methods in the Probe class.
+  """
 
   def setUp(self):
     self.a = probe.Probe.from_str('ATCGTCGCGGATCG')
@@ -28,23 +29,23 @@ class TestProbe(unittest.TestCase):
     s = "".join(np.random.choice(bases, size=length, replace=True))
     return probe.Probe.from_str(s)
 
-  """Test that probe parses the string correctly.
-  """
   def test_parse_str(self):
+    """Test that probe parses the string correctly.
+    """
     np.testing.assert_array_equal(self.a.seq,
         np.array(['A','T','C','G','T','C','G','C','G',
                   'G','A','T','C','G']))
 
-  """Test mismatches method.
-  """
   def test_mismatches(self):
+    """Test mismatches method.
+    """
     self.assertEqual(self.a.mismatches(self.a), 0)
     self.assertEqual(self.a.mismatches(self.b), 3)
     self.assertEqual(self.b.mismatches(self.a), 3)
 
-  """Test mismatches_at_offset method.
-  """
   def test_mismatches_at_offset(self):
+    """Test mismatches_at_offset method.
+    """
     self.assertEqual(self.a.mismatches_at_offset(self.d, -1), 0)
     self.assertEqual(self.a.mismatches_at_offset(self.e, -2), 2)
     self.assertEqual(self.a.mismatches_at_offset(self.f, 3), 1)
@@ -53,9 +54,9 @@ class TestProbe(unittest.TestCase):
     self.assertRaises(ValueError, self.a.mismatches_at_offset,
         self.b, 15)
 
-  """Test min_mismatches_within_shift method.
-  """
   def test_min_mismatches_within_shift(self):
+    """Test min_mismatches_within_shift method.
+    """
     self.assertEqual(self.a.min_mismatches_within_shift(self.g, 5), 1)
     self.assertEqual(self.g.min_mismatches_within_shift(self.a, 5), 1)
     self.assertEqual(self.a.min_mismatches_within_shift(self.g, 2), 8)
@@ -65,42 +66,42 @@ class TestProbe(unittest.TestCase):
     self.assertEqual(self.a.min_mismatches_within_shift(self.b, 2), 3)
     self.assertEqual(self.b.min_mismatches_within_shift(self.a, 2), 3)
 
-  """Test reverse_complement method.
-  """
   def test_reverse_complement(self):
+    """Test reverse_complement method.
+    """
     a_rc = self.a.reverse_complement()
     a_rc_desired = probe.Probe.from_str('CGATCCGCGACGAT')
     self.assertEqual(a_rc, a_rc_desired)
 
-  """Test with_prepended_str method.
-  """
   def test_with_prepended_str(self):
+    """Test with_prepended_str method.
+    """
     a_prepended = self.a.with_prepended_str('TATA')
     a_prepended_desired = probe.Probe.from_str('TATAATCGTCGCGGATCG')
     self.assertEqual(a_prepended, a_prepended_desired)
 
-  """Test with_appended_str method.
-  """
   def test_with_appended_str(self):
+    """Test with_appended_str method.
+    """
     a_appended = self.a.with_appended_str('TATA')
     a_appended_desired = probe.Probe.from_str('ATCGTCGCGGATCGTATA')
     self.assertEqual(a_appended, a_appended_desired)
 
-  """Test identifier method.
-
-  This randomly produces 100 probes and checks that their identifiers
-  are all unique. They are not guaranteed to be, but certainly
-  should be.
-  """
   def test_identifier(self):
+    """Test identifier method.
+
+    This randomly produces 100 probes and checks that their identifiers
+    are all unique. They are not guaranteed to be, but certainly
+    should be.
+    """
     np.random.seed(1)
     probes = [self.make_random_probe(100) for _ in xrange(100)]
     identifiers = set([p.identifier() for p in probes])
     self.assertEqual(len(identifiers), 100)
 
-  """Test share_some_kmers method.
-  """
   def test_share_some_kmers_nonmemoized(self):
+    """Test share_some_kmers method.
+    """
     np.random.seed(1)
     args = { 'k': 5, 'num_kmers_to_test': 10,
              'memoize_kmers': False }
@@ -122,9 +123,9 @@ class TestProbe(unittest.TestCase):
     self.assertGreater(ac, 90)
     self.assertGreater(ca, 90)
 
-  """Test share_some_kmers method.
-  """
   def test_share_some_kmers_memoized(self):
+    """Test share_some_kmers method.
+    """
     np.random.seed(1)
     args = { 'k': 5, 'num_kmers_to_test': 10,
              'memoize_kmers': True }
@@ -146,30 +147,31 @@ class TestProbe(unittest.TestCase):
     self.assertGreater(ac, 90)
     self.assertGreater(ca, 90)
 
-  """Test construct_kmers method.
-  """
   def test_construct_kmers(self):
+    """Test construct_kmers method.
+    """
     a = probe.Probe.from_str('ABCDEFGHI')
     self.assertEqual(a.construct_kmers(4),
         set(['ABCD','BCDE','CDEF','DEFG','EFGH','FGHI']))
 
 
-"""Tests construct_kmer_probe_map function.
-"""
 class TestConstructKmerProbeMap(unittest.TestCase):
+
+  """Tests construct_kmer_probe_map function.
+  """
 
   def make_random_probe(self, length):
     bases = ['A','T','C','G']
     s = "".join(np.random.choice(bases, size=length, replace=True))
     return probe.Probe.from_str(s)
 
-  """Make 50 random probes. From them, construct the kmer probe map
-  with k=15 and with 10 kmers per probe. For each probe, check that
-  at least 8 of its kmers can be found in this map (because kmers
-  are selected from the probes with replacement, not all 10 may be
-  present, and indeed not even 8 may be present).
-  """
   def test_random(self):
+    """Make 50 random probes. From them, construct the kmer probe map
+    with k=15 and with 10 kmers per probe. For each probe, check that
+    at least 8 of its kmers can be found in this map (because kmers
+    are selected from the probes with replacement, not all 10 may be
+    present, and indeed not even 8 may be present).
+    """
     np.random.seed(1)
     k = 15
     num_kmers_per_probe = 10
@@ -219,10 +221,10 @@ class TestConstructKmerProbeMap(unittest.TestCase):
     self.assertItemsEqual(kmer_map['EFH'], [(b,4)])
 
 
-"""Tests probe_covers_sequence_by_longest_common_substring
-function.
-"""
 class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
+
+  """Tests probe_covers_sequence_by_longest_common_substring function.
+  """
 
   def setUp(self):
     self.seq = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -274,14 +276,15 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
     self.assertTrue(match == None)
 
 
-"""Tests find_probe_covers_in_sequence function.
-"""
 class TestFindProbeCoversInSequence(unittest.TestCase):
 
-  """Tests with short sequence, short probes, and small k
-  where each probe appears zero or one times.
+  """Tests find_probe_covers_in_sequence function.
   """
+
   def test_one_or_no_occurrence(self):
+    """Tests with short sequence, short probes, and small k
+    where each probe appears zero or one times.
+    """
     np.random.seed(1)
     sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     a = probe.Probe.from_str('GHIJKL')
@@ -299,10 +302,10 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     self.assertItemsEqual(found[b], [(18,24)])
     self.assertFalse(c in found)
 
-  """Tests with short sequence, short probes, and small k
-  where one probe appears twice.
-  """
   def test_two_occurrences(self):
+    """Tests with short sequence, short probes, and small k
+    where one probe appears twice.
+    """
     np.random.seed(1)
     sequence = 'ABCDEFGHIJKLMNOPCDEFGHQRSTU'
     a = probe.Probe.from_str('CDEFGH')
@@ -320,10 +323,10 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     self.assertItemsEqual(found[b], [(6,12)])
     self.assertFalse(c in found)
 
-  """Tests with short sequence, short probes, and small k
-  where probes contain more than what they cover.
-  """
   def test_more_than_cover(self):
+    """Tests with short sequence, short probes, and small k
+    where probes contain more than what they cover.
+    """
     np.random.seed(1)
     sequence = 'ABCDEFGHIJKLMNOPQR'+('Z'*100)+'STUVWXYZ'
     a = probe.Probe.from_str('XYZCDEFGHIJKABCSTUVWXABC')
@@ -341,11 +344,11 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     self.assertItemsEqual(found[b], [(6,14)])
     self.assertItemsEqual(found[c], [(5,12)])
 
-  """Tests with short sequence, short probes, and small k
-  where the sequence and probes have repetitive sequences, so that
-  one probe can cover a lot of the sequence.
-  """
   def test_repetitive(self):
+    """Tests with short sequence, short probes, and small k
+    where the sequence and probes have repetitive sequences, so that
+    one probe can cover a lot of the sequence.
+    """
     np.random.seed(1)
     sequence = 'ABCAAAAAAAAAAXYZXYZXYZXYZAAAAAAAAAAAAAXYZ'
     a = probe.Probe.from_str('NAAAAAAN')
@@ -365,14 +368,24 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
   def test_random_large_genome(self):
     self.run_random(2, 1500000, 2500000, 30000)
 
-  """Runs, n times, a test in which a long sequence is randomly
-  generated and probes are generated from that sequence. Makes 100 bp
-  probes with k=15 and num_kmers_per_probe=10 and creates the probes
-  with the intention of determining coverage with a longest common
-  substring. The genome size is randomly chosen between genome_min
-  and genome_max, and the number of probes generated is num_probes.
-  """
   def run_random(self, n, genome_min, genome_max, num_probes):
+    """Run tests with a randomly generated sequence.
+
+    Repeatedly runs tests in which a sequence is randomly generated,
+    probes are generated from that sequence, and then the probes are
+    looked up in the sequence.
+
+    Makes 100 bp probes with k=15 and num_kmers_per_probe=10 and
+    creates the probes with the intention of determining coverage with
+    a longest common substring. 
+
+    Args:
+        n: number of times to run the test
+        genome_min/genome_max: the genome (sequence) size is
+            randomly chosen between genome_min and genome_max
+        num_probes: the number of probes generated from the random
+            sequence
+    """
     np.random.seed(1)
     for n in xrange(n):
       # Make a random sequence
