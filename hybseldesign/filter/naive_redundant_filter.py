@@ -108,7 +108,6 @@ def redundant_shift_and_mismatch_count(shift=0,
     # return the 'quick' function when mismatch_thres is below
     # this cutoff.
     if quick and mismatch_thres < quick_mismatch_cutoff:
-
         def are_redundant(probe_a, probe_b):
             probe_a_len = len(probe_a.seq)
             probe_b_len = len(probe_b.seq)
@@ -136,7 +135,6 @@ def redundant_shift_and_mismatch_count(shift=0,
             # All of the shifts have > mismatch_thres mismatches
             return False
     else:
-
         def are_redundant(probe_a, probe_b):
             mismatches = probe_a.min_mismatches_within_shift(probe_b, shift)
             return mismatches <= mismatch_thres
@@ -170,7 +168,6 @@ def redundant_longest_common_substring(mismatches=0,
         function that returns True or False depending on whether two
         probes are redundant
     """
-
     def are_redundant(probe_a, probe_b):
         if prune_with_heuristic:
             if not probe_a.shares_some_kmers(probe_b):

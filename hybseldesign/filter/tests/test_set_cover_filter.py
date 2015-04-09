@@ -51,10 +51,8 @@ class TestSetCoverFilter(unittest.TestCase):
                                                         k=k,
                                                         num_kmers_per_probe=10,
                                                         include_positions=True)
-        for tg in [
-            g
-            for genomes_from_group in target_genomes for g in genomes_from_group
-        ]:
+        for tg in [g for genomes_from_group in target_genomes
+                   for g in genomes_from_group]:
             num_bp_covered = 0
             for seq in tg.seqs:
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(
@@ -78,10 +76,8 @@ class TestSetCoverFilter(unittest.TestCase):
 
     def run_full_coverage_check_for_target_genomes(self, target_genomes):
         input = []
-        for tg in [
-            g
-            for genomes_from_group in target_genomes for g in genomes_from_group
-        ]:
+        for tg in [g for genomes_from_group in target_genomes
+                   for g in genomes_from_group]:
             for seq in tg.seqs:
                 input += [seq[i:(i + 6)] for i in xrange(len(seq) - 6 + 1)]
         must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
@@ -133,10 +129,8 @@ class TestSetCoverFilter(unittest.TestCase):
                        lcf_thres_tolerant=6,
                        blacklisted_genomes=[]):
         input = []
-        for tg in [
-            g
-            for genomes_from_group in target_genomes for g in genomes_from_group
-        ]:
+        for tg in [g for genomes_from_group in target_genomes
+                   for g in genomes_from_group]:
             for seq in tg.seqs:
                 input += [seq[i:(i + 6)] for i in xrange(len(seq) - 6 + 1)]
         # Use 100 kmers per probe to better avoid the very rare cases

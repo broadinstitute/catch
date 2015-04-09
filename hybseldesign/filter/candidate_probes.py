@@ -136,12 +136,12 @@ def make_candidate_probes_from_sequence(seq,
 
 
 def make_candidate_probes_from_sequences(
-    seqs,
-    probe_length=100,
-    probe_stride=50,
-    min_n_string_length=2,
-    insert_bugs=False,
-    move_all_n_string_flanking_probes_to_end=False):
+        seqs,
+        probe_length=100,
+        probe_stride=50,
+        min_n_string_length=2,
+        insert_bugs=False,
+        move_all_n_string_flanking_probes_to_end=False):
     """Generate a list of candidate probes from a list of sequences.
 
     It is possible (perhaps even likely depending on where
