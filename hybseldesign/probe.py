@@ -1,14 +1,15 @@
 """Structure(s) and functions for directly working with probes.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 from collections import defaultdict
 import hashlib
+
 import numpy as np
 
-from hybseldesign.utils import longest_common_substring
 from hybseldesign.utils import interval
+from hybseldesign.utils import longest_common_substring
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class Probe:

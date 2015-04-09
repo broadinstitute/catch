@@ -1,17 +1,17 @@
 """Tests for set_cover_filter module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
-import logging
 from collections import OrderedDict
+import logging
 import tempfile
+import unittest
 
+from hybseldesign.filter import set_cover_filter as scf
 from hybseldesign import genome
 from hybseldesign import probe
-from hybseldesign.filter import set_cover_filter as scf
 from hybseldesign.utils import interval
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestSetCoverFilter(unittest.TestCase):

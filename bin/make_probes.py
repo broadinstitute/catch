@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 """Design probes by treating the problem as an instance of set cover."""
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import argparse
-import logging
 import importlib
+import logging
 
 from hybseldesign.datasets import hg19
+from hybseldesign.filter import adapter_filter
+from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
-from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import set_cover_filter
-from hybseldesign.filter import adapter_filter
 from hybseldesign.utils import seq_io, version, log
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 # Set the path to the hg19 fasta file (assuming this is a Broad machine)
 hg19.add_fasta_path("/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_assembly19.fasta")

@@ -6,11 +6,11 @@ probes that are identical to another. It preserves the order of
 the input.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 from collections import OrderedDict
 
 from hybseldesign.filter.base_filter import BaseFilter
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class DuplicateFilter(BaseFilter):

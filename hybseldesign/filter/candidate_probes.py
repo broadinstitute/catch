@@ -4,15 +4,16 @@ These functions compute lists of many (likely redundant) probes, termed
 candidate probes, from a sequence of list of sequences.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import sys
 import re
+import sys
+
 import numpy as np
 
-from hybseldesign.utils import seq_io
-from hybseldesign import probe
 from hybseldesign.datasets import ebola2014
+from hybseldesign import probe
+from hybseldesign.utils import seq_io
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 def make_candidate_probes_from_sequence(seq, probe_length=100,

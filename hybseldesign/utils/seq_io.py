@@ -1,14 +1,16 @@
 """Utilities for working with sequence i/o.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
-import logging
-import numpy as np
-import re
 from collections import OrderedDict
+import logging
+import re
+
+import numpy as np
 
 from hybseldesign import genome
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 

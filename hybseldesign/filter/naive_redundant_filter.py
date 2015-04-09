@@ -13,11 +13,11 @@ implemented primarily to replicate previous software and results on
 designing probes for hybrid selection.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import logging
 
 from hybseldesign.filter.base_filter import BaseFilter
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 

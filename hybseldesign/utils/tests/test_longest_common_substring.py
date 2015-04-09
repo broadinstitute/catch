@@ -1,11 +1,11 @@
 """Tests for longest_common_substring module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import unittest
 
 from hybseldesign.utils import longest_common_substring as lcf
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestLCSWithKMismatches(unittest.TestCase):

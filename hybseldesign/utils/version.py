@@ -1,10 +1,13 @@
 """Gets the git version into python-land.
 """
 
+import os
+import os.path
+import subprocess
+
 __author__ = "dpark@broadinstitute.org"
 __version__ = None
 
-import subprocess, os, os.path
  
 def get_module_path() :
     """Return the absolute path of the top-level project.

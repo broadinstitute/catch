@@ -1,14 +1,14 @@
 """Tests for dominating_set_filter module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
 import logging
+import unittest
 
-from hybseldesign import probe
 from hybseldesign.filter import dominating_set_filter as dsf
 from hybseldesign.filter import naive_redundant_filter as nrf
+from hybseldesign import probe
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestDominatingSetFilter(unittest.TestCase):

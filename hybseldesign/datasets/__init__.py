@@ -1,11 +1,11 @@
 """Convenience classes and functions for working with datasets.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import logging
-from os.path import join
 from os.path import dirname
+from os.path import join
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 

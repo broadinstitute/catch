@@ -1,15 +1,16 @@
 """Tests for set_cover module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
-import logging
-import numpy as np
-from collections import defaultdict
 from array import array
+from collections import defaultdict
+import logging
+import unittest
+
+import numpy as np
 
 from hybseldesign.utils import set_cover as sc
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestSetCoverApprox(unittest.TestCase):

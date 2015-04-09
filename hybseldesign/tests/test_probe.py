@@ -1,13 +1,14 @@
 """Tests for probe module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
-import numpy as np
 from collections import defaultdict
+import unittest
+
+import numpy as np
 
 from hybseldesign import probe
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestProbe(unittest.TestCase):

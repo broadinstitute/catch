@@ -1,15 +1,15 @@
 """Tests for probe_designer module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
 import logging
+import unittest
 
+from hybseldesign.filter import duplicate_filter
+from hybseldesign.filter import probe_designer
 from hybseldesign import genome
 from hybseldesign import probe
-from hybseldesign.filter import probe_designer
-from hybseldesign.filter import duplicate_filter
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestProbeDesigner(unittest.TestCase):

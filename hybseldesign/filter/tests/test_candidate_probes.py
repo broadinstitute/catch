@@ -1,13 +1,13 @@
 """Tests for candidate_probes module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import unittest
 
-from hybseldesign.utils import seq_io                                  
 from hybseldesign.datasets import ebola2014
 from hybseldesign.filter import candidate_probes
+from hybseldesign.utils import seq_io                                  
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestCandidateProbesOnContrivedInput(unittest.TestCase):

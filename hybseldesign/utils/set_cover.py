@@ -1,11 +1,10 @@
 """Functions for working with instances of the set cover problem.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import logging
-import math
 from collections import defaultdict
+import logging
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 
