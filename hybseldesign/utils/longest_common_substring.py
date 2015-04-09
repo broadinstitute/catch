@@ -97,9 +97,9 @@ def k_lcf_around_anchor(a, b, anchor_start, anchor_end, k):
 
   # Convert a and b to NumPy arrays, which is useful for quickly
   # computing mismatch positions
-  if type(a) != np.array:
+  if type(a) != np.ndarray:
     a = np.fromstring(a, dtype='S1')
-  if type(b) != np.array:
+  if type(b) != np.ndarray:
     b = np.fromstring(b, dtype='S1')
 
   # Check that the anchor is the same in a and b

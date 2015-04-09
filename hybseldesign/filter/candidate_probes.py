@@ -42,7 +42,7 @@ def make_candidate_probes_from_sequence(seq, probe_length=100,
   if probe_length > len(seq):
     raise ValueError("Invalid probe_length " + str(probe_length))
 
-  if type(seq) is np.ndarray or type(seq) is np.array:
+  if type(seq) is np.ndarray:
     seq = seq.tostring()
   n_string_query = re.compile('(N{'+str(min_n_string_length)+',})')
 
