@@ -17,19 +17,19 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 class ReverseComplementFilter(BaseFilter):
 
-  """Filter that adds reverse complements to list of probes.
-  """
-
-  def _filter(self, input):
-    """Return input probes and their reverse complements.
+    """Filter that adds reverse complements to list of probes.
     """
-    output = []
-    for p in input:
-      p.header = "probe_%s | from target sequence" % p.identifier()
-      output += [ p ]
 
-      p_rc = p.reverse_complement()
-      p_rc.header = "probe_%s | reverse complement of probe_%s" % \
-                      (p_rc.identifier(), p.identifier())
-      output += [ p_rc ]
-    return output
+    def _filter(self, input):
+        """Return input probes and their reverse complements.
+        """
+        output = []
+        for p in input:
+            p.header = "probe_%s | from target sequence" % p.identifier()
+            output += [p]
+
+            p_rc = p.reverse_complement()
+            p_rc.header = "probe_%s | reverse complement of probe_%s" % \
+                (p_rc.identifier(), p.identifier())
+            output += [p_rc]
+        return output
