@@ -304,7 +304,8 @@ class TestSetCoverFilter(unittest.TestCase):
                           ['ATATATABCDEFATATATATATATATXYZXYZ']]
         target_genomes = self.convert_target_genomes(target_genomes)
         f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, mismatches_tolerant=1, lcf_thres_tolerant=5, identify=True)
+            target_genomes, cover=6, mismatches_tolerant=1,
+            lcf_thres_tolerant=5, identify=True)
         self.assertEqual(set(probes),
                          set([probe.Probe.from_str('MNOPQR'),
                               probe.Probe.from_str('XYZXYZ')]))
@@ -385,7 +386,8 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = self.convert_target_genomes(target_genomes)
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=6, identify=False,
-                                        mismatches_tolerant=1, lcf_thres_tolerant=5,
+                                        mismatches_tolerant=1,
+                                        lcf_thres_tolerant=5,
                                         blacklisted_genomes=[bl_file.name])
         # ATCGGG is blacklisted, so go for the second most common probe
         self.assertEqual(set(probes),

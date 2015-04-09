@@ -180,10 +180,10 @@ class SetCoverFilter(BaseFilter):
                         for cover_range in cover_ranges:
                             for bp in xrange(cover_range[0], cover_range[1]):
                                 # bp gives a position in just this sequence
-                                # (chromosome), so adding the lengths of all the
-                                # sequences previously iterated (length_so_far) onto
-                                # bp gives a unique integer position in the
-                                # genome gnm
+                                # (chromosome), so adding the lengths of all
+                                # the sequences previously iterated
+                                # (length_so_far) onto bp gives a unique
+                                # integer position in the genome gnm
                                 sets[set_id][universe_id].append(
                                     length_so_far +
                                     bp)

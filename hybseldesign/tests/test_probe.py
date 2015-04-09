@@ -424,9 +424,11 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 # Add random bases before and after what the probe should
                 # cover
                 probe_str_start = "".join(np.random.choice(
-                    ['A', 'T', 'C', 'G'], size=cover_start - subseq_start, replace=True))
+                    ['A', 'T', 'C', 'G'], size=cover_start - subseq_start,
+                    replace=True))
                 probe_str_end = "".join(np.random.choice(
-                    ['A', 'T', 'C', 'G'], size=subseq_end - cover_end, replace=True))
+                    ['A', 'T', 'C', 'G'], size=subseq_end - cover_end,
+                    replace=True))
                 probe_str = probe_str_start + probe_str_cover + probe_str_end
                 # Add 0, 1, 2, or 3 random mismatches
                 for k in xrange(np.random.randint(0, 4)):

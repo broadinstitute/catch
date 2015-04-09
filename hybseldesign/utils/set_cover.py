@@ -371,10 +371,11 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
                     universe = universes[universe_id]
                     if use_arrays:
                         # It may seem faster to compute, in the case where s is
-                        # array, num_covered as sum([1 for v in s if v in universe])
-                        # in order to avoid converting s to an array. However,
-                        # it appears that, in practice, converting s to a set and
-                        # using set.intersection is faster.
+                        # an array, num_covered as
+                        # sum([1 for v in s if v in universe])
+                        # in order to avoid converting s to a set. However,
+                        # it appears that, in practice, converting s to a set
+                        # and using set.intersection is faster.
                         s = set(s)
                     num_covered = len(s.intersection(universe))
                     # Memoize num_covered
