@@ -142,7 +142,8 @@ class AdapterFilter(BaseFilter):
                 to a sequence
         """
         self.cover_range_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(mismatches=mismatches, lcf_thres=lcf_thres)
+            probe.probe_covers_sequence_by_longest_common_substring(
+                mismatches=mismatches, lcf_thres=lcf_thres)
         self.kmer_size = kmer_size
         self.num_kmers_per_probe = num_kmers_per_probe
 

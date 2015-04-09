@@ -359,10 +359,11 @@ def construct_kmer_probe_map(probes,
     return dict(kmer_probe_map)
 
 
-def find_probe_covers_in_sequence(sequence, kmer_probe_map,
-                                  k=15,
-                                  cover_range_for_probe_in_subsequence_fn=None
-                                 ):
+def find_probe_covers_in_sequence(
+        sequence,
+        kmer_probe_map,
+        k=15,
+        cover_range_for_probe_in_subsequence_fn=None):
     """Find ranges in sequence that a collection of probes cover.
 
     Probes are from the values of kmer_probe_map. A probe is said
@@ -484,7 +485,8 @@ def find_probe_covers_in_sequence(sequence, kmer_probe_map,
                 probe_seq = probe.seq
                 kmer_start = pos
             cover_range = \
-                cover_range_for_probe_in_subsequence_fn(probe_seq, subsequence, kmer_start, kmer_start + k)
+                cover_range_for_probe_in_subsequence_fn(
+                    probe_seq, subsequence, kmer_start, kmer_start + k)
             if cover_range is None:
                 # probe does not meet the threshold for covering this
                 # subsequence
@@ -537,7 +539,6 @@ def probe_covers_sequence_by_longest_common_substring(mismatches=0,
         k-mer, returns whether the probe covers part of the sequence and,
         if so, which part
     """
-
     def lcf(probe_seq, sequence, kmer_start, kmer_end):
         l, start = longest_common_substring.k_lcf_around_anchor(
             probe_seq, sequence, kmer_start, kmer_end, mismatches)

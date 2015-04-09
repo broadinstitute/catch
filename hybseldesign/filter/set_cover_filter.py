@@ -101,14 +101,16 @@ class SetCoverFilter(BaseFilter):
                 probes.
         """
         self.cover_range_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(mismatches, lcf_thres)
+            probe.probe_covers_sequence_by_longest_common_substring(
+                mismatches, lcf_thres)
 
         if not mismatches_tolerant:
             mismatches_tolerant = mismatches
         if not lcf_thres_tolerant:
             lcf_thres_tolerant = lcf_thres
         self.cover_range_tolerant_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(mismatches_tolerant, lcf_thres_tolerant)
+            probe.probe_covers_sequence_by_longest_common_substring(
+                mismatches_tolerant, lcf_thres_tolerant)
 
         # Warn if identification is enabled but the coverage is high
         if identify:
@@ -174,8 +176,7 @@ class SetCoverFilter(BaseFilter):
                     probe_cover_ranges = probe.find_probe_covers_in_sequence(
                         sequence, kmer_probe_map,
                         k=self.kmer_size,
-                        cover_range_for_probe_in_subsequence_fn=
-                        self.cover_range_fn)
+                        cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
                     # Add the bases of sequence that are covered by all the
                     # probes into sets with universe_id equal to (i,j)
                     for p, cover_ranges in probe_cover_ranges.iteritems():
@@ -234,8 +235,7 @@ class SetCoverFilter(BaseFilter):
             probe_cover_ranges = probe.find_probe_covers_in_sequence(
                 sequence, kmer_probe_map,
                 k=self.kmer_size,
-                cover_range_for_probe_in_subsequence_fn=
-                self.cover_range_tolerant_fn)
+                cover_range_for_probe_in_subsequence_fn=self.cover_range_tolerant_fn)
 
             all_cover_ranges = []
             for p, cover_ranges in probe_cover_ranges.iteritems():

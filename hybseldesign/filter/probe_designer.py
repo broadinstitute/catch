@@ -53,7 +53,8 @@ class ProbeDesigner:
         for genomes_from_group in self.genomes:
             for g in genomes_from_group:
                 self.candidate_probes += candidate_probes.\
-                    make_candidate_probes_from_sequences(g.seqs, **replicate_args)
+                    make_candidate_probes_from_sequences(g.seqs,
+                                                         **replicate_args)
 
         probes = self.candidate_probes
         for f in self.filters:
