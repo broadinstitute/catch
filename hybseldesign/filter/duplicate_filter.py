@@ -15,14 +15,13 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 class DuplicateFilter(BaseFilter):
 
-  """Filter that removes duplicates.
-  """
-
-  def _filter(self, input):
-    """Return a subset of the input probes.
+    """Filter that removes duplicates.
     """
-    # `return list(set(input))` would be a short way to produce
-    # non-duplicate probes, but would not preserve the input
-    # order. Instead, preserve the order with an OrderedDict.
-    return list(OrderedDict.fromkeys(input))
 
+    def _filter(self, input):
+        """Return a subset of the input probes.
+        """
+        # `return list(set(input))` would be a short way to produce
+        # non-duplicate probes, but would not preserve the input
+        # order. Instead, preserve the order with an OrderedDict.
+        return list(OrderedDict.fromkeys(input))

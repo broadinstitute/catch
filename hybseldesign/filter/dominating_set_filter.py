@@ -39,52 +39,51 @@ logger = logging.getLogger(__name__)
 
 class DominatingSetFilter(BaseFilter):
 
-  """Filter that selects candidate probes with a dominating set approach.
-  """
-
-  def __init__(self, are_redundant_fn=None):
+    """Filter that selects candidate probes with a dominating set approach.
     """
-    Args:
-        are_redundant_fn: function that takes as input two probes
-            and returns True iff the two are deemed redundant
-    """
-    if are_redundant_fn == None:
-      # Use the shift and mismatch count method by default, with
-      # parameters ensuring that two probes are deemed redundant
-      # iff they are identical (i.e., no shift with no mismatches
-      # between the two)
-      are_redundant_fn = redundant_shift_and_mismatch_count(
-                          shift=0, mismatch_thres=0)
-    self.are_redundant_fn = are_redundant_fn
 
-  def _filter(self, input):
-    """Return a subset of the input probes.
-    """
-    # Ensure that the input is a list
-    input = list(input)
+    def __init__(self, are_redundant_fn=None):
+        """
+        Args:
+            are_redundant_fn: function that takes as input two probes
+                and returns True iff the two are deemed redundant
+        """
+        if are_redundant_fn is None:
+            # Use the shift and mismatch count method by default, with
+            # parameters ensuring that two probes are deemed redundant
+            # iff they are identical (i.e., no shift with no mismatches
+            # between the two)
+            are_redundant_fn = redundant_shift_and_mismatch_count(
+                shift=0, mismatch_thres=0)
+        self.are_redundant_fn = are_redundant_fn
 
-    # In the instance of set cover, we have a set S for each probe P
-    # in which S consists of P as well as all other probes redundant
-    # to P. Construct these sets.
-    sets = defaultdict(set)
-    for i in xrange(len(input)):
-      if i % 100 == 0:
-        logger.info("Making set for candidate probe %d of %d",
-          i, len(input))
-      probe_a = input[i]
-      # Put probe_a into its set
-      sets[i].add(probe_a)
-      # Find all other probes redundant to probe_a
-      for j in xrange(i+1, len(input)):
-        probe_b = input[j]
-        if self.are_redundant_fn(probe_a, probe_b):
-          # Put probe_b into probe_a's set (set[i]), and also put
-          # probe_a into probe_b's set (set[j])
-          sets[i].add(probe_b)
-          sets[j].add(probe_a)
+    def _filter(self, input):
+        """Return a subset of the input probes.
+        """
+        # Ensure that the input is a list
+        input = list(input)
 
-    # Run the set cover approximation algorithm
-    set_ids_in_cover = set_cover.approx(sets)
+        # In the instance of set cover, we have a set S for each probe P
+        # in which S consists of P as well as all other probes redundant
+        # to P. Construct these sets.
+        sets = defaultdict(set)
+        for i in xrange(len(input)):
+            if i % 100 == 0:
+                logger.info("Making set for candidate probe %d of %d",
+                            i, len(input))
+            probe_a = input[i]
+            # Put probe_a into its set
+            sets[i].add(probe_a)
+            # Find all other probes redundant to probe_a
+            for j in xrange(i + 1, len(input)):
+                probe_b = input[j]
+                if self.are_redundant_fn(probe_a, probe_b):
+                    # Put probe_b into probe_a's set (set[i]), and also put
+                    # probe_a into probe_b's set (set[j])
+                    sets[i].add(probe_b)
+                    sets[j].add(probe_a)
 
-    return [input[id] for id in set_ids_in_cover]
+        # Run the set cover approximation algorithm
+        set_ids_in_cover = set_cover.approx(sets)
 
+        return [input[id] for id in set_ids_in_cover]

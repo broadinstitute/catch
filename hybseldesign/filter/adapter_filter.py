@@ -123,223 +123,223 @@ ADAPTER_B_3END = 'GACCTTTTGGGACAGCGGTG'
 
 class AdapterFilter(BaseFilter):
 
-  """Filter that adds adapters to probes.
-  """
-
-  def __init__(self, mismatches=0, lcf_thres=100,
-      kmer_size=15, num_kmers_per_probe=10):
+    """Filter that adds adapters to probes.
     """
-    Args:
-        mismatches/lcf_thres: consider a probe to hybridize to a
-            sequence if a stretch of 'lcf_thres' or more bp aligns with
-            'mismatches' or fewer mismatched bp
-        kmer_size: the number of bp in a kmer taken from a probe; this
-            is used when determining alignment to a sequence
-        num_kmers_per_probe: the number of kmers to randomly pick from
-            each probe for use when determining the alignment of probes
-            to a sequence
-    """
-    self.cover_range_fn = \
-        probe.probe_covers_sequence_by_longest_common_substring(
-            mismatches=mismatches, lcf_thres=lcf_thres)
-    self.kmer_size = kmer_size
-    self.num_kmers_per_probe = num_kmers_per_probe
 
-  def _votes_in_sequence(self, probes, sequence, kmer_probe_map):
-    """Compute votes for probes based on their overlap.
+    def __init__(self, mismatches=0, lcf_thres=100,
+                 kmer_size=15, num_kmers_per_probe=10):
+        """
+        Args:
+            mismatches/lcf_thres: consider a probe to hybridize to a
+                sequence if a stretch of 'lcf_thres' or more bp aligns with
+                'mismatches' or fewer mismatched bp
+            kmer_size: the number of bp in a kmer taken from a probe; this
+                is used when determining alignment to a sequence
+            num_kmers_per_probe: the number of kmers to randomly pick from
+                each probe for use when determining the alignment of probes
+                to a sequence
+        """
+        self.cover_range_fn = \
+            probe.probe_covers_sequence_by_longest_common_substring(
+                mismatches=mismatches, lcf_thres=lcf_thres)
+        self.kmer_size = kmer_size
+        self.num_kmers_per_probe = num_kmers_per_probe
 
-    Votes are determined by first determining the probes' hybridization
-    (alignment) to sequence (e.g., one target genome) and then
-    by considering their overlap.
+    def _votes_in_sequence(self, probes, sequence, kmer_probe_map):
+        """Compute votes for probes based on their overlap.
 
-    We use the greedy interval scheduling algorithm and assign 'A'
-    votes to all probes selected by this algorithm. All other probes
-    that hybridize to 'sequence' but are not selected receive a 'B'
-    vote.
+        Votes are determined by first determining the probes' hybridization
+        (alignment) to sequence (e.g., one target genome) and then
+        by considering their overlap.
 
-    Args:
-        probes: a list of candidate probes for which to determine votes
-        sequence: a string of a sequence (e.g., from a target genome)
-            to use when determining overlap among probes
-        kmer_probe_map: dict mapping kmers to probes
+        We use the greedy interval scheduling algorithm and assign 'A'
+        votes to all probes selected by this algorithm. All other probes
+        that hybridize to 'sequence' but are not selected receive a 'B'
+        vote.
 
-    Returns:
-        A list L, in which L[i] corresponds to the probe probes[i].
-        L[i] is either (1,0) [vote for 'A'], (0,1) [vote for 'B'], or
-        (0,0) [the probe does not hybridize in 'sequence'].
-    """
-    probe_cover_ranges = probe.find_probe_covers_in_sequence(
-        sequence, kmer_probe_map, k=self.kmer_size,
-        cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
-    aligned_probes = set(probe_cover_ranges.keys())
-    # Make a list of all the intervals covered by all the probes,
-    # along with a reference to the probe with the interval
-    intervals = []
-    for p, cover_ranges in probe_cover_ranges.iteritems():
-      for cover_range in cover_ranges:
-        intervals += [ (cover_range, p) ]
+        Args:
+            probes: a list of candidate probes for which to determine votes
+            sequence: a string of a sequence (e.g., from a target genome)
+                to use when determining overlap among probes
+            kmer_probe_map: dict mapping kmers to probes
 
-    # Perform interval scheduling to choose probes that should be
-    # assigned the 'A' adapter
-    chosen_probes = set(interval.schedule(intervals))
+        Returns:
+            A list L, in which L[i] corresponds to the probe probes[i].
+            L[i] is either (1,0) [vote for 'A'], (0,1) [vote for 'B'], or
+            (0,0) [the probe does not hybridize in 'sequence'].
+        """
+        probe_cover_ranges = probe.find_probe_covers_in_sequence(
+            sequence, kmer_probe_map, k=self.kmer_size,
+            cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
+        aligned_probes = set(probe_cover_ranges.keys())
+        # Make a list of all the intervals covered by all the probes,
+        # along with a reference to the probe with the interval
+        intervals = []
+        for p, cover_ranges in probe_cover_ranges.iteritems():
+            for cover_range in cover_ranges:
+                intervals += [(cover_range, p)]
 
-    votes = []
-    for p in probes:
-      if p in chosen_probes:
-        # vote for 'A'
-        vote = (1,0)
-      else:
-        if p in aligned_probes:
-          # p should have been skipped by the interval scheduling
-          # algorithm
-          # vote for 'B'
-          vote = (0,1)
-        else:
-          # p does not hybridize to sequence
-          vote = (0,0)
-      votes += [vote]
-    return votes
+        # Perform interval scheduling to choose probes that should be
+        # assigned the 'A' adapter
+        chosen_probes = set(interval.schedule(intervals))
 
-  def _flip_AB_votes(self, votes):
-    """Exchange 'A' votes with 'B' votes.
+        votes = []
+        for p in probes:
+            if p in chosen_probes:
+                # vote for 'A'
+                vote = (1, 0)
+            else:
+                if p in aligned_probes:
+                    # p should have been skipped by the interval scheduling
+                    # algorithm
+                    # vote for 'B'
+                    vote = (0, 1)
+                else:
+                    # p does not hybridize to sequence
+                    vote = (0, 0)
+            votes += [vote]
+        return votes
 
-    Args:
-        votes: a list of tuples (a,b) in which a represents a number
-            of A votes and b represents a number of B votes; each
-            tuple typically corresponds to a candidate probe
+    def _flip_AB_votes(self, votes):
+        """Exchange 'A' votes with 'B' votes.
 
-    Returns:
-        A list of tuples (b,a), each corresponding to a tuple in the
-        input, where the 'A' votes are swapped with the 'B' votes.
-    """
-    votes_flipped = []
-    for vote in votes:
-      assert len(vote) == 2
-      votes_flipped += [ (vote[1], vote[0]) ]
-    return votes_flipped
+        Args:
+            votes: a list of tuples (a,b) in which a represents a number
+                of A votes and b represents a number of B votes; each
+                tuple typically corresponds to a candidate probe
 
-  def _sum_plurality_vote_across_probes(self, votes):
-    """Sum the plurality vote across each probe in votes.
+        Returns:
+            A list of tuples (b,a), each corresponding to a tuple in the
+            input, where the 'A' votes are swapped with the 'B' votes.
+        """
+        votes_flipped = []
+        for vote in votes:
+            assert len(vote) == 2
+            votes_flipped += [(vote[1], vote[0])]
+        return votes_flipped
 
-    Args:
-        votes: a list of tuples in which each tuple corresponds to
-            votes made by a candidate probe
+    def _sum_plurality_vote_across_probes(self, votes):
+        """Sum the plurality vote across each probe in votes.
 
-    Returns:
-        The sum, for all probes in votes, of the count of the vote
-        that received the most number of votes.
-    """
-    return sum(max(v) for v in votes)
+        Args:
+            votes: a list of tuples in which each tuple corresponds to
+                votes made by a candidate probe
 
-  def _sum_votes_per_probe(self, votes_x, votes_y):
-    """Add corresponding votes from votes_x and votes_y.
+        Returns:
+            The sum, for all probes in votes, of the count of the vote
+            that received the most number of votes.
+        """
+        return sum(max(v) for v in votes)
 
-    Args:
-        votes_x: a list of tuples, one per probe, representing votes
-        votes_y: a list of tuples, one per probe, representing votes
+    def _sum_votes_per_probe(self, votes_x, votes_y):
+        """Add corresponding votes from votes_x and votes_y.
 
-    Returns:
-        For each probe, the votes in votes_x plus the votes in
-        votes_y. For example, let votes_x=[(1,2), (0,3)] and
-        votes_y=[(0,1), (1,1)]. (These represent two probes.) The
-        summed votes, as returned, are [(1,3), (1,4)].
-    """
-    assert len(votes_x) == len(votes_y)
-    votes_sum = []
-    for i in xrange(len(votes_x)):
-      vote_x, vote_y = votes_x[i], votes_y[i]
-      # They must represent the same number of adapters (e.g., for
-      # 'A' and 'B' adapters), this length should be 2
-      assert len(vote_x) == len(vote_y)
-      votes_sum += [ tuple(x+y for x,y in zip(vote_x, vote_y)) ]
-    return votes_sum
+        Args:
+            votes_x: a list of tuples, one per probe, representing votes
+            votes_y: a list of tuples, one per probe, representing votes
 
-  def _make_votes_across_target_genomes(self, probes):
-    """Compute, for each probe, votes for adapters to the probe.
+        Returns:
+            For each probe, the votes in votes_x plus the votes in
+            votes_y. For example, let votes_x=[(1,2), (0,3)] and
+            votes_y=[(0,1), (1,1)]. (These represent two probes.) The
+            summed votes, as returned, are [(1,3), (1,4)].
+        """
+        assert len(votes_x) == len(votes_y)
+        votes_sum = []
+        for i in xrange(len(votes_x)):
+            vote_x, vote_y = votes_x[i], votes_y[i]
+            # They must represent the same number of adapters (e.g., for
+            # 'A' and 'B' adapters), this length should be 2
+            assert len(vote_x) == len(vote_y)
+            votes_sum += [tuple(x + y for x, y in zip(vote_x, vote_y))]
+        return votes_sum
 
-    Votes are computed, cumulatively, across all the target genomes in
-    self.target_genomes.
+    def _make_votes_across_target_genomes(self, probes):
+        """Compute, for each probe, votes for adapters to the probe.
 
-    Args:
-        probes: list of candidate probes
+        Votes are computed, cumulatively, across all the target genomes in
+        self.target_genomes.
 
-    Returns:
-        a list L such that L[i] is a tuple (A,B) where A gives the
-        number of 'A' adapter votes for the probe probes[i] and B gives
-        the number of 'B' adapter votes.
-    """
-    logger.info("Building map from k-mers to probes")
-    kmer_probe_map = probe.construct_kmer_probe_map(probes,
-        k=self.kmer_size,
-        num_kmers_per_probe=self.num_kmers_per_probe,
-        include_positions=True)
+        Args:
+            probes: list of candidate probes
 
-    def iter_all_seqs():
-      for genomes_from_group in self.target_genomes:
-        for g in genomes_from_group:
-          for seq in g.seqs:
-            yield seq
+        Returns:
+            a list L such that L[i] is a tuple (A,B) where A gives the
+            number of 'A' adapter votes for the probe probes[i] and B gives
+            the number of 'B' adapter votes.
+        """
+        logger.info("Building map from k-mers to probes")
+        kmer_probe_map = probe.construct_kmer_probe_map(
+            probes,
+            k=self.kmer_size,
+            num_kmers_per_probe=self.num_kmers_per_probe,
+            include_positions=True)
 
-    # Store adapter votes for each probe in a list where the element
-    # at index i is a tuple (A,B) that corresponds to the probe
-    # probes[i] where A gives the 'A' votes for the probe and B gives
-    # the 'B' votes
-    cumulative_votes = [(0,0) for _ in xrange(len(probes))]
-    for sequence in iter_all_seqs():
-      # Compute votes for the adapters for each probe in 'sequence',
-      # and also exchange all 'A' votes with 'B' votes and vice-versa.
-      # Determine whether or not the exchange matches better with
-      # cumulative_votes so far, and update cumulative_votes
-      # accordingly.
-      votes = self._votes_in_sequence(probes, sequence,
-                kmer_probe_map)
-      votes_flipped = self._flip_AB_votes(votes)
-      cumulative_votes_with_nonflipped = self._sum_votes_per_probe(
-          cumulative_votes, votes)
-      sum_nonflipped = self._sum_plurality_vote_across_probes(
-          cumulative_votes_with_nonflipped)
-      cumulative_votes_with_flipped = self._sum_votes_per_probe(
-          cumulative_votes, votes_flipped)
-      sum_flipped = self._sum_plurality_vote_across_probes(
-          cumulative_votes_with_flipped)
-      if sum_flipped > sum_nonflipped:
-        # Add onto cumulative votes the votes in 'votes_flipped'
-        # because these could be said to yield a more decisive
-        # choice of adapter for each probe (i.e., the sum, across
-        # all probes, of the most common vote of adapter for the
-        # probe is higher) than the (unflipped) votes in 'votes'
-        cumulative_votes = cumulative_votes_with_flipped
-      else:
-        cumulative_votes = cumulative_votes_with_nonflipped
-    return cumulative_votes
+        def iter_all_seqs():
+            for genomes_from_group in self.target_genomes:
+                for g in genomes_from_group:
+                    for seq in g.seqs:
+                        yield seq
 
-  def _filter(self, input):
-    """Add adapters to input probes.
-    """
-    # Ensure that the input is a list
-    input = list(input)
+        # Store adapter votes for each probe in a list where the element
+        # at index i is a tuple (A,B) that corresponds to the probe
+        # probes[i] where A gives the 'A' votes for the probe and B gives
+        # the 'B' votes
+        cumulative_votes = [(0, 0) for _ in xrange(len(probes))]
+        for sequence in iter_all_seqs():
+            # Compute votes for the adapters for each probe in 'sequence',
+            # and also exchange all 'A' votes with 'B' votes and vice-versa.
+            # Determine whether or not the exchange matches better with
+            # cumulative_votes so far, and update cumulative_votes
+            # accordingly.
+            votes = self._votes_in_sequence(probes, sequence,
+                                            kmer_probe_map)
+            votes_flipped = self._flip_AB_votes(votes)
+            cumulative_votes_with_nonflipped = self._sum_votes_per_probe(
+                cumulative_votes, votes)
+            sum_nonflipped = self._sum_plurality_vote_across_probes(
+                cumulative_votes_with_nonflipped)
+            cumulative_votes_with_flipped = self._sum_votes_per_probe(
+                cumulative_votes, votes_flipped)
+            sum_flipped = self._sum_plurality_vote_across_probes(
+                cumulative_votes_with_flipped)
+            if sum_flipped > sum_nonflipped:
+                # Add onto cumulative votes the votes in 'votes_flipped'
+                # because these could be said to yield a more decisive
+                # choice of adapter for each probe (i.e., the sum, across
+                # all probes, of the most common vote of adapter for the
+                # probe is higher) than the (unflipped) votes in 'votes'
+                cumulative_votes = cumulative_votes_with_flipped
+            else:
+                cumulative_votes = cumulative_votes_with_nonflipped
+        return cumulative_votes
 
-    logger.info("Computing adapter votes across all target genomes")
-    votes = self._make_votes_across_target_genomes(input)
+    def _filter(self, input):
+        """Add adapters to input probes.
+        """
+        # Ensure that the input is a list
+        input = list(input)
 
-    # Using votes, select the adapter for each probe (the one with
-    # the most number of votes) and create a new probe that has
-    # this adapter on both ends
-    logger.info("Adding adapters to probes based on votes")
-    input_with_adapters = []
-    for i in xrange(len(input)):
-      p = input[i]
-      vote = votes[i]
-      # Only work with 'A' and 'B' adapters
-      assert len(vote) == 2
-      if vote[0] > vote[1]:
-        # Add an 'A' adapter
-        new_p = p.with_prepended_str(ADAPTER_A_5END).\
-                  with_appended_str(ADAPTER_A_3END)
-      else:
-        # Add a 'B' adapter
-        new_p = p.with_prepended_str(ADAPTER_B_5END).\
-                  with_appended_str(ADAPTER_B_3END)
-      input_with_adapters += [new_p]
-    return input_with_adapters
+        logger.info("Computing adapter votes across all target genomes")
+        votes = self._make_votes_across_target_genomes(input)
 
+        # Using votes, select the adapter for each probe (the one with
+        # the most number of votes) and create a new probe that has
+        # this adapter on both ends
+        logger.info("Adding adapters to probes based on votes")
+        input_with_adapters = []
+        for i in xrange(len(input)):
+            p = input[i]
+            vote = votes[i]
+            # Only work with 'A' and 'B' adapters
+            assert len(vote) == 2
+            if vote[0] > vote[1]:
+                # Add an 'A' adapter
+                new_p = p.with_prepended_str(ADAPTER_A_5END).\
+                    with_appended_str(ADAPTER_A_3END)
+            else:
+                # Add a 'B' adapter
+                new_p = p.with_prepended_str(ADAPTER_B_5END).\
+                    with_appended_str(ADAPTER_B_3END)
+            input_with_adapters += [new_p]
+        return input_with_adapters

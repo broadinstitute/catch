@@ -15,4 +15,4 @@ setup(name='hybseldesign',
       author_email='hayden@mit.edu',
       packages=find_packages(),
       requires=['numpy'],
-)
+      )

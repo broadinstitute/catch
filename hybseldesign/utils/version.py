@@ -8,8 +8,8 @@ import subprocess
 __author__ = "dpark@broadinstitute.org"
 __version__ = None
 
- 
-def get_module_path() :
+
+def get_module_path():
     """Return the absolute path of the top-level project.
 
     It is assumed to be the parent of the directory containing
@@ -23,13 +23,14 @@ def get_module_path() :
     path = os.path.dirname(path)     # hybseldesign directory
     return path
 
+
 def call_git_describe():
     cwd = os.getcwd()
     try:
         os.chdir(get_module_path())
         cmd = ['git', 'describe', '--tags', '--always', '--dirty']
         out = subprocess.check_output(cmd)
-        if type(out) != str:
+        if not isinstance(out, str):
             out = out.decode('utf-8')
         ver = out.strip()
     except:
@@ -37,9 +38,11 @@ def call_git_describe():
     os.chdir(cwd)
     return ver
 
+
 def release_file():
     return os.path.join(get_module_path(), 'VERSION')
- 
+
+
 def read_release_version():
     try:
         with open(release_file(), 'rt') as inf:
@@ -47,29 +50,31 @@ def read_release_version():
     except:
         version = None
     return version
- 
+
+
 def write_release_version(version):
     with open(release_file(), 'wt') as outf:
-        outf.write(version+'\n')
+        outf.write(version + '\n')
+
 
 def get_version():
     global __version__
-    if __version__ == None:
-        from_git  = call_git_describe()
+    if __version__ is None:
+        from_git = call_git_describe()
         from_file = read_release_version()
-        
+
         if from_git:
             if from_file != from_git:
                 write_release_version(from_git)
             __version__ = from_git
         else:
             __version__ = from_file
-        
-        if __version__ == None:
+
+        if __version__ is None:
             raise ValueError("Cannot find the version number!")
-    
+
     return __version__
- 
- 
+
+
 if __name__ == "__main__":
     print(get_version())
