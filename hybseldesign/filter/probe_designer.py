@@ -1,11 +1,11 @@
 """Designs probes with a filtering approach.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import logging
 
 from hybseldesign.filter import candidate_probes
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,13 @@
 """Tests for reverse_complement_filter module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 import unittest
 
-from hybseldesign import probe
 from hybseldesign.filter import reverse_complement_filter
+from hybseldesign import probe
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestReverseComplementFilter(unittest.TestCase):

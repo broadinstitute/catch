@@ -1,14 +1,14 @@
 """Tests for seq_io module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
 import logging
+import unittest
 
+from hybseldesign.datasets import ebola2014
 from hybseldesign import genome
 from hybseldesign.utils import seq_io
-from hybseldesign.datasets import ebola2014
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestEbola2014FASTARead(unittest.TestCase):

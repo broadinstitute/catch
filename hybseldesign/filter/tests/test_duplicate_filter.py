@@ -1,12 +1,12 @@
 """Tests for duplicate_filter module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import unittest
 
-from hybseldesign import probe
 from hybseldesign.filter import duplicate_filter
+from hybseldesign import probe
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestDuplicateFilter(unittest.TestCase):

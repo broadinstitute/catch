@@ -1,11 +1,11 @@
 """Tests for interval module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import unittest
 
 from hybseldesign.utils import interval
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestMergeOverlapping(unittest.TestCase):

@@ -1,11 +1,11 @@
 """Functions for computing the longest common substring between two sequences.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 from collections import deque
 
 import numpy as np
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 def k_lcf(a, b, k):

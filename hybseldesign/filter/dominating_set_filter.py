@@ -26,13 +26,13 @@ list). Redundancy (i.e., an edge between two vertices) is determined
 by self.are_redundant_fn.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import logging
 from collections import defaultdict
+import logging
 
 from hybseldesign.filter.base_filter import BaseFilter
 from hybseldesign.utils import set_cover
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 

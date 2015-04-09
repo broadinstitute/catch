@@ -1,9 +1,9 @@
 """Utilities involving logging.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 import logging
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 def configure_logging(level=logging.WARNING):

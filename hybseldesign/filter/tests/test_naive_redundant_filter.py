@@ -1,13 +1,13 @@
 """Tests for naive_redundant_filter module.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-import unittest
 import logging
+import unittest
 
-from hybseldesign import probe
 from hybseldesign.filter import naive_redundant_filter as nrf
+from hybseldesign import probe
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestNaiveRedundantFilterShiftAndMismatchCount(unittest.TestCase):

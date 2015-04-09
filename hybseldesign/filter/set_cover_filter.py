@@ -42,17 +42,17 @@ considering the longest common substring with some number of
 mismatches between a sequence and a probe.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
+from array import array
+from collections import defaultdict
 import logging
 import re
-from collections import defaultdict
-from array import array
 
-from hybseldesign import probe
 from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign.utils import set_cover
+from hybseldesign import probe
 from hybseldesign.utils import seq_io
+from hybseldesign.utils import set_cover
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 
