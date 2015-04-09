@@ -1,12 +1,13 @@
 """Setup script for the hybseldesign distribution using Distutils.
 """
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
-from setuptools import setup
 from setuptools import find_packages
+from setuptools import setup
 
 import hybseldesign
+
+__author__ = 'Hayden Metsky <hayden@mit.edu>'
+
 
 setup(name='hybseldesign',
       version=hybseldesign.__version__,
