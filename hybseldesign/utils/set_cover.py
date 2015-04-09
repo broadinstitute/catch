@@ -137,14 +137,16 @@ def approx(sets, costs=None, p=1.0):
         set_ids_in_cover.add(id_min_ratio)
         set_ids_not_in_cover.remove(id_min_ratio)
         universe.difference_update(sets[id_min_ratio])
-        num_left_to_cover = max(0,
-                                len(universe) - num_that_can_be_uncovered)
+        num_left_to_cover = max(0, len(universe) - num_that_can_be_uncovered)
 
     return set_ids_in_cover
 
 
-def approx_multiuniverse(sets, costs=None, universe_p=None,
-                         ranks=None, use_arrays=False):
+def approx_multiuniverse(sets,
+                         costs=None,
+                         universe_p=None,
+                         ranks=None,
+                         use_arrays=False):
     """Approximates the solution to a "multiuniverse" set problem.
 
     We define the "multiuniverse" set problem to be a version of the
@@ -253,8 +255,8 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
                 raise ValueError("All costs must be nonnegative")
         for set_id in sets.keys():
             if set_id not in costs:
-                raise ValueError("costs is missing a value for set %d"
-                                 % set_id)
+                raise ValueError("costs is missing a value for set %d" %
+                                 set_id)
 
     # Create the universes from given sets
     universes = defaultdict(set)
@@ -289,8 +291,8 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
     else:
         for set_id in sets.keys():
             if set_id not in ranks:
-                raise ValueError("ranks is missing a value for set %d"
-                                 % set_id)
+                raise ValueError("ranks is missing a value for set %d" %
+                                 set_id)
     # Track the current index (curr_rank_index) as we step through all
     # of the ranks (rank_vals)
     rank_vals = sorted(set(ranks.values()))
@@ -320,8 +322,10 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
     # memoize the sizes of the intersections of universes with sets
     # and discard memoized values for a particular universe U_i when
     # U_i is updated.
-    memoized_intersect_counts = {universe_id: {} for universe_id
-                                 in universes.keys()}
+    memoized_intersect_counts = {
+        universe_id: {}
+        for universe_id in universes.keys()
+    }
 
     set_ids_not_in_cover = set(sets.keys())
     set_ids_in_cover = set()
@@ -364,8 +368,7 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
             for universe_id in sets[set_id].keys():
                 if set_id in memoized_intersect_counts[universe_id]:
                     # We have num_covered memoized
-                    num_covered = memoized_intersect_counts[
-                        universe_id][set_id]
+                    num_covered = memoized_intersect_counts[universe_id][set_id]
                 else:
                     s = sets[set_id][universe_id]
                     universe = universes[universe_id]
@@ -379,8 +382,7 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
                         s = set(s)
                     num_covered = len(s.intersection(universe))
                     # Memoize num_covered
-                    memoized_intersect_counts[
-                        universe_id][set_id] = num_covered
+                    memoized_intersect_counts[universe_id][set_id] = num_covered
                 # There is no need to cover more than num_left_to_cover
                 # elements for this universe
                 num_needed_covered = min(num_left_to_cover[universe_id],
@@ -413,9 +415,7 @@ def approx_multiuniverse(sets, costs=None, universe_p=None,
             else:
                 universe.difference_update(s)
             num_left_to_cover[universe_id] = max(
-                0,
-                len(universe) -
-                num_that_can_be_uncovered[universe_id])
+                0, len(universe) - num_that_can_be_uncovered[universe_id])
             if len(universe) != prev_universe_size:
                 # The universe was modified, so discard all memoized
                 # intersection counts that involve this universe

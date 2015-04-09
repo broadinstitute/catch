@@ -14,7 +14,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestAdapterFilter(unittest.TestCase):
-
     """Tests the adapter filter output on contrived input.
     """
 
@@ -22,19 +21,12 @@ class TestAdapterFilter(unittest.TestCase):
         # Disable logging
         logging.disable(logging.INFO)
 
-    def get_filter_and_output(
-            self,
-            lcf_thres,
-            mismatches,
-            target_genomes,
-            input_probes,
-            k,
-            num_kmers_per_probe):
-        f = af.AdapterFilter(
-            mismatches=mismatches,
-            lcf_thres=lcf_thres,
-            kmer_size=k,
-            num_kmers_per_probe=num_kmers_per_probe)
+    def get_filter_and_output(self, lcf_thres, mismatches, target_genomes,
+                              input_probes, k, num_kmers_per_probe):
+        f = af.AdapterFilter(mismatches=mismatches,
+                             lcf_thres=lcf_thres,
+                             kmer_size=k,
+                             num_kmers_per_probe=num_kmers_per_probe)
         f.target_genomes = target_genomes
         f.filter(input_probes)
         return (f, f.output_probes)
@@ -76,13 +68,11 @@ class TestAdapterFilter(unittest.TestCase):
         """
         probes = []
         for p_str in probe_str_a:
-            probes += [probe.Probe.from_str(p_str).
-                       with_prepended_str(af.ADAPTER_A_5END).
-                       with_appended_str(af.ADAPTER_A_3END)]
+            probes += [probe.Probe.from_str(p_str).with_prepended_str(
+                af.ADAPTER_A_5END).with_appended_str(af.ADAPTER_A_3END)]
         for p_str in probe_str_b:
-            probes += [probe.Probe.from_str(p_str).
-                       with_prepended_str(af.ADAPTER_B_5END).
-                       with_appended_str(af.ADAPTER_B_3END)]
+            probes += [probe.Probe.from_str(p_str).with_prepended_str(
+                af.ADAPTER_B_5END).with_appended_str(af.ADAPTER_B_3END)]
         return probes
 
     def convert_target_genomes(self, target_genomes):
@@ -113,13 +103,16 @@ class TestAdapterFilter(unittest.TestCase):
         for genomes_from_group in target_genomes:
             for g in genomes_from_group:
                 input += cp.make_candidate_probes_from_sequences(
-                    g.seqs, probe_length=6, probe_stride=3)
+                    g.seqs,
+                    probe_length=6,
+                    probe_stride=3)
 
-        f, output = self.get_filter_and_output(6, 0, target_genomes,
-                                               input, 3, 10)
-        desired_output = self.make_probes_with_adapters(
-            ['ABCDEF', 'GHIJKL', 'MNOPQR', 'STUVWX'],
-            ['DEFGHI', 'JKLMNO', 'PQRSTU', 'UVWXYZ'])
+        f, output = self.get_filter_and_output(6, 0, target_genomes, input, 3,
+                                               10)
+        desired_output = self.make_probes_with_adapters(['ABCDEF', 'GHIJKL',
+                                                         'MNOPQR', 'STUVWX'],
+                                                        ['DEFGHI', 'JKLMNO',
+                                                         'PQRSTU', 'UVWXYZ'])
         self.assertItemsEqual(output, desired_output)
 
     def test_two_genomes(self):
@@ -131,15 +124,16 @@ class TestAdapterFilter(unittest.TestCase):
         for genomes_from_group in target_genomes:
             for g in genomes_from_group:
                 input += cp.make_candidate_probes_from_sequences(
-                    g.seqs, probe_length=6, probe_stride=3)
+                    g.seqs,
+                    probe_length=6,
+                    probe_stride=3)
 
-        f, output = self.get_filter_and_output(6, 0, target_genomes,
-                                               input, 3, 10)
+        f, output = self.get_filter_and_output(6, 0, target_genomes, input, 3,
+                                               10)
         desired_output = self.make_probes_with_adapters(
-            ['ABCDEF', 'GHIJKL', 'MNOPQR', 'STUVWX',
-             'ZYXWVU', 'TSRQPO', 'NMLKJI', 'HGFEDC'],
-            ['DEFGHI', 'JKLMNO', 'PQRSTU', 'UVWXYZ',
-             'WVUTSR', 'QPONML', 'KJIHGF', 'FEDCBA'])
+            ['ABCDEF', 'GHIJKL', 'MNOPQR', 'STUVWX', 'ZYXWVU', 'TSRQPO',
+             'NMLKJI', 'HGFEDC'], ['DEFGHI', 'JKLMNO', 'PQRSTU', 'UVWXYZ',
+                                   'WVUTSR', 'QPONML', 'KJIHGF', 'FEDCBA'])
         self.assertItemsEqual(output, desired_output)
 
     def test_almost_identical_probe(self):
@@ -151,17 +145,19 @@ class TestAdapterFilter(unittest.TestCase):
         two probes should be assigned adapter 'A' and the bottom two should
         be assigned adapter 'B'.
         """
-        target_genomes = [['ABCDEFGHIJKLMNOP',
-                           'ABCDEFGHXJKLMNOP']]
+        target_genomes = [['ABCDEFGHIJKLMNOP', 'ABCDEFGHXJKLMNOP']]
         target_genomes = self.convert_target_genomes(target_genomes)
         input = ['ABCDEF', 'FGHIJK', 'FGHXJK', 'KLMNOP']
         input = [probe.Probe.from_str(s) for s in input]
 
         for allowed_mismatches in [0, 1]:
-            f, output = self.get_filter_and_output(
-                6, allowed_mismatches, target_genomes, input, 3, 100)
-            desired_output = self.make_probes_with_adapters(
-                ['ABCDEF', 'KLMNOP'], ['FGHIJK', 'FGHXJK'])
+            f, output = self.get_filter_and_output(6, allowed_mismatches,
+                                                   target_genomes, input, 3,
+                                                   100)
+            desired_output = self.make_probes_with_adapters(['ABCDEF',
+                                                             'KLMNOP'],
+                                                            ['FGHIJK',
+                                                             'FGHXJK'])
             self.assertItemsEqual(output, desired_output)
 
             # Check votes too
@@ -177,48 +173,43 @@ class TestAdapterFilter(unittest.TestCase):
         """Test probes that align to two genomes, but in which the ones
         aligning to one genome are offset from the other.
         """
-        target_genomes = [['ABCDEFGHIJKLMNOPQR',
-                           'XYZABCDEFGHIJKLMNOPQR']]
+        target_genomes = [['ABCDEFGHIJKLMNOPQR', 'XYZABCDEFGHIJKLMNOPQR']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        input = ['XYZABC', 'ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO',
-                 'MNOPQR']
+        input = ['XYZABC', 'ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO', 'MNOPQR']
         input = [probe.Probe.from_str(s) for s in input]
 
-        f, output = self.get_filter_and_output(6, 0,
-                                               target_genomes, input, 3, 10)
+        f, output = self.get_filter_and_output(6, 0, target_genomes, input, 3,
+                                               10)
 
         # Assume 'ABCDEF' gets 'A' adapter and 'XYZABC' gets 'B' adapter,
         # and so on. But flipping the 'A' and 'B' adapters would also
         # be OK.
 
-        desired_output = self.make_probes_with_adapters(
-            ['ABCDEF', 'GHIJKL', 'MNOPQR'],
-            ['XYZABC', 'DEFGHI', 'JKLMNO'])
+        desired_output = self.make_probes_with_adapters(['ABCDEF', 'GHIJKL',
+                                                         'MNOPQR'],
+                                                        ['XYZABC', 'DEFGHI',
+                                                         'JKLMNO'])
         self.assertItemsEqual(output, desired_output)
 
         # Check votes too
         votes = f._make_votes_across_target_genomes(input)
-        self.assertEqual(
-            votes, [
-                (0, 1), (2, 0), (0, 2), (2, 0), (0, 2), (2, 0)])
+        self.assertEqual(votes, [(0, 1), (2, 0), (0, 2), (2, 0), (0, 2),
+                                 (2, 0)])
 
     def test_three_genomes(self):
         """Test probes that align adjacent to each other in one genome,
         but overlapping in two others. One should be assigned adapter 'A'
         and the other should be assigned adapter 'B'.
         """
-        target_genomes = [['ABCDEFGHEFKLMN',
-                           'ABCDEFKLMN',
-                           'ABCDEFKLMNO']]
+        target_genomes = [['ABCDEFGHEFKLMN', 'ABCDEFKLMN', 'ABCDEFKLMNO']]
         target_genomes = self.convert_target_genomes(target_genomes)
         input = ['ABCDEF', 'EFKLMN']
         input = [probe.Probe.from_str(s) for s in input]
 
-        f, output = self.get_filter_and_output(6, 0,
-                                               target_genomes, input, 3, 10)
+        f, output = self.get_filter_and_output(6, 0, target_genomes, input, 3,
+                                               10)
 
-        desired_output = self.make_probes_with_adapters(
-            ['ABCDEF'], ['EFKLMN'])
+        desired_output = self.make_probes_with_adapters(['ABCDEF'], ['EFKLMN'])
         self.assertItemsEqual(output, desired_output)
 
         # Check votes too
@@ -226,23 +217,21 @@ class TestAdapterFilter(unittest.TestCase):
         self.assertEqual(votes, [(3, 0), (1, 2)])
 
     def test_with_mismatches(self):
-        target_genomes = [['ABCDEFGHIJKLMNO',
-                           'ABCXEFGXIJKXMNO',
-                           'ABCDEFGYYJKLMNO',
-                           'ABCDEXGHIJKLXNO',
-                           'ABCDEFGHIJKLMNX',
-                           'AXCDEFGHIJKLMNO',
+        target_genomes = [['ABCDEFGHIJKLMNO', 'ABCXEFGXIJKXMNO',
+                           'ABCDEFGYYJKLMNO', 'ABCDEXGHIJKLXNO',
+                           'ABCDEFGHIJKLMNX', 'AXCDEFGHIJKLMNO',
                            'ABCDEFGHIYYLMNO']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        input = ['ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO', 'DEFGYY',
-                 'GYYJKL', 'IYYLMN']
+        input = ['ABCDEF', 'DEFGHI', 'GHIJKL', 'JKLMNO', 'DEFGYY', 'GYYJKL',
+                 'IYYLMN']
         input = [probe.Probe.from_str(s) for s in input]
 
-        f, output = self.get_filter_and_output(6, 1, target_genomes,
-                                               input, 3, 10)
-        desired_output = self.make_probes_with_adapters(
-            ['ABCDEF', 'GHIJKL', 'GYYJKL', 'IYYLMN'],
-            ['DEFGHI', 'JKLMNO', 'DEFGYY'])
+        f, output = self.get_filter_and_output(6, 1, target_genomes, input, 3,
+                                               10)
+        desired_output = self.make_probes_with_adapters(['ABCDEF', 'GHIJKL',
+                                                         'GYYJKL', 'IYYLMN'],
+                                                        ['DEFGHI', 'JKLMNO',
+                                                         'DEFGYY'])
         self.assertItemsEqual(output, desired_output)
 
     def tearDown(self):

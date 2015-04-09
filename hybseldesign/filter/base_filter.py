@@ -5,7 +5,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class BaseFilter:
-
     """Abstract class representing a filter for processing candidate probes.
 
     A filter may operate in the more traditional sense of reducing the

@@ -37,7 +37,8 @@ def main(args):
     #     condense 'similar' probes down to one
     nf = naive_redundant_filter.NaiveRedundantFilter(
         naive_redundant_filter.redundant_shift_and_mismatch_count(
-            shift=args.shift, mismatch_thres=args.mismatch_thres))
+            shift=args.shift,
+            mismatch_thres=args.mismatch_thres))
     filters = [rc, df, nf]
 
     # Design the probes
@@ -57,30 +58,31 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-s",
-        "--shift",
+        "-s", "--shift",
         required=True,
         type=int,
-        help=(
-            "Shift one probe from -shift to +shift bp relative to "
-            "the other"))
+        help=("Shift one probe from -shift to +shift bp relative to "
+              "the other"))
     parser.add_argument(
-        "-m",
-        "--mismatch_thres",
+        "-m", "--mismatch_thres",
         required=True,
         type=int,
-        help=(
-            "Deem one probe redundant to another if, as one is "
-            "shifted relative to the other, the minimum number of "
-            "mismatches between them is <= 'mismatch_thres'"))
-    parser.add_argument("--debug", dest="log_level",
-                        action="store_const", const=logging.DEBUG,
+        help=("Deem one probe redundant to another if, as one is "
+              "shifted relative to the other, the minimum number of "
+              "mismatches between them is <= 'mismatch_thres'"))
+    parser.add_argument("--debug",
+                        dest="log_level",
+                        action="store_const",
+                        const=logging.DEBUG,
                         default=logging.WARNING,
                         help=("Debug output"))
-    parser.add_argument("--verbose", dest="log_level",
-                        action="store_const", const=logging.INFO,
+    parser.add_argument("--verbose",
+                        dest="log_level",
+                        action="store_const",
+                        const=logging.INFO,
                         help=("Verbose output"))
-    parser.add_argument('--version', '-V', action='version',
+    parser.add_argument('--version', '-V',
+                        action='version',
                         version=version.get_version())
     args = parser.parse_args()
 

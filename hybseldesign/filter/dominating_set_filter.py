@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 
 class DominatingSetFilter(BaseFilter):
-
     """Filter that selects candidate probes with a dominating set approach.
     """
 
@@ -54,7 +53,8 @@ class DominatingSetFilter(BaseFilter):
             # iff they are identical (i.e., no shift with no mismatches
             # between the two)
             are_redundant_fn = redundant_shift_and_mismatch_count(
-                shift=0, mismatch_thres=0)
+                shift=0,
+                mismatch_thres=0)
         self.are_redundant_fn = are_redundant_fn
 
     def _filter(self, input):
@@ -69,8 +69,8 @@ class DominatingSetFilter(BaseFilter):
         sets = defaultdict(set)
         for i in xrange(len(input)):
             if i % 100 == 0:
-                logger.info("Making set for candidate probe %d of %d",
-                            i, len(input))
+                logger.info("Making set for candidate probe %d of %d", i,
+                            len(input))
             probe_a = input[i]
             # Put probe_a into its set
             sets[i].add(probe_a)

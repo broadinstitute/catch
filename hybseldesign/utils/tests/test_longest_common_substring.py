@@ -9,7 +9,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestLCSWithKMismatches(unittest.TestCase):
-
     """Tests the k_lcf function.
     """
 
@@ -72,7 +71,6 @@ class TestLCSWithKMismatches(unittest.TestCase):
 
 
 class TestLCSAroundAnchorWithKMismatches(unittest.TestCase):
-
     """Tests the k_lcf_around_anchor function.
     """
 

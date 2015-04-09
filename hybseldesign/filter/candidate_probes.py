@@ -16,12 +16,11 @@ from hybseldesign.utils import seq_io
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
-def make_candidate_probes_from_sequence(
-        seq,
-        probe_length=100,
-        probe_stride=50,
-        min_n_string_length=2,
-        insert_bugs=False):
+def make_candidate_probes_from_sequence(seq,
+                                        probe_length=100,
+                                        probe_stride=50,
+                                        min_n_string_length=2,
+                                        insert_bugs=False):
     """Generate a list of candidate probes from a sequence.
 
     It is possible (especially when there are strings of N's) that
@@ -54,11 +53,9 @@ def make_candidate_probes_from_sequence(
     # Namely, if that subsequence contains no string of N's, then it
     # is a probe to be added and the probe is returned in a single-
     # valued list. Otherwise, an empty list is returned.
-    def add_probe_from_subsequence(
-            start,
-            end,
-            is_flanking_n_string=False,
-            is_bug_location=False):
+    def add_probe_from_subsequence(start, end,
+                                   is_flanking_n_string=False,
+                                   is_bug_location=False):
         subseq = seq[start:end]
         probes = []
 
@@ -116,10 +113,8 @@ def make_candidate_probes_from_sequence(
             # A bug was present that ignored the bases on the end
             pass
         else:
-            probes += add_probe_from_subsequence(
-                len(seq) -
-                probe_length,
-                len(seq))
+            probes += add_probe_from_subsequence(len(seq) - probe_length,
+                                                 len(seq))
 
     # Add probes flanking each string of N's. Specifically, add a probe
     # to the left of a string and to the right. The called function
@@ -128,29 +123,25 @@ def make_candidate_probes_from_sequence(
     for match in n_string_query.finditer(seq):
         if match.start() - probe_length >= 0:
             # Add the left flanking probe for match
-            probes += add_probe_from_subsequence(
-                match.start() -
-                probe_length,
-                match.start(),
-                is_flanking_n_string=True)
+            probes += add_probe_from_subsequence(match.start() - probe_length,
+                                                 match.start(),
+                                                 is_flanking_n_string=True)
         if match.end() + probe_length <= len(seq):
             # Add the right flanking probe for match
-            probes += add_probe_from_subsequence(
-                match.end(),
-                match.end() +
-                probe_length,
-                is_flanking_n_string=True)
+            probes += add_probe_from_subsequence(match.end(),
+                                                 match.end() + probe_length,
+                                                 is_flanking_n_string=True)
 
     return probes
 
 
 def make_candidate_probes_from_sequences(
-        seqs,
-        probe_length=100,
-        probe_stride=50,
-        min_n_string_length=2,
-        insert_bugs=False,
-        move_all_n_string_flanking_probes_to_end=False):
+    seqs,
+    probe_length=100,
+    probe_stride=50,
+    min_n_string_length=2,
+    insert_bugs=False,
+    move_all_n_string_flanking_probes_to_end=False):
     """Generate a list of candidate probes from a list of sequences.
 
     It is possible (perhaps even likely depending on where

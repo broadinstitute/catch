@@ -13,7 +13,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class Probe:
-
     """Immutable sequence representing a probe/bait.
     """
 
@@ -157,7 +156,9 @@ class Probe:
                 kmers.add(kmer)
         return kmers
 
-    def shares_some_kmers(self, other, k=10, num_kmers_to_test=10,
+    def shares_some_kmers(self, other,
+                          k=10,
+                          num_kmers_to_test=10,
                           memoize_kmers=True):
         """Determine whether this probe likely shares one or more k-mers with other.
 
@@ -220,11 +221,9 @@ class Probe:
                 other.kmers[k] = other.construct_kmers(k)
 
             if len(self.kmers_rand_choices[k][num_kmers_to_test]) == 0:
-                rand_kmers = np.random.choice(
-                    list(
-                        self.kmers[k]),
-                    size=num_kmers_to_test,
-                    replace=True)
+                rand_kmers = np.random.choice(list(self.kmers[k]),
+                                              size=num_kmers_to_test,
+                                              replace=True)
                 # Memoize the random choices too because the calls to
                 # list(self.kmers[k]) and to np.random.choice are
                 # slow
@@ -240,8 +239,9 @@ class Probe:
                     return True
             return False
         else:
-            rand_kmer_positions = np.random.random_integers(
-                0, len(self.seq) - k, num_kmers_to_test)
+            rand_kmer_positions = np.random.random_integers(0,
+                                                            len(self.seq) - k,
+                                                            num_kmers_to_test)
             for n in xrange(num_kmers_to_test):
                 # Read a random k-mer from self and explicitly test for
                 # its presence in other
@@ -309,7 +309,9 @@ class Probe:
         return Probe(np.fromstring(seq_str, dtype='S1'))
 
 
-def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10,
+def construct_kmer_probe_map(probes,
+                             k=15,
+                             num_kmers_per_probe=10,
                              include_positions=False):
     """Construct map from k-mers to probes that contain these k-mers.
 
@@ -342,28 +344,25 @@ def construct_kmer_probe_map(probes, k=15, num_kmers_per_probe=10,
         if include_positions:
             # np.random.choice won't directly pick tuples from a list,
             # so instead randomly select indices
-            rand_kmers = [
-                kmers[i] for i in np.random.choice(
-                    len(kmers),
-                    size=num_kmers_per_probe,
-                    replace=True)]
+            rand_kmers = [kmers[i]
+                          for i in np.random.choice(len(kmers),
+                                                    size=num_kmers_per_probe,
+                                                    replace=True)]
             for kmer, pos in rand_kmers:
                 kmer_probe_map[kmer].add((probe, pos))
         else:
-            rand_kmers = np.random.choice(
-                kmers,
-                size=num_kmers_per_probe,
-                replace=True)
+            rand_kmers = np.random.choice(kmers,
+                                          size=num_kmers_per_probe,
+                                          replace=True)
             for kmer in rand_kmers:
                 kmer_probe_map[kmer].add(probe)
     return dict(kmer_probe_map)
 
 
-def find_probe_covers_in_sequence(
-        sequence,
-        kmer_probe_map,
-        k=15,
-        cover_range_for_probe_in_subsequence_fn=None):
+def find_probe_covers_in_sequence(sequence, kmer_probe_map,
+                                  k=15,
+                                  cover_range_for_probe_in_subsequence_fn=None
+                                 ):
     """Find ranges in sequence that a collection of probes cover.
 
     Probes are from the values of kmer_probe_map. A probe is said
@@ -478,15 +477,14 @@ def find_probe_covers_in_sequence(
             elif i - pos + len(probe.seq) > len(sequence):
                 # An edge case where probe is cutoff on right end because it
                 # extends further right than where sequence ends
-                probe_seq = probe.seq[
-                    :-(i - pos + len(probe.seq) - len(sequence))]
+                probe_seq = probe.seq[:-(i - pos + len(probe.seq) -
+                                         len(sequence))]
                 kmer_start = pos
             else:
                 probe_seq = probe.seq
                 kmer_start = pos
             cover_range = \
-                cover_range_for_probe_in_subsequence_fn(
-                    probe_seq, subsequence, kmer_start, kmer_start + k)
+                cover_range_for_probe_in_subsequence_fn(probe_seq, subsequence, kmer_start, kmer_start + k)
             if cover_range is None:
                 # probe does not meet the threshold for covering this
                 # subsequence
@@ -539,6 +537,7 @@ def probe_covers_sequence_by_longest_common_substring(mismatches=0,
         k-mer, returns whether the probe covers part of the sequence and,
         if so, which part
     """
+
     def lcf(probe_seq, sequence, kmer_start, kmer_end):
         l, start = longest_common_substring.k_lcf_around_anchor(
             probe_seq, sequence, kmer_start, kmer_end, mismatches)
@@ -546,4 +545,5 @@ def probe_covers_sequence_by_longest_common_substring(mismatches=0,
             return (start, start + l)
         else:
             return None
+
     return lcf

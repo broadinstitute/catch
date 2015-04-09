@@ -13,7 +13,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestProbeDesigner(unittest.TestCase):
-
     """Tests the probe designer output on contrived input.
     """
 
@@ -27,11 +26,10 @@ class TestProbeDesigner(unittest.TestCase):
         generating candidate probes: probe length of 100 bp with a stride
         of 50 bp.
         """
-        seqs = [
-            [genome.Genome.from_one_seq('A' * 100 + 'B' * 100 + 'A' * 100)]]
+        seqs = [[genome.Genome.from_one_seq('A' * 100 + 'B' * 100 + 'A' * 100)]
+               ]
         desired_candidate_probes = \
-            ['A' * 100, 'A' * 50 + 'B' * 50, 'B' * 100, 'B' * 50 + 'A' * 50,
-             'A' * 100]
+            ['A' * 100, 'A' * 50 + 'B' * 50, 'B' * 100, 'B' * 50 + 'A' * 50, 'A' * 100]
         desired_candidate_probes = \
             [probe.Probe.from_str(s) for s in desired_candidate_probes]
         desired_final_probes = ['A' * 100, 'A' * 50 + 'B' * 50, 'B' * 100,
@@ -56,8 +54,7 @@ class TestProbeDesigner(unittest.TestCase):
                  genome.Genome.from_one_seq('B' * 150)],
                 [genome.Genome.from_one_seq('C' * 300)]]
         desired_candidate_probes = \
-            ['A' * 100, 'A' * 100, 'A' * 100, 'B' * 100, 'B' * 100,
-             'C' * 100, 'C' * 100, 'C' * 100, 'C' * 100, 'C' * 100]
+            ['A' * 100, 'A' * 100, 'A' * 100, 'B' * 100, 'B' * 100, 'C' * 100, 'C' * 100, 'C' * 100, 'C' * 100, 'C' * 100]
         desired_candidate_probes = \
             [probe.Probe.from_str(s) for s in desired_candidate_probes]
         desired_final_probes = ['A' * 100, 'B' * 100, 'C' * 100]

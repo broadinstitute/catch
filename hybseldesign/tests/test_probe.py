@@ -12,7 +12,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestProbe(unittest.TestCase):
-
     """Tests methods in the Probe class.
     """
 
@@ -33,8 +32,10 @@ class TestProbe(unittest.TestCase):
     def test_parse_str(self):
         """Test that probe parses the string correctly.
         """
-        np.testing.assert_array_equal(self.a.seq, np.array(
-            ['A', 'T', 'C', 'G', 'T', 'C', 'G', 'C', 'G', 'G', 'A', 'T', 'C', 'G']))
+        np.testing.assert_array_equal(self.a.seq,
+                                      np.array(['A', 'T', 'C', 'G', 'T', 'C',
+                                                'G', 'C', 'G', 'G', 'A', 'T',
+                                                'C', 'G']))
 
     def test_mismatches(self):
         """Test mismatches method.
@@ -49,10 +50,8 @@ class TestProbe(unittest.TestCase):
         self.assertEqual(self.a.mismatches_at_offset(self.d, -1), 0)
         self.assertEqual(self.a.mismatches_at_offset(self.e, -2), 2)
         self.assertEqual(self.a.mismatches_at_offset(self.f, 3), 1)
-        self.assertRaises(ValueError, self.a.mismatches_at_offset,
-                          self.c, 1)
-        self.assertRaises(ValueError, self.a.mismatches_at_offset,
-                          self.b, 15)
+        self.assertRaises(ValueError, self.a.mismatches_at_offset, self.c, 1)
+        self.assertRaises(ValueError, self.a.mismatches_at_offset, self.b, 15)
 
     def test_min_mismatches_within_shift(self):
         """Test min_mismatches_within_shift method.
@@ -103,8 +102,7 @@ class TestProbe(unittest.TestCase):
         """Test share_some_kmers method.
         """
         np.random.seed(1)
-        args = {'k': 5, 'num_kmers_to_test': 10,
-                'memoize_kmers': False}
+        args = {'k': 5, 'num_kmers_to_test': 10, 'memoize_kmers': False}
         a = probe.Probe.from_str('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
         c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')
@@ -127,8 +125,7 @@ class TestProbe(unittest.TestCase):
         """Test share_some_kmers method.
         """
         np.random.seed(1)
-        args = {'k': 5, 'num_kmers_to_test': 10,
-                'memoize_kmers': True}
+        args = {'k': 5, 'num_kmers_to_test': 10, 'memoize_kmers': True}
         a = probe.Probe.from_str('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
         c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')
@@ -156,7 +153,6 @@ class TestProbe(unittest.TestCase):
 
 
 class TestConstructKmerProbeMap(unittest.TestCase):
-
     """Tests construct_kmer_probe_map function.
     """
 
@@ -194,7 +190,8 @@ class TestConstructKmerProbeMap(unittest.TestCase):
         probes = [a, b]
         # Use a high num_kmers_per_probe to ensure all possible
         # kmers are selected to be put into the map
-        kmer_map = probe.construct_kmer_probe_map(probes, k=3,
+        kmer_map = probe.construct_kmer_probe_map(probes,
+                                                  k=3,
                                                   num_kmers_per_probe=50)
         self.assertTrue(a in kmer_map['DEF'])
         self.assertTrue(b in kmer_map['DEF'])
@@ -214,11 +211,10 @@ class TestConstructKmerProbeMap(unittest.TestCase):
         probes = [a, b]
         # Use a high num_kmers_per_probe to ensure all possible
         # kmers are selected to be put into the map
-        kmer_map = probe.construct_kmer_probe_map(
-            probes,
-            k=3,
-            num_kmers_per_probe=50,
-            include_positions=True)
+        kmer_map = probe.construct_kmer_probe_map(probes,
+                                                  k=3,
+                                                  num_kmers_per_probe=50,
+                                                  include_positions=True)
         self.assertItemsEqual(kmer_map['DEF'], [(a, 3), (b, 3)])
         self.assertItemsEqual(kmer_map['ABC'], [(a, 0), (a, 7)])
         self.assertItemsEqual(kmer_map['XYZ'], [(b, 0)])
@@ -227,7 +223,6 @@ class TestConstructKmerProbeMap(unittest.TestCase):
 
 
 class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
-
     """Tests probe_covers_sequence_by_longest_common_substring function.
     """
 
@@ -282,7 +277,6 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
 
 class TestFindProbeCoversInSequence(unittest.TestCase):
-
     """Tests find_probe_covers_in_sequence function.
     """
 
@@ -298,14 +292,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes = [a, b, c]
         k = 2
         num_kmers_per_probe = 10
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            probes,
-            k,
-            num_kmers_per_probe,
-            include_positions=True)
+        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
+                                                        num_kmers_per_probe,
+                                                        include_positions=True)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence,
-                                                    kmer_probe_map, k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
+                                                    k, f)
         self.assertItemsEqual(found[a], [(6, 12)])
         self.assertItemsEqual(found[b], [(18, 24)])
         self.assertFalse(c in found)
@@ -322,14 +314,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes = [a, b, c]
         k = 2
         num_kmers_per_probe = 10
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            probes,
-            k,
-            num_kmers_per_probe,
-            include_positions=True)
+        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
+                                                        num_kmers_per_probe,
+                                                        include_positions=True)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence,
-                                                    kmer_probe_map, k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
+                                                    k, f)
         self.assertItemsEqual(found[a], [(2, 8), (16, 22)])
         self.assertItemsEqual(found[b], [(6, 12)])
         self.assertFalse(c in found)
@@ -346,14 +336,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes = [a, b, c]
         k = 4
         num_kmers_per_probe = 100
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            probes,
-            k,
-            num_kmers_per_probe,
-            include_positions=True)
+        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
+                                                        num_kmers_per_probe,
+                                                        include_positions=True)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence,
-                                                    kmer_probe_map, k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
+                                                    k, f)
         self.assertItemsEqual(found[a], [(2, 11), (118, 124)])
         self.assertItemsEqual(found[b], [(6, 14)])
         self.assertItemsEqual(found[c], [(5, 12)])
@@ -369,14 +357,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes = [a]
         k = 3
         num_kmers_per_probe = 20
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            probes,
-            k,
-            num_kmers_per_probe,
-            include_positions=True)
+        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
+                                                        num_kmers_per_probe,
+                                                        include_positions=True)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence,
-                                                    kmer_probe_map, k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
+                                                    k, f)
         self.assertItemsEqual(found[a], [(3, 13), (25, 38)])
 
     def test_random_small_genome(self):
@@ -408,7 +394,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             # Make a random sequence
             seq_length = np.random.randint(genome_min, genome_max)
             sequence = "".join(np.random.choice(['A', 'T', 'C', 'G'],
-                                                size=seq_length, replace=True))
+                                                size=seq_length,
+                                                replace=True))
             desired_probe_cover_ranges = defaultdict(list)
             # Make num_probes random probes
             probes = []
@@ -423,22 +410,20 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 probe_str_cover = sequence[cover_start:cover_end]
                 # Add random bases before and after what the probe should
                 # cover
-                probe_str_start = "".join(np.random.choice(
-                    ['A', 'T', 'C', 'G'], size=cover_start - subseq_start,
-                    replace=True))
-                probe_str_end = "".join(np.random.choice(
-                    ['A', 'T', 'C', 'G'], size=subseq_end - cover_end,
-                    replace=True))
+                probe_str_start = "".join(
+                    np.random.choice(['A', 'T', 'C', 'G'],
+                                     size=cover_start - subseq_start,
+                                     replace=True))
+                probe_str_end = "".join(
+                    np.random.choice(['A', 'T', 'C', 'G'],
+                                     size=subseq_end - cover_end,
+                                     replace=True))
                 probe_str = probe_str_start + probe_str_cover + probe_str_end
                 # Add 0, 1, 2, or 3 random mismatches
                 for k in xrange(np.random.randint(0, 4)):
                     pos = np.random.randint(0, probe_length)
-                    base_choices = [
-                        b for b in [
-                            'A',
-                            'T',
-                            'C',
-                            'G'] if b != probe_str[pos]]
+                    base_choices = [b for b in ['A', 'T', 'C', 'G']
+                                    if b != probe_str[pos]]
                     probe_str = probe_str[:pos] + \
                         "".join(np.random.choice(base_choices, size=1)) + \
                         probe_str[(pos + 1):]
@@ -452,8 +437,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 include_positions=True)
             f = probe.probe_covers_sequence_by_longest_common_substring(3, 80)
             found = probe.find_probe_covers_in_sequence(
-                sequence,
-                kmer_probe_map,
+                sequence, kmer_probe_map,
                 k=15,
                 cover_range_for_probe_in_subsequence_fn=f)
             # Check that this didn't find any extraneous probes and that

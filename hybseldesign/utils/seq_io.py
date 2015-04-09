@@ -1,7 +1,6 @@
 """Utilities for working with sequence i/o.
 """
 
-
 from collections import OrderedDict
 import logging
 import re

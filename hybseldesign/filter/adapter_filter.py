@@ -122,12 +122,14 @@ ADAPTER_B_3END = 'GACCTTTTGGGACAGCGGTG'
 
 
 class AdapterFilter(BaseFilter):
-
     """Filter that adds adapters to probes.
     """
 
-    def __init__(self, mismatches=0, lcf_thres=100,
-                 kmer_size=15, num_kmers_per_probe=10):
+    def __init__(self,
+                 mismatches=0,
+                 lcf_thres=100,
+                 kmer_size=15,
+                 num_kmers_per_probe=10):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a
@@ -140,8 +142,7 @@ class AdapterFilter(BaseFilter):
                 to a sequence
         """
         self.cover_range_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches=mismatches, lcf_thres=lcf_thres)
+            probe.probe_covers_sequence_by_longest_common_substring(mismatches=mismatches, lcf_thres=lcf_thres)
         self.kmer_size = kmer_size
         self.num_kmers_per_probe = num_kmers_per_probe
 
@@ -169,7 +170,8 @@ class AdapterFilter(BaseFilter):
             (0,0) [the probe does not hybridize in 'sequence'].
         """
         probe_cover_ranges = probe.find_probe_covers_in_sequence(
-            sequence, kmer_probe_map, k=self.kmer_size,
+            sequence, kmer_probe_map,
+            k=self.kmer_size,
             cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
         aligned_probes = set(probe_cover_ranges.keys())
         # Make a list of all the intervals covered by all the probes,
@@ -292,8 +294,7 @@ class AdapterFilter(BaseFilter):
             # Determine whether or not the exchange matches better with
             # cumulative_votes so far, and update cumulative_votes
             # accordingly.
-            votes = self._votes_in_sequence(probes, sequence,
-                                            kmer_probe_map)
+            votes = self._votes_in_sequence(probes, sequence, kmer_probe_map)
             votes_flipped = self._flip_AB_votes(votes)
             cumulative_votes_with_nonflipped = self._sum_votes_per_probe(
                 cumulative_votes, votes)

@@ -12,7 +12,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestEbola2014FASTARead(unittest.TestCase):
-
     """Tests reading the Ebola 2014 dataset (FASTA file).
     """
 
@@ -60,7 +59,6 @@ class TestEbola2014FASTARead(unittest.TestCase):
 
 
 class TestDatasetGenomeRead(unittest.TestCase):
-
     def setUp(self):
         # Disable logging
         logging.disable(logging.INFO)
@@ -75,9 +73,10 @@ class TestDatasetGenomeRead(unittest.TestCase):
         enters the condition of reading just one sequence per genome.
         """
         genomes = seq_io.read_dataset_genomes(ebola2014)
-        desired_genomes = [genome.Genome.from_one_seq(s) for s in
-                           seq_io.read_fasta(ebola2014.fasta_path).
-                           values()]
+        desired_genomes = [
+            genome.Genome.from_one_seq(s)
+            for s in seq_io.read_fasta(ebola2014.fasta_path).values()
+        ]
         self.assertEqual(genomes, desired_genomes)
 
     def tearDown(self):

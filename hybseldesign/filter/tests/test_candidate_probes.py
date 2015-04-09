@@ -11,61 +11,65 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestCandidateProbesOnContrivedInput(unittest.TestCase):
-
     """Tests explicitly the generated candidate probes from contrived input.
     """
 
     def test_no_n(self):
         p = candidate_probes.make_candidate_probes_from_sequence(
-            'ATCGTCGCGGATCG', probe_length=6, probe_stride=3,
+            'ATCGTCGCGGATCG',
+            probe_length=6,
+            probe_stride=3,
             min_n_string_length=2)
         p = [x.seq.tostring() for x in p]
-        self.assertItemsEqual(p,
-                              ['ATCGTC', 'GTCGCG', 'GCGGAT', 'GGATCG'])
+        self.assertItemsEqual(p, ['ATCGTC', 'GTCGCG', 'GCGGAT', 'GGATCG'])
 
     def test_one_n(self):
         p = candidate_probes.make_candidate_probes_from_sequence(
-            'ATCGNCGCGGATCG', probe_length=6, probe_stride=3,
+            'ATCGNCGCGGATCG',
+            probe_length=6,
+            probe_stride=3,
             min_n_string_length=2)
         p = [x.seq.tostring() for x in p]
-        self.assertItemsEqual(p,
-                              ['ATCGNC', 'GNCGCG', 'GCGGAT', 'GGATCG'])
+        self.assertItemsEqual(p, ['ATCGNC', 'GNCGCG', 'GCGGAT', 'GGATCG'])
 
     def test_two_n(self):
         p = candidate_probes.make_candidate_probes_from_sequence(
-            'ATNGNCGCGGATCG', probe_length=6, probe_stride=3,
+            'ATNGNCGCGGATCG',
+            probe_length=6,
+            probe_stride=3,
             min_n_string_length=2)
         p = [x.seq.tostring() for x in p]
-        self.assertItemsEqual(p,
-                              ['ATNGNC', 'GNCGCG', 'GCGGAT', 'GGATCG'])
+        self.assertItemsEqual(p, ['ATNGNC', 'GNCGCG', 'GCGGAT', 'GGATCG'])
 
     def test_n_string1(self):
         p = candidate_probes.make_candidate_probes_from_sequence(
-            'ATCGNCGNNTCG', probe_length=6, probe_stride=3,
+            'ATCGNCGNNTCG',
+            probe_length=6,
+            probe_stride=3,
             min_n_string_length=2)
         p = [x.seq.tostring() for x in p]
         self.assertItemsEqual(p, ['ATCGNC', 'TCGNCG'])
 
     def test_n_string2(self):
         p = candidate_probes.make_candidate_probes_from_sequence(
-            'ATCGNCGNNTCGATAT', probe_length=6, probe_stride=3,
+            'ATCGNCGNNTCGATAT',
+            probe_length=6,
+            probe_stride=3,
             min_n_string_length=2)
         p = [x.seq.tostring() for x in p]
-        self.assertItemsEqual(
-            p, ['ATCGNC', 'TCGNCG', 'TCGATA', 'TCGATA', 'CGATAT'])
+        self.assertItemsEqual(p, ['ATCGNC', 'TCGNCG', 'TCGATA', 'TCGATA',
+                                  'CGATAT'])
 
     def test_multiple_seqs(self):
         p = candidate_probes.make_candidate_probes_from_sequences(
             ['ATCGNCGNNTCG', 'ATCGNCGNNTCGATAT'],
-            probe_length=6, probe_stride=3, min_n_string_length=2)
+            probe_length=6,
+            probe_stride=3,
+            min_n_string_length=2)
         p = [x.seq.tostring() for x in p]
-        self.assertItemsEqual(p,
-                              ['ATCGNC',
-                               'TCGNCG'] + ['ATCGNC',
-                                            'TCGNCG',
-                                            'TCGATA',
-                                            'TCGATA',
-                                            'CGATAT'])
+        self.assertItemsEqual(
+            p, ['ATCGNC', 'TCGNCG'] + ['ATCGNC', 'TCGNCG', 'TCGATA', 'TCGATA',
+                                       'CGATAT'])
 
     def test_buggy(self):
         """Tests the version with bugs, intended to replicate the original
@@ -73,23 +77,25 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
         """
         p = candidate_probes.make_candidate_probes_from_sequences(
             ['ATCGNCGNNTCG', 'ATCGNCGNNTCGATAT'],
-            probe_length=6, probe_stride=3, min_n_string_length=2,
+            probe_length=6,
+            probe_stride=3,
+            min_n_string_length=2,
             insert_bugs=True,
             move_all_n_string_flanking_probes_to_end=True)
         p = [x.seq.tostring() for x in p]
         # Use assertEqual rather than assertItemsEqual to check order
-        self.assertEqual(p, ['ATCGNC'] + ['ATCGNC', 'TCGATA'] +
-                         ['TCGNCG', 'TCGNCG', 'TCGATA'])
+        self.assertEqual(
+            p,
+            ['ATCGNC'] + ['ATCGNC', 'TCGATA'] + ['TCGNCG', 'TCGNCG', 'TCGATA'])
 
 
 class TestCandidateProbesOnEbola2014(unittest.TestCase):
-
     """Tests the candidate probes from the Ebola 2014 dataset.
     """
 
     def setUp(self):
         seqs = seq_io.read_fasta(ebola2014.fasta_path).values()
-        self.probes = candidate_probes. make_candidate_probes_from_sequences(
+        self.probes = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
             probe_length=100,
             probe_stride=50,

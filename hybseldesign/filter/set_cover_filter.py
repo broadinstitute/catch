@@ -58,14 +58,19 @@ logger = logging.getLogger(__name__)
 
 
 class SetCoverFilter(BaseFilter):
-
     """Filter that selects candidate probes using a set cover approach.
     """
 
-    def __init__(self, mismatches=0, lcf_thres=100,
-                 mismatches_tolerant=None, lcf_thres_tolerant=None,
-                 identify=False, blacklisted_genomes=[], coverage=1.0,
-                 kmer_size=15, num_kmers_per_probe=10):
+    def __init__(self,
+                 mismatches=0,
+                 lcf_thres=100,
+                 mismatches_tolerant=None,
+                 lcf_thres_tolerant=None,
+                 identify=False,
+                 blacklisted_genomes=[],
+                 coverage=1.0,
+                 kmer_size=15,
+                 num_kmers_per_probe=10):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a sequence
@@ -96,16 +101,14 @@ class SetCoverFilter(BaseFilter):
                 probes.
         """
         self.cover_range_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches, lcf_thres)
+            probe.probe_covers_sequence_by_longest_common_substring(mismatches, lcf_thres)
 
         if not mismatches_tolerant:
             mismatches_tolerant = mismatches
         if not lcf_thres_tolerant:
             lcf_thres_tolerant = lcf_thres
         self.cover_range_tolerant_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches_tolerant, lcf_thres_tolerant)
+            probe.probe_covers_sequence_by_longest_common_substring(mismatches_tolerant, lcf_thres_tolerant)
 
         # Warn if identification is enabled but the coverage is high
         if identify:
@@ -162,17 +165,17 @@ class SetCoverFilter(BaseFilter):
         for i, genomes_from_group in enumerate(self.target_genomes):
             for j, gnm in enumerate(genomes_from_group):
                 logger.info(("Computing coverage in grouping %d (of %d), "
-                             "with target genome %d (of %d)"),
-                            i, len(self.target_genomes),
-                            j, len(genomes_from_group))
+                             "with target genome %d (of %d)"), i,
+                            len(self.target_genomes), j,
+                            len(genomes_from_group))
                 universe_id = (i, j)
                 length_so_far = 0
                 for sequence in gnm.seqs:
                     probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                        sequence,
-                        kmer_probe_map,
+                        sequence, kmer_probe_map,
                         k=self.kmer_size,
-                        cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
+                        cover_range_for_probe_in_subsequence_fn=
+                        self.cover_range_fn)
                     # Add the bases of sequence that are covered by all the
                     # probes into sets with universe_id equal to (i,j)
                     for p, cover_ranges in probe_cover_ranges.iteritems():
@@ -185,8 +188,7 @@ class SetCoverFilter(BaseFilter):
                                 # (length_so_far) onto bp gives a unique
                                 # integer position in the genome gnm
                                 sets[set_id][universe_id].append(
-                                    length_so_far +
-                                    bp)
+                                    length_so_far + bp)
                     length_so_far += len(sequence)
 
         # Convert each defaultdict to dict
@@ -195,12 +197,9 @@ class SetCoverFilter(BaseFilter):
 
         return sets
 
-    def _compute_tolerant_bp_covered_within_sequence(
-            self,
-            candidate_probes,
-            kmer_probe_map,
-            sequence,
-            rc_too=True):
+    def _compute_tolerant_bp_covered_within_sequence(self, candidate_probes,
+                                                     kmer_probe_map, sequence,
+                                                     rc_too=True):
         """Compute number of bp captured in sequence by each input probe.
 
         Uses self.coverage_range_tolerant_fn for determining coverage (i.e.,
@@ -233,10 +232,10 @@ class SetCoverFilter(BaseFilter):
             if rc:
                 sequence = ''.join([rc_map.get(b, b) for b in sequence[::-1]])
             probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                sequence,
-                kmer_probe_map,
+                sequence, kmer_probe_map,
                 k=self.kmer_size,
-                cover_range_for_probe_in_subsequence_fn=self.cover_range_tolerant_fn)
+                cover_range_for_probe_in_subsequence_fn=
+                self.cover_range_tolerant_fn)
 
             all_cover_ranges = []
             for p, cover_ranges in probe_cover_ranges.iteritems():
@@ -245,8 +244,7 @@ class SetCoverFilter(BaseFilter):
 
         return dict(num_bp_covered)
 
-    def _count_num_groupings_hit(self, candidate_probes,
-                                 kmer_probe_map):
+    def _count_num_groupings_hit(self, candidate_probes, kmer_probe_map):
         """Compute number of genome groupings hit by each candidate probe.
 
         A probe is said to "hit" a grouping of target genomes if it covers
@@ -266,16 +264,14 @@ class SetCoverFilter(BaseFilter):
         num_groupings_hit = {p: 0 for p in candidate_probes}
         for i, genomes_from_group in enumerate(self.target_genomes):
             logger.info(("Computing coverage in grouping %d (of %d) to "
-                         "count number of groupings hit"),
-                        i, len(self.target_genomes))
+                         "count number of groupings hit"), i,
+                        len(self.target_genomes))
             num_bp_covered_in_grouping = defaultdict(int)
             for j, gnm in enumerate(genomes_from_group):
                 for sequence in gnm.seqs:
                     # Count hits in both sequence and its reverse complement
                     num_bp = self._compute_tolerant_bp_covered_within_sequence(
-                        candidate_probes,
-                        kmer_probe_map,
-                        sequence,
+                        candidate_probes, kmer_probe_map, sequence,
                         rc_too=True)
                     for p in num_bp.keys():
                         num_bp_covered_in_grouping[p] += num_bp[p]
@@ -297,8 +293,7 @@ class SetCoverFilter(BaseFilter):
 
         return num_groupings_hit
 
-    def _count_blacklisted_bp_covered(self, candidate_probes,
-                                      kmer_probe_map):
+    def _count_blacklisted_bp_covered(self, candidate_probes, kmer_probe_map):
         """Compute number of blacklisted genome bp covered by each probe.
 
         This decides whether a candidate probe captures a portion of a
@@ -328,7 +323,8 @@ class SetCoverFilter(BaseFilter):
                              "sequence"))
                 # Blacklist both sequence and its reverse complement
                 num_bp = self._compute_tolerant_bp_covered_within_sequence(
-                    candidate_probes, kmer_probe_map, sequence, rc_too=True)
+                    candidate_probes, kmer_probe_map, sequence,
+                    rc_too=True)
                 for p in num_bp.keys():
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
@@ -397,10 +393,12 @@ class SetCoverFilter(BaseFilter):
             # rank of 1); probes that hit more than one grouping are poor
             # for identification and their ranks are equal to the number
             # of groupings they hit.
-            num_groupings_hit = self._count_num_groupings_hit(
-                candidate_probes, kmer_probe_map)
-            rank_val = {p: (0, hit) for p, hit
-                        in num_groupings_hit.iteritems()}
+            num_groupings_hit = self._count_num_groupings_hit(candidate_probes,
+                                                              kmer_probe_map)
+            rank_val = {
+                p: (0, hit)
+                for p, hit in num_groupings_hit.iteritems()
+            }
         else:
             # Start each probe with the same rank
             rank_val = {p: (0, 0) for p in candidate_probes}
@@ -511,9 +509,11 @@ class SetCoverFilter(BaseFilter):
         # Run the set cover approximation algorithm
         logger.info(("Approximating the solution to the set cover "
                      "instance"))
-        set_ids_in_cover = set_cover.approx_multiuniverse(
-            sets, costs=costs, universe_p=universe_p,
-            ranks=ranks, use_arrays=True)
+        set_ids_in_cover = set_cover.approx_multiuniverse(sets,
+                                                          costs=costs,
+                                                          universe_p=universe_p,
+                                                          ranks=ranks,
+                                                          use_arrays=True)
 
         # Save ranks and costs
         self.probe_ranks = ranks

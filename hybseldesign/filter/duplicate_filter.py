@@ -14,7 +14,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class DuplicateFilter(BaseFilter):
-
     """Filter that removes duplicates.
     """
 
