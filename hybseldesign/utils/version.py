@@ -16,11 +16,11 @@ def get_module_path():
     this script.
     """
     # abspath converts relative to absolute path; expanduser interprets ~
-    path = __file__                  # path to this script
+    path = __file__  # path to this script
     path = os.path.expanduser(path)  # interpret ~
-    path = os.path.abspath(path)     # convert to absolute path
-    path = os.path.dirname(path)     # utils directory
-    path = os.path.dirname(path)     # hybseldesign directory
+    path = os.path.abspath(path)  # convert to absolute path
+    path = os.path.dirname(path)  # utils directory
+    path = os.path.dirname(path)  # hybseldesign directory
     return path
 
 

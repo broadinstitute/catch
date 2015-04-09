@@ -5,7 +5,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class Genome:
-
     """Immutable collection of sequences (chromosomes) representing a genome.
 
     This is designed to accomodate both:
@@ -14,7 +13,6 @@ class Genome:
      - genomes that are divided into multiple chromosomes and must
        support the ability to obtain a sequence from a chromosome label
     """
-
     """
   Args:
       seqs: list of sequences (chromosomes) that make up this genome;

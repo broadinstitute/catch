@@ -9,13 +9,11 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestMergeOverlapping(unittest.TestCase):
-
     """Tests the merge_overlapping function.
     """
 
     def compare(self, input, desired_output):
-        self.assertEqual(interval.merge_overlapping(input),
-                         desired_output)
+        self.assertEqual(interval.merge_overlapping(input), desired_output)
 
     def test_single(self):
         self.compare([(1, 2)], [(1, 2)])
@@ -41,13 +39,11 @@ class TestMergeOverlapping(unittest.TestCase):
 
 
 class TestSchedule(unittest.TestCase):
-
     """Tests the schedule function.
     """
 
     def compare(self, input, desired_output):
-        self.assertEqual(interval.schedule(input),
-                         desired_output)
+        self.assertEqual(interval.schedule(input), desired_output)
 
     def test_single(self):
         self.compare([((1, 2), 1)], [1])

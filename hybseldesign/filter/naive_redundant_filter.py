@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class NaiveRedundantFilter(BaseFilter):
-
     """Filter that selects candidate probes with a naive approach.
     """
 
@@ -39,7 +38,8 @@ class NaiveRedundantFilter(BaseFilter):
             # iff they are identical (i.e., no shift with no mismatches
             # between the two)
             are_redundant_fn = redundant_shift_and_mismatch_count(
-                shift=0, mismatch_thres=0)
+                shift=0,
+                mismatch_thres=0)
         self.are_redundant_fn = are_redundant_fn
 
     def _filter(self, input):
@@ -57,8 +57,8 @@ class NaiveRedundantFilter(BaseFilter):
         probe_indices_to_delete = set()
         for i in xrange(len(input)):
             if i % 100 == 0:
-                logger.info("Processing candidate probe %d of %d",
-                            i, len(input))
+                logger.info("Processing candidate probe %d of %d", i,
+                            len(input))
 
             if i in probe_indices_to_delete:
                 continue
@@ -76,11 +76,10 @@ class NaiveRedundantFilter(BaseFilter):
                 if i not in probe_indices_to_delete]
 
 
-def redundant_shift_and_mismatch_count(
-        shift=0,
-        mismatch_thres=0,
-        quick=True,
-        quick_mismatch_cutoff=10):
+def redundant_shift_and_mismatch_count(shift=0,
+                                       mismatch_thres=0,
+                                       quick=True,
+                                       quick_mismatch_cutoff=10):
     """Return a function for determining probe redundancy.
 
     The returned function determines whether two probes are redundant
@@ -109,6 +108,7 @@ def redundant_shift_and_mismatch_count(
     # return the 'quick' function when mismatch_thres is below
     # this cutoff.
     if quick and mismatch_thres < quick_mismatch_cutoff:
+
         def are_redundant(probe_a, probe_b):
             probe_a_len = len(probe_a.seq)
             probe_b_len = len(probe_b.seq)
@@ -136,16 +136,17 @@ def redundant_shift_and_mismatch_count(
             # All of the shifts have > mismatch_thres mismatches
             return False
     else:
+
         def are_redundant(probe_a, probe_b):
             mismatches = probe_a.min_mismatches_within_shift(probe_b, shift)
             return mismatches <= mismatch_thres
+
     return are_redundant
 
 
-def redundant_longest_common_substring(
-        mismatches=0,
-        lcf_thres=100,
-        prune_with_heuristic=True):
+def redundant_longest_common_substring(mismatches=0,
+                                       lcf_thres=100,
+                                       prune_with_heuristic=True):
     """Return a function for determining probe redundancy.
 
     The returned function determines whether two probes are redundant
@@ -169,6 +170,7 @@ def redundant_longest_common_substring(
         function that returns True or False depending on whether two
         probes are redundant
     """
+
     def are_redundant(probe_a, probe_b):
         if prune_with_heuristic:
             if not probe_a.shares_some_kmers(probe_b):
@@ -178,4 +180,5 @@ def redundant_longest_common_substring(
         lcf_length = probe_a.longest_common_substring_length(probe_b,
                                                              mismatches)
         return lcf_length >= lcf_thres
+
     return are_redundant

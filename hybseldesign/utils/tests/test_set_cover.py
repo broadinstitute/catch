@@ -14,119 +14,132 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestSetCoverApprox(unittest.TestCase):
-
     """Tests approx function.
     """
 
     def test_complete_unweighted(self):
-        input = {0: set([1, 2]),
-                 1: set([1, 2, 4]),
-                 2: set([2, 4]),
-                 3: set([4, 5]),
-                 4: set([3])}
+        input = {
+            0: set([1, 2]),
+            1: set([1, 2, 4]),
+            2: set([2, 4]),
+            3: set([4, 5]),
+            4: set([3])
+        }
         desired_output = set([1, 3, 4])
         self.assertEqual(sc.approx(input), desired_output)
 
     def test_partial_unweighted1(self):
-        input = {0: set([1, 2]),
-                 1: set([1, 2, 4]),
-                 2: set([2, 4]),
-                 3: set([4, 5]),
-                 4: set([3])}
+        input = {
+            0: set([1, 2]),
+            1: set([1, 2, 4]),
+            2: set([2, 4]),
+            3: set([4, 5]),
+            4: set([3])
+        }
         desired_output = set([1])
         self.assertEqual(sc.approx(input, p=0.6), desired_output)
 
     def test_partial_unweighted2(self):
-        input = {0: set([1, 2]),
-                 1: set([1, 2, 4]),
-                 2: set([2, 4]),
-                 3: set([4, 5]),
-                 4: set([2, 3, 6])}
+        input = {
+            0: set([1, 2]),
+            1: set([1, 2, 4]),
+            2: set([2, 4]),
+            3: set([4, 5]),
+            4: set([2, 3, 6])
+        }
         desired_output = set([1, 4])
         self.assertEqual(sc.approx(input, p=0.81), desired_output)
 
     def test_complete_weighted1(self):
-        input = {0: set([1, 2]),
-                 1: set([1, 2, 4]),
-                 2: set([2, 4]),
-                 3: set([4, 5]),
-                 4: set([3])}
+        input = {
+            0: set([1, 2]),
+            1: set([1, 2, 4]),
+            2: set([2, 4]),
+            3: set([4, 5]),
+            4: set([3])
+        }
         costs = {0: 2, 1: 1000, 2: 3, 3: 1, 4: 10}
         desired_output = set([0, 3, 4])
         self.assertEqual(sc.approx(input, costs=costs), desired_output)
 
     def test_complete_weighted2(self):
-        input = {0: set([1, 2]),
-                 1: set([1, 2, 3, 4, 5]),
-                 2: set([4]),
-                 3: set([5]),
-                 4: set([3])}
+        input = {
+            0: set([1, 2]),
+            1: set([1, 2, 3, 4, 5]),
+            2: set([4]),
+            3: set([5]),
+            4: set([3])
+        }
         costs = {0: 2, 1: 1000, 2: 3, 3: 1, 4: 10}
         desired_output = set([0, 2, 3, 4])
         self.assertEqual(sc.approx(input, costs=costs), desired_output)
 
     def test_partial_weighted1(self):
-        input = {0: set([1, 2]),
-                 1: set([1, 2, 3, 4, 5]),
-                 2: set([4]),
-                 3: set([5]),
-                 4: set([3])}
+        input = {
+            0: set([1, 2]),
+            1: set([1, 2, 3, 4, 5]),
+            2: set([4]),
+            3: set([5]),
+            4: set([3])
+        }
         costs = {0: 2, 1: 1000, 2: 3, 3: 1, 4: 10}
         desired_output = set([3])
-        self.assertEqual(sc.approx(input, costs=costs, p=0.1),
-                         desired_output)
+        self.assertEqual(sc.approx(input, costs=costs, p=0.1), desired_output)
 
     def test_partial_weighted2(self):
-        input = {0: set([1, 2]),
-                 1: set([2, 3]),
-                 2: set([4, 5]),
-                 3: set([5]),
-                 4: set([4])}
+        input = {
+            0: set([1, 2]),
+            1: set([2, 3]),
+            2: set([4, 5]),
+            3: set([5]),
+            4: set([4])
+        }
         costs = {0: 2, 1: 1000, 2: 100, 3: 10, 4: 10}
         desired_output = set([0, 3, 4])
-        self.assertEqual(sc.approx(input, costs=costs, p=0.7),
-                         desired_output)
+        self.assertEqual(sc.approx(input, costs=costs, p=0.7), desired_output)
 
     def test_partial_weighted3(self):
-        input = {0: set([1, 2]),
-                 1: set([3]),
-                 2: set([4]),
-                 3: set([2, 5]),
-                 4: set([1])}
+        input = {
+            0: set([1, 2]),
+            1: set([3]),
+            2: set([4]),
+            3: set([2, 5]),
+            4: set([1])
+        }
         costs = {0: 2, 1: 1000, 2: 999, 3: 10, 4: 10}
         desired_output = set([0, 2, 3])
-        self.assertEqual(sc.approx(input, costs=costs, p=0.8),
-                         desired_output)
+        self.assertEqual(sc.approx(input, costs=costs, p=0.8), desired_output)
 
     def test_partial_weighted4(self):
-        input = {0: set([1, 2]),
-                 1: set([3, 4, 5]),
-                 2: set([3]),
-                 3: set([4]),
-                 4: set([5])}
+        input = {
+            0: set([1, 2]),
+            1: set([3, 4, 5]),
+            2: set([3]),
+            3: set([4]),
+            4: set([5])
+        }
         costs = {0: 2.1, 1: 3, 2: 2, 3: 2, 4: 2}
         desired_output = set([1])
-        self.assertEqual(sc.approx(input, costs=costs, p=0.6),
-                         desired_output)
+        self.assertEqual(sc.approx(input, costs=costs, p=0.6), desired_output)
 
     def test_partial_weighted5(self):
-        input = {0: set([1, 2]),
-                 1: set([2, 3, 4, 5]),
-                 2: set([3]),
-                 3: set([4]),
-                 4: set([5])}
+        input = {
+            0: set([1, 2]),
+            1: set([2, 3, 4, 5]),
+            2: set([3]),
+            3: set([4]),
+            4: set([5])
+        }
 
         costs = {0: 3, 1: 4, 2: 1, 3: 1, 4: 2}
         desired_output = set([1])
-        self.assertEqual(sc.approx(input, costs=costs, p=0.8),
-                         desired_output)
+        self.assertEqual(sc.approx(input, costs=costs, p=0.8), desired_output)
 
         costs = {0: 3, 1: 4.1, 2: 1, 3: 1, 4: 2}
         desired_output = set([0, 2, 3])
         # The optimal solution is [1], but the approximation fails to
         # find it
-        self.assertEqual(sc.approx(input, costs=costs, p=0.8),
-                         desired_output)
+        self.assertEqual(sc.approx(input, costs=costs, p=0.8), desired_output)
 
     def test_no_elements(self):
         input = {}
@@ -140,7 +153,6 @@ class TestSetCoverApprox(unittest.TestCase):
 
 
 class TestSetCoverApproxMultiuniverse(unittest.TestCase):
-
     """Tests approx_multiuniverse function.
     """
 
@@ -149,332 +161,307 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
         logging.disable(logging.INFO)
 
     def test_one_universe_complete_unweighted(self):
-        sets = {0: {0: set([1, 2])},
-                1: {0: set([1, 2, 4])},
-                2: {0: set([2, 4])},
-                3: {0: set([4, 5])},
-                4: {0: set([3])}}
+        sets = {
+            0: {0: set([1, 2])},
+            1: {0: set([1, 2, 4])},
+            2: {0: set([2, 4])},
+            3: {0: set([4, 5])},
+            4: {0: set([3])}
+        }
         desired_output = set([1, 3, 4])
-        self.assertEqual(sc.approx_multiuniverse(sets),
-                         desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets), desired_output)
 
     def test_two_universes_complete_unweighted(self):
-        sets = {0: {0: set([1, 2])},
-                1: {0: set([1, 2, 4])},
-                2: {0: set([2, 4])},
-                3: {0: set([4]), 1: set([5])},
-                4: {1: set([3])}}
+        sets = {
+            0: {0: set([1, 2])},
+            1: {0: set([1, 2, 4])},
+            2: {0: set([2, 4])},
+            3: {0: set([4]),
+                1: set([5])},
+            4: {1: set([3])}
+        }
         desired_output = set([1, 3, 4])
-        self.assertEqual(sc.approx_multiuniverse(sets),
-                         desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets), desired_output)
 
     def test_one_universe_partial_unweighted(self):
-        sets = {0: {0: set([1, 2])},
-                1: {0: set([1, 2, 4])},
-                2: {0: set([2, 4])},
-                3: {0: set([4, 5])},
-                4: {0: set([3])}}
+        sets = {
+            0: {0: set([1, 2])},
+            1: {0: set([1, 2, 4])},
+            2: {0: set([2, 4])},
+            3: {0: set([4, 5])},
+            4: {0: set([3])}
+        }
         universe_p = {0: 0.6}
         desired_output = set([1])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_two_universes_partial_unweighted1(self):
-        sets = {0: {1: set([1, 2])},
-                1: {1: set([1, 2, 4])},
-                2: {1: set([2, 4])},
-                3: {0: set([5]), 1: set([4])},
-                4: {0: set([3])}}
+        sets = {
+            0: {1: set([1, 2])},
+            1: {1: set([1, 2, 4])},
+            2: {1: set([2, 4])},
+            3: {0: set([5]),
+                1: set([4])},
+            4: {0: set([3])}
+        }
         universe_p = {0: 1.0, 1: 0.3}
         desired_output = set([3, 4])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_two_universes_partial_unweighted2(self):
-        sets = {0: {0: set([2]), 1: set([1])},
-                1: {0: set([2, 4]), 1: set([1])},
-                2: {0: set([2, 4])},
-                3: {0: set([4]), 1: set([5])},
-                4: {0: set([3])}}
+        sets = {
+            0: {0: set([2]),
+                1: set([1])},
+            1: {0: set([2, 4]),
+                1: set([1])},
+            2: {0: set([2, 4])},
+            3: {0: set([4]),
+                1: set([5])},
+            4: {0: set([3])}
+        }
         universe_p = {0: 1.0, 1: 0.5}
         desired_output = set([1, 4])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_two_universes_partial_weighted1(self):
-        sets = {0: {0: set([1, 2])},
-                1: {0: set([1, 2]), 1: set([3, 4, 5])},
-                2: {1: set([4])},
-                3: {1: set([5])},
-                4: {1: set([3])}}
+        sets = {
+            0: {0: set([1, 2])},
+            1: {0: set([1, 2]),
+                1: set([3, 4, 5])},
+            2: {1: set([4])},
+            3: {1: set([5])},
+            4: {1: set([3])}
+        }
 
         costs = {0: 2, 1: 1000, 2: 3, 3: 1, 4: 10}
         universe_p = {0: 0.1, 1: 0.1}
         desired_output = set([0, 3])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
         costs = {0: 2, 1: 1000, 2: 3, 3: 1, 4: 10}
         universe_p = {0: 0.0, 1: 0.1}
         desired_output = set([3])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
         costs = {0: 2, 1: 1000, 2: 3, 3: 1, 4: 10}
         universe_p = {0: 0.5, 1: 0.5}
         desired_output = set([0, 2, 3])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
     def test_two_universes_partial_weighted2(self):
-        sets = {0: {0: set([1, 2])},
-                1: {0: set([2, 3]), 1: set([4, 5])},
-                2: {0: set([3])},
-                3: {1: set([4])},
-                4: {1: set([5])}}
+        sets = {
+            0: {0: set([1, 2])},
+            1: {0: set([2, 3]),
+                1: set([4, 5])},
+            2: {0: set([3])},
+            3: {1: set([4])},
+            4: {1: set([5])}
+        }
         costs = {0: 3, 1: 4, 2: 1, 3: 1, 4: 2}
         universe_p = {0: 1.0, 1: 0.5}
         desired_output = set([0, 2, 3])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
     def test_two_universes_partial_weighted3(self):
-        sets = {0: {1: set([1, 2])},
-                1: {0: set([3, 4, 5]), 1: set([2])},
-                2: {0: set([3])},
-                3: {0: set([4])},
-                4: {0: set([5])}}
+        sets = {
+            0: {1: set([1, 2])},
+            1: {0: set([3, 4, 5]),
+                1: set([2])},
+            2: {0: set([3])},
+            3: {0: set([4])},
+            4: {0: set([5])}
+        }
 
         costs = {0: 1000, 1: 4, 2: 1, 3: 1, 4: 2}
         universe_p = {0: 0.6, 1: 0.5}
         desired_output = set([1, 2, 3])
         # The optimal solution is [1] but the approximation fails to
         # find it
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
         costs = {0: 1000, 1: 4, 2: 1.5, 3: 1.5, 4: 2}
         universe_p = {0: 0.6, 1: 0.5}
         desired_output = set([1])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
     def test_three_universes_partial_weighted(self):
-        sets = {0: {0: set([1, 2])},
-                1: {0: set([2]), 1: set([3, 4])},
-                2: {1: set([3])},
-                3: {1: set([4]), 2: set([6])},
-                4: {2: set([5])}}
+        sets = {
+            0: {0: set([1, 2])},
+            1: {0: set([2]),
+                1: set([3, 4])},
+            2: {1: set([3])},
+            3: {1: set([4]),
+                2: set([6])},
+            4: {2: set([5])}
+        }
         costs = {0: 3, 1: 4, 2: 1, 3: 1, 4: 1000}
         universe_p = {0: 0.5, 1: 0.5, 2: 1.0}
         desired_output = set([0, 3, 4])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs,
-                universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets, costs, universe_p),
+                         desired_output)
 
     def test_same_value_different_universe1(self):
-        sets = {0: {0: set([1, 2])},
-                1: {1: set([1])}}
+        sets = {0: {0: set([1, 2])}, 1: {1: set([1])}}
         universe_p = {0: 1.0, 1: 1.0}
         desired_output = set([0, 1])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_same_value_different_universe2(self):
-        sets = {0: {0: set([1, 2]), 1: set([1])},
-                1: {1: set([1])}}
+        sets = {0: {0: set([1, 2]), 1: set([1])}, 1: {1: set([1])}}
         universe_p = {0: 1.0, 1: 1.0}
         desired_output = set([0])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_same_value_different_universe3(self):
-        sets = {0: {0: set([1, 2]), 1: set([2])},
-                1: {0: set([1, 2, 3])}}
+        sets = {0: {0: set([1, 2]), 1: set([2])}, 1: {0: set([1, 2, 3])}}
         universe_p = {0: 1.0, 1: 1.0}
         desired_output = set([0, 1])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_tuple_universe_id(self):
-        sets = {0: {(0, 0): set([1, 2]), (1, 0): set([2])},
-                1: {(0, 0): set([1, 2, 3])}}
+        sets = {
+            0: {(0, 0): set([1, 2]),
+                (1, 0): set([2])},
+            1: {(0, 0): set([1, 2, 3])}
+        }
         universe_p = {(0, 0): 1.0, (1, 0): 1.0}
         desired_output = set([0, 1])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p),
+                         desired_output)
 
     def test_one_universe_rank(self):
-        sets = {0: {0: set([1, 2, 3])},
-                1: {0: set([1, 2, 3, 4])},
-                2: {0: set([1, 2, 3])},
-                3: {0: set([1, 2, 3])}}
+        sets = {
+            0: {0: set([1, 2, 3])},
+            1: {0: set([1, 2, 3, 4])},
+            2: {0: set([1, 2, 3])},
+            3: {0: set([1, 2, 3])}
+        }
         ranks = {0: 5, 1: 10, 2: 1, 3: 10}
         desired_output = set([1, 2])
         self.assertEqual(sc.approx_multiuniverse(sets,
                                                  ranks=ranks), desired_output)
 
     def test_two_universes_ranks(self):
-        sets = {0: {0: set([1, 2, 3, 4]), 1: set([1])},
-                1: {0: set([1, 2, 3])},
-                2: {0: set([4]), 1: set([1])},
-                3: {0: set([2])}}
+        sets = {
+            0: {0: set([1, 2, 3, 4]),
+                1: set([1])},
+            1: {0: set([1, 2, 3])},
+            2: {0: set([4]),
+                1: set([1])},
+            3: {0: set([2])}
+        }
         ranks = {0: 100, 1: 3, 2: 2, 3: 1}
         desired_output = set([1, 2, 3])
         self.assertEqual(sc.approx_multiuniverse(sets,
                                                  ranks=ranks), desired_output)
 
     def test_cost_and_ranks1(self):
-        sets = {0: {0: set([1, 2, 3, 4, 5])},
-                1: {0: set([1, 2, 3])},
-                2: {0: set([3, 4])},
-                3: {0: set([1, 2, 3, 4])}}
+        sets = {
+            0: {0: set([1, 2, 3, 4, 5])},
+            1: {0: set([1, 2, 3])},
+            2: {0: set([3, 4])},
+            3: {0: set([1, 2, 3, 4])}
+        }
         ranks = {0: 2, 1: 1, 2: 1, 3: 1}
         costs = {0: 1, 1: 1, 2: 1, 3: 10}
         desired_output = set([0, 1, 2])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs=costs,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 costs=costs,
+                                                 ranks=ranks), desired_output)
 
     def test_cost_and_ranks2(self):
-        sets = {0: {0: set([1, 2, 3, 4])},
-                1: {0: set([1, 2, 3])},
-                2: {0: set([3, 4])},
-                3: {0: set([1, 2, 3, 4])}}
+        sets = {
+            0: {0: set([1, 2, 3, 4])},
+            1: {0: set([1, 2, 3])},
+            2: {0: set([3, 4])},
+            3: {0: set([1, 2, 3, 4])}
+        }
         ranks = {0: 2, 1: 1, 2: 1, 3: 1}
         costs = {0: 1, 1: 1, 2: 1, 3: 10}
         desired_output = set([1, 2])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                costs=costs,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 costs=costs,
+                                                 ranks=ranks), desired_output)
 
     def test_partial_coverage_with_ranks(self):
-        sets = {0: {0: set([1, 2, 3])},
-                1: {0: set([4, 5, 6])},
-                2: {0: set([7, 8, 9])},
-                3: {0: set([10, 11, 12])}}
+        sets = {
+            0: {0: set([1, 2, 3])},
+            1: {0: set([4, 5, 6])},
+            2: {0: set([7, 8, 9])},
+            3: {0: set([10, 11, 12])}
+        }
 
         universe_p = {0: 0.25}
         ranks = {0: 2, 1: 1, 2: 2, 3: 2}
         desired_output = set([1])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 ranks=ranks), desired_output)
 
         universe_p = {0: 0.5}
         ranks = {0: 3, 1: 1, 2: 3, 3: 2}
         desired_output = set([1, 3])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 ranks=ranks), desired_output)
 
     def test_two_universe_partial_coverage_with_ranks(self):
-        sets = {0: {0: set([1, 2, 3]), 1: set([1, 2, 3])},
-                1: {0: set([4, 5, 6])},
-                2: {0: set([7, 8, 9]), 1: set([1])}}
+        sets = {
+            0: {0: set([1, 2, 3]),
+                1: set([1, 2, 3])},
+            1: {0: set([4, 5, 6])},
+            2: {0: set([7, 8, 9]),
+                1: set([1])}
+        }
 
         universe_p = {0: 0.1, 1: 0.1}
         ranks = {0: 10, 1: 5, 2: 1}
         desired_output = set([2])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 ranks=ranks), desired_output)
 
         universe_p = {0: 0.1, 1: 0.5}
         ranks = {0: 10, 1: 5, 2: 1}
         desired_output = set([0, 2])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 ranks=ranks), desired_output)
 
         universe_p = {0: 0.5, 1: 0.1}
         ranks = {0: 10, 1: 5, 2: 1}
         desired_output = set([1, 2])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 ranks=ranks), desired_output)
 
         universe_p = {0: 0.5, 1: 0.5}
         ranks = {0: 10, 1: 5, 2: 1}
         desired_output = set([0, 1, 2])
-        self.assertEqual(
-            sc.approx_multiuniverse(
-                sets,
-                universe_p=universe_p,
-                ranks=ranks),
-            desired_output)
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 ranks=ranks), desired_output)
 
-    def verify_partial_cover(self, sets, universe_p,
-                             output):
+    def verify_partial_cover(self, sets, universe_p, output):
         """Verify the coverage achieved in each universe.
 
         Args:
@@ -558,11 +545,9 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                     set_size_from_universe = np.random.randint(0, 25)
                     if set_size_from_universe > 0:
                         els = set(
-                            np.random.choice(
-                                list(
-                                    universes[universe_id]),
-                                size=set_size_from_universe,
-                                replace=False))
+                            np.random.choice(list(universes[universe_id]),
+                                             size=set_size_from_universe,
+                                             replace=False))
                         sets[set_id][universe_id] = els
                         sets_union[universe_id].update(els)
             # Remove from all universes any elements that don't show
@@ -571,10 +556,14 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
             for universe_id, universe in universes.iteritems():
                 universe.intersection_update(sets_union[universe_id])
             # Generate random set costs and random coverage fractions
-            costs = {set_id: 1.0 + 10.0 * np.random.random()
-                     for set_id in xrange(num_sets)}
-            universe_p = {universe_id: np.random.random()
-                          for universe_id in xrange(num_universes)}
+            costs = {
+                set_id: 1.0 + 10.0 * np.random.random()
+                for set_id in xrange(num_sets)
+            }
+            universe_p = {
+                universe_id: np.random.random()
+                for universe_id in xrange(num_universes)
+            }
             # Compute the set cover
             if use_arrays:
                 sets_as_arrays = {}
@@ -585,7 +574,8 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                         for el in sets[set_id][universe_id]:
                             sets_as_arrays[set_id][universe_id].append(el)
                 output = sc.approx_multiuniverse(sets_as_arrays, costs,
-                                                 universe_p, use_arrays=True)
+                                                 universe_p,
+                                                 use_arrays=True)
             else:
                 output = sc.approx_multiuniverse(sets, costs, universe_p,
                                                  use_arrays=False)

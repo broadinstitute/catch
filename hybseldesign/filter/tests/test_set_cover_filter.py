@@ -15,7 +15,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class TestSetCoverFilter(unittest.TestCase):
-
     """Tests the set cover filter output on contrived input.
     """
 
@@ -23,55 +22,43 @@ class TestSetCoverFilter(unittest.TestCase):
         # Disable logging
         logging.disable(logging.WARNING)
 
-    def get_filter_and_output(
-            self,
-            lcf_thres,
-            mismatches,
-            target_genomes,
-            input,
-            coverage,
-            k,
-            num_kmers_per_probe,
-            mismatches_tolerant=-1,
-            lcf_thres_tolerant=-1,
-            identify=False,
-            blacklisted_genomes=[]):
+    def get_filter_and_output(self, lcf_thres, mismatches, target_genomes,
+                              input, coverage, k, num_kmers_per_probe,
+                              mismatches_tolerant=-1,
+                              lcf_thres_tolerant=-1,
+                              identify=False,
+                              blacklisted_genomes=[]):
         input_probes = [probe.Probe.from_str(s) for s in input]
         # Remove duplicates
         input_probes = list(OrderedDict.fromkeys(input_probes))
-        f = scf.SetCoverFilter(
-            mismatches=mismatches,
-            lcf_thres=lcf_thres,
-            coverage=coverage,
-            kmer_size=k,
-            num_kmers_per_probe=num_kmers_per_probe,
-            mismatches_tolerant=mismatches_tolerant,
-            lcf_thres_tolerant=lcf_thres_tolerant,
-            identify=identify,
-            blacklisted_genomes=blacklisted_genomes)
+        f = scf.SetCoverFilter(mismatches=mismatches,
+                               lcf_thres=lcf_thres,
+                               coverage=coverage,
+                               kmer_size=k,
+                               num_kmers_per_probe=num_kmers_per_probe,
+                               mismatches_tolerant=mismatches_tolerant,
+                               lcf_thres_tolerant=lcf_thres_tolerant,
+                               identify=identify,
+                               blacklisted_genomes=blacklisted_genomes)
         f.target_genomes = target_genomes
         f.filter(input_probes)
         return (f, f.output_probes)
 
-    def verify_target_genome_coverage(
-            self,
-            selected_probes,
-            target_genomes,
-            k,
-            num_kmers_per_probe,
-            filter,
-            desired_coverage):
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            selected_probes, k=k,
-            num_kmers_per_probe=10,
-            include_positions=True)
-        for tg in [g for genomes_from_group in target_genomes
-                   for g in genomes_from_group]:
+    def verify_target_genome_coverage(self, selected_probes, target_genomes, k,
+                                      num_kmers_per_probe, filter,
+                                      desired_coverage):
+        kmer_probe_map = probe.construct_kmer_probe_map(selected_probes,
+                                                        k=k,
+                                                        num_kmers_per_probe=10,
+                                                        include_positions=True)
+        for tg in [
+            g
+            for genomes_from_group in target_genomes for g in genomes_from_group
+        ]:
             num_bp_covered = 0
             for seq in tg.seqs:
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                    seq,
-                    kmer_probe_map,
+                    seq, kmer_probe_map,
                     k=k,
                     cover_range_for_probe_in_subsequence_fn=filter.cover_range_fn)
                 all_cover_ranges = []
@@ -91,23 +78,21 @@ class TestSetCoverFilter(unittest.TestCase):
 
     def run_full_coverage_check_for_target_genomes(self, target_genomes):
         input = []
-        for tg in [g for genomes_from_group in target_genomes
-                   for g in genomes_from_group]:
+        for tg in [
+            g
+            for genomes_from_group in target_genomes for g in genomes_from_group
+        ]:
             for seq in tg.seqs:
                 input += [seq[i:(i + 6)] for i in xrange(len(seq) - 6 + 1)]
-        must_have_output = ['OPQRST',
-                            'UVWXYZ',
-                            'FEDCBA',
-                            'ABCDEF',
-                            'ZYXWVF']
-        f, output = self.get_filter_and_output(6, 0, target_genomes,
-                                               input, 1.0, 3, 10)
+        must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
+        f, output = self.get_filter_and_output(6, 0, target_genomes, input,
+                                               1.0, 3, 10)
         # output must have probes in must_have_output
         for o in must_have_output:
             self.assertTrue(probe.Probe.from_str(o) in output)
         # verify that each of the target genomes is fully covered
-        self.verify_target_genome_coverage(output,
-                                           target_genomes, 3, 10, f, 1.0)
+        self.verify_target_genome_coverage(output, target_genomes, 3, 10, f,
+                                           1.0)
 
     def convert_target_genomes(self, target_genomes):
         """Convert genomes to instances of genome.Genome.
@@ -141,12 +126,17 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = self.convert_target_genomes(target_genomes)
         self.run_full_coverage_check_for_target_genomes(target_genomes)
 
-    def get_6bp_probes(self, target_genomes, cover=1.0, identify=False,
-                       mismatches_tolerant=0, lcf_thres_tolerant=6,
+    def get_6bp_probes(self, target_genomes,
+                       cover=1.0,
+                       identify=False,
+                       mismatches_tolerant=0,
+                       lcf_thres_tolerant=6,
                        blacklisted_genomes=[]):
         input = []
-        for tg in [g for genomes_from_group in target_genomes
-                   for g in genomes_from_group]:
+        for tg in [
+            g
+            for genomes_from_group in target_genomes for g in genomes_from_group
+        ]:
             for seq in tg.seqs:
                 input += [seq[i:(i + 6)] for i in xrange(len(seq) - 6 + 1)]
         # Use 100 kmers per probe to better avoid the very rare cases
@@ -154,10 +144,12 @@ class TestSetCoverFilter(unittest.TestCase):
         # in a test case failing. We could set a random seed, but using
         # 100 for this parameter makes the probability of this
         # happening incredibly small.
-        f, output = self.get_filter_and_output(6, 0, target_genomes,
-                                               input, cover, 3, 100, mismatches_tolerant=mismatches_tolerant,
-                                               lcf_thres_tolerant=lcf_thres_tolerant,
-                                               identify=identify, blacklisted_genomes=blacklisted_genomes)
+        f, output = self.get_filter_and_output(
+            6, 0, target_genomes, input, cover, 3, 100,
+            mismatches_tolerant=mismatches_tolerant,
+            lcf_thres_tolerant=lcf_thres_tolerant,
+            identify=identify,
+            blacklisted_genomes=blacklisted_genomes)
         return f, output
 
     def test_same_output_with_duplicated_species(self):
@@ -191,13 +183,8 @@ class TestSetCoverFilter(unittest.TestCase):
             # probes ('ABCDEF' and one other)
             min_num_probes = {0.1: 1, 0.5: 2, 0.8: 4, 1.0: 5}
             self.assertEqual(len(probes), min_num_probes[cover_frac])
-            self.verify_target_genome_coverage(
-                probes,
-                target_genomes,
-                3,
-                10,
-                f,
-                cover_frac)
+            self.verify_target_genome_coverage(probes, target_genomes, 3, 10,
+                                               f, cover_frac)
 
     def test_explicit_bp_coverage(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
@@ -209,20 +196,14 @@ class TestSetCoverFilter(unittest.TestCase):
             # ('ABCDEF')
             min_num_probes = {2: 1, 5: 1, 10: 1, 15: 2, 20: 3}
             self.assertEqual(len(probes), min_num_probes[num_bp])
-            self.verify_target_genome_coverage(
-                probes,
-                target_genomes,
-                3,
-                10,
-                f,
-                num_bp)
+            self.verify_target_genome_coverage(probes, target_genomes, 3, 10,
+                                               f, num_bp)
 
     def test_identify_one_group(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                            'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=True)
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True)
         self.assertEqual(probes, [probe.Probe.from_str('ABCDEF')])
 
     def test_identify_two_groups(self):
@@ -230,11 +211,9 @@ class TestSetCoverFilter(unittest.TestCase):
                            'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
                           ['ATATATABCDEFATATATATATATATATATAT']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=True)
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR'),
-                              probe.Probe.from_str('ATATAT')]))
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True)
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR'),
+                                           probe.Probe.from_str('ATATAT')]))
 
     def test_identify_three_groups(self):
         target_genomes = [['ABCDEFQRSQRSHIJKLMQRSQRSQRSQRSQR',
@@ -244,8 +223,7 @@ class TestSetCoverFilter(unittest.TestCase):
                           ['XYZXYZAAAAAAXYZXYZXYZXYZXYZXYZXY',
                            'QRSQRSQRSQRAAAAAAQRSQRSQRSQRSQRS']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=True)
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True)
         # CGCGCG for second group
         self.assertIn(probe.Probe.from_str('CGCGCG'), probes)
         # AAAAAA for third group
@@ -254,29 +232,22 @@ class TestSetCoverFilter(unittest.TestCase):
         self.assertEqual(len(probes), 4)
 
     def test_identify_three_groups_forced_pick(self):
-        target_genomes = [['ABCDEFXYZXYZIJKLMN',
-                           'XYZXYZBCDEFMNOPQ'],
-                          ['ABCDEFMNOPQR'],
-                          ['ABCDEF']]
+        target_genomes = [['ABCDEFXYZXYZIJKLMN', 'XYZXYZBCDEFMNOPQ'],
+                          ['ABCDEFMNOPQR'], ['ABCDEF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=True)
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True)
         # ABCDEF is forced to be chosen due to the third group,
         # but XYZXYZ and MNOPQR will first be chosen for the first and
         # second groups
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('ABCDEF'),
-                              probe.Probe.from_str('XYZXYZ'),
-                              probe.Probe.from_str('MNOPQR')]))
+        self.assertEqual(set(probes), set([probe.Probe.from_str('ABCDEF'),
+                                           probe.Probe.from_str('XYZXYZ'),
+                                           probe.Probe.from_str('MNOPQR')]))
 
     def test_identify_three_groups_two_hit_species(self):
-        target_genomes = [['ABCDEFXYZXYZ',
-                           'MNOPQRXYZXYZ'],
-                          ['ABCDEFXYZXYZ'],
+        target_genomes = [['ABCDEFXYZXYZ', 'MNOPQRXYZXYZ'], ['ABCDEFXYZXYZ'],
                           ['ABCDEFMNOPQR']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=True)
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True)
         # ABCDEF should not be chosen because it hits all three groups,
         # but some probe(s) that are selected will have to hit two groups
         self.assertNotIn(probe.Probe.from_str('ABCDEF'), probes)
@@ -292,34 +263,33 @@ class TestSetCoverFilter(unittest.TestCase):
                           ['ATATATABCDEFATATATATATATATATATAT']]
         target_genomes = self.convert_target_genomes(target_genomes)
         f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=10, identify=True)
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR'),
-                              probe.Probe.from_str('TUVWXY'),
-                              probe.Probe.from_str('ATATAT')]))
+                                        cover=10,
+                                        identify=True)
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR'),
+                                           probe.Probe.from_str('TUVWXY'),
+                                           probe.Probe.from_str('ATATAT')]))
 
     def test_identify_two_groups_tolerant(self):
         target_genomes = [['ABCDEFXXIJKXMNOPQRXTATXAYABCDEFATAXATXYZX',
                            'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
                           ['ATATATABCDEFATATATATATATATXYZXYZ']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, mismatches_tolerant=1,
-            lcf_thres_tolerant=5, identify=True)
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR'),
-                              probe.Probe.from_str('XYZXYZ')]))
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=6,
+                                        mismatches_tolerant=1,
+                                        lcf_thres_tolerant=5,
+                                        identify=True)
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR'),
+                                           probe.Probe.from_str('XYZXYZ')]))
 
     def test_identify_two_groups_reverse_complement(self):
         target_genomes = [['ATCGGGXXIJKXMNOPQRXTUXWXYXATCGGG',
                            'ATCGGGGHIJKLMNOPQRSTUVWXYZATCGGG'],
                           ['ATATATCCCGATATATATATATATATATATAT']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=True)
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR'),
-                              probe.Probe.from_str('ATATAT')]))
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True)
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR'),
+                                           probe.Probe.from_str('ATATAT')]))
 
     def test_blacklist_one_genome1(self):
         bl_file = tempfile.NamedTemporaryFile()
@@ -330,12 +300,12 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ABCDEFXXIJKXMNOPQRXTUXWXYXABCDEF',
                            'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, identify=False, blacklisted_genomes=[
-                bl_file.name])
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=6,
+                                        identify=False,
+                                        blacklisted_genomes=[bl_file.name])
         # No candidate probe is blacklisted
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('ABCDEF')]))
+        self.assertEqual(set(probes), set([probe.Probe.from_str('ABCDEF')]))
 
         bl_file.close()
 
@@ -348,12 +318,12 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ATCGGGXXIJKXMNOPQRXTUXWXYXATCGGG',
                            'ATCGGGGHIJKLMNOPQRSTUVWXYZATCGGG']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, identify=False, blacklisted_genomes=[
-                bl_file.name])
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=6,
+                                        identify=False,
+                                        blacklisted_genomes=[bl_file.name])
         # ABCDEF is blacklisted, so go for the second most common probe
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR')]))
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR')]))
 
         bl_file.close()
 
@@ -366,12 +336,12 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ATCGGGXXIJKXMNOPQRXTUXWXYXATCGGG',
                            'ATCGGGGHIJKLMNOPQRSTUVWXYZAYCGGG']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, identify=False, blacklisted_genomes=[
-                bl_file.name])
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=6,
+                                        identify=False,
+                                        blacklisted_genomes=[bl_file.name])
         # ATCGGG is blacklisted, so go for the second most common probe
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR')]))
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR')]))
 
         bl_file.close()
 
@@ -385,13 +355,13 @@ class TestSetCoverFilter(unittest.TestCase):
                            'ATCGGGGHIJKLMNOPQRSTUVWXYZAYCGGG']]
         target_genomes = self.convert_target_genomes(target_genomes)
         f, probes = self.get_6bp_probes(target_genomes,
-                                        cover=6, identify=False,
+                                        cover=6,
+                                        identify=False,
                                         mismatches_tolerant=1,
                                         lcf_thres_tolerant=5,
                                         blacklisted_genomes=[bl_file.name])
         # ATCGGG is blacklisted, so go for the second most common probe
-        self.assertEqual(set(probes),
-                         set([probe.Probe.from_str('MNOPQR')]))
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR')]))
 
         bl_file.close()
 
@@ -406,9 +376,10 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ATCGGGXXIJKXGGGGGGXTUXWXYXATCGGG',
                            'ATCGGGGHIJKLGGGGGGSTUVWXYZATCGGG']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, identify=False, blacklisted_genomes=[
-                bl_file.name])
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=6,
+                                        identify=False,
+                                        blacklisted_genomes=[bl_file.name])
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
         self.assertNotIn(probe.Probe.from_str('GGGGGG'), probes)
 
@@ -428,8 +399,10 @@ class TestSetCoverFilter(unittest.TestCase):
                            'ATCGGGGHIJKLGGGGGGSTUVWXYZATCGGG']]
         target_genomes = self.convert_target_genomes(target_genomes)
         f, probes = self.get_6bp_probes(
-            target_genomes, cover=6, identify=False, blacklisted_genomes=[
-                bl_file1.name, bl_file2.name])
+            target_genomes,
+            cover=6,
+            identify=False,
+            blacklisted_genomes=[bl_file1.name, bl_file2.name])
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
         self.assertNotIn(probe.Probe.from_str('GGGGGG'), probes)
 
@@ -442,12 +415,12 @@ class TestSetCoverFilter(unittest.TestCase):
         bl_file.write("AAAAAAAAAAATCGGGAAAAA\n")
         bl_file.seek(0)
 
-        target_genomes = [['ABCDEFABCDEF'],
-                          ['ABCDEFATCGGG']]
+        target_genomes = [['ABCDEFABCDEF'], ['ABCDEFATCGGG']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=1.0, identify=False, blacklisted_genomes=[
-                bl_file.name])
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=1.0,
+                                        identify=False,
+                                        blacklisted_genomes=[bl_file.name])
         # Should choose ABCDEF
         self.assertIn(probe.Probe.from_str('ABCDEF'), probes)
         # Forced to choose ATCGGG at end to ensure full coverage
@@ -468,9 +441,10 @@ class TestSetCoverFilter(unittest.TestCase):
                           ['ABCDEFATCGGGATCGGGXXX',
                            'ATCGGGBCDEFGGGGGCCCCCATCGGGYYY']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(
-            target_genomes, cover=12, identify=True, blacklisted_genomes=[
-                bl_file.name])
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=12,
+                                        identify=True,
+                                        blacklisted_genomes=[bl_file.name])
         # Should pick GGGGGG and CCCCCC for the first genome
         # Note there are just 5 G's and 5 C's in the last genome
         self.assertIn(probe.Probe.from_str('GGGGGG'), probes)
@@ -479,8 +453,8 @@ class TestSetCoverFilter(unittest.TestCase):
         self.assertNotIn(probe.Probe.from_str('ABCDEF'), probes)
         # Should avoid ATCGGG because it's blacklisted
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
-        self.verify_target_genome_coverage(probes,
-                                           target_genomes, 3, 10, f, 12)
+        self.verify_target_genome_coverage(probes, target_genomes, 3, 10, f,
+                                           12)
 
         bl_file.close()
 

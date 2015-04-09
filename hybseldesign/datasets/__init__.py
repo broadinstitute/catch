@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class GenomesDataset:
-
     """Individual (sampled) genomes, usually from the same species.
     """
 
@@ -36,7 +35,6 @@ class GenomesDataset:
 
 
 class GenomesDatasetSingleChrom(GenomesDataset):
-
     """Dataset whose genomes have one chromosome.
 
     This is used when the genome held by this dataset can be fully
@@ -68,7 +66,6 @@ class GenomesDatasetSingleChrom(GenomesDataset):
 
 
 class GenomesDatasetMultiChrom(GenomesDataset):
-
     """Dataset whose genomes have multiple chromosomes.
 
     This is used when the genome held by this dataset has more than one

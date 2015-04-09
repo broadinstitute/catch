@@ -16,7 +16,6 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 class ReverseComplementFilter(BaseFilter):
-
     """Filter that adds reverse complements to list of probes.
     """
 
