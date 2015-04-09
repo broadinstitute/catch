@@ -13,19 +13,18 @@ class Genome:
      - genomes that are divided into multiple chromosomes and must
        support the ability to obtain a sequence from a chromosome label
     """
-    """
-  Args:
-      seqs: list of sequences (chromosomes) that make up this genome;
-          if len(seqs)==1, then this genome is not divided into
-          multiple chromosomes
-
-      chrs: OrderedDict mapping the labels of chromosomes to the
-          sequence corresponding to the label; it should be true that
-          chrs.values()==seqs -- i.e., they contain the same sequences
-          in the same order (although this is not asserted)
-  """
 
     def __init__(self, seqs, chrs=None):
+        """
+        Args:
+            seqs: list of sequences (chromosomes) that make up this genome;
+                if len(seqs)==1, then this genome is not divided into
+                multiple chromosomes
+            chrs: OrderedDict mapping the labels of chromosomes to the
+                sequence corresponding to the label; it should be true that
+                chrs.values()==seqs -- i.e., they contain the same sequences
+                in the same order (although this is not asserted)
+        """
         if len(seqs) > 1 and chrs is None:
             raise ValueError(("When there is more than one sequence, chrs "
                               "should also be specified"))
