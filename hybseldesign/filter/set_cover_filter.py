@@ -42,13 +42,13 @@ considering the longest common substring with some number of
 mismatches between a sequence and a probe.
 """
 
-from array import array
 from collections import defaultdict
 import logging
 import re
 
 from hybseldesign.filter.base_filter import BaseFilter
 from hybseldesign import probe
+from hybseldesign.utils import interval
 from hybseldesign.utils import seq_io
 from hybseldesign.utils import set_cover
 
@@ -154,15 +154,14 @@ class SetCoverFilter(BaseFilter):
             j ranges from 0 through (n_i)-1 where n_i is the number of
             target genomes in the i'th group. In the returned value
             (sets), sets[set_id][universe_id] is a set of all the bases
-            (as integers) covered by probe set_id in the target genome
-            universe_id.
+            (as an instance of interval.IntervalSet) covered by probe
+            set_id in the target genome universe_id.
         """
         probe_id = {}
         sets = {}
         for id, p in enumerate(candidate_probes):
             probe_id[p] = id
-            # Store values in an array of type 'I' to be space efficient
-            sets[id] = defaultdict(lambda: array('I'))
+            sets[id] = defaultdict(list)
 
         for i, genomes_from_group in enumerate(self.target_genomes):
             for j, gnm in enumerate(genomes_from_group):
@@ -182,19 +181,23 @@ class SetCoverFilter(BaseFilter):
                     for p, cover_ranges in probe_cover_ranges.iteritems():
                         set_id = probe_id[p]
                         for cover_range in cover_ranges:
-                            for bp in xrange(cover_range[0], cover_range[1]):
-                                # bp gives a position in just this sequence
-                                # (chromosome), so adding the lengths of all
-                                # the sequences previously iterated
-                                # (length_so_far) onto bp gives a unique
-                                # integer position in the genome gnm
-                                sets[set_id][universe_id].append(
-                                    length_so_far + bp)
+                            # The endpoints of cover_range give positions in
+                            # just this sequence (chromosome), so adding the
+                            # lengths of all the sequences previously iterated
+                            # (length_so_far) onto them gives unique
+                            # integer positions in the genome gnm
+                            adjusted_cover = (cover_range[0] + length_so_far,
+                                              cover_range[1] + length_so_far)
+                            sets[set_id][universe_id].append(adjusted_cover)
                     length_so_far += len(sequence)
 
-        # Convert each defaultdict to dict
+        # Convert each defaultdict to a dict and make an IntervalSet out of
+        # the intervals of each set
         for set_id in sets.keys():
             sets[set_id] = dict(sets[set_id])
+            for universe_id in sets[set_id].keys():
+                intervals = sets[set_id][universe_id]
+                sets[set_id][universe_id] = interval.IntervalSet(intervals)
 
         return sets
 
@@ -513,7 +516,7 @@ class SetCoverFilter(BaseFilter):
                                                           costs=costs,
                                                           universe_p=universe_p,
                                                           ranks=ranks,
-                                                          use_arrays=True)
+                                                          use_intervalsets=True)
 
         # Save ranks and costs
         self.probe_ranks = ranks
