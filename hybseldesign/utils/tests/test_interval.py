@@ -4,8 +4,114 @@
 import unittest
 
 from hybseldesign.utils import interval
+from hybseldesign.utils.interval import IntervalSet
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
+
+
+class TestIntervalSet(unittest.TestCase):
+    """Tests the IntervalSet class and its methods.
+    """
+
+    def test_eq(self):
+        # assertEquals should call the __eq__ method
+        self.assertEqual(IntervalSet([(1, 3), (3, 5)]), IntervalSet([(1, 5)]))
+        self.assertNotEqual(IntervalSet([(1, 3)]), IntervalSet([(5, 7)]))
+
+    def test_num_elements(self):
+        self.assertEqual(len(IntervalSet([])), 0)
+        self.assertEqual(len(IntervalSet([(1, 5)])), 4)
+        self.assertEqual(len(IntervalSet([(1, 3), (3, 5)])), 4)
+        self.assertEqual(len(IntervalSet([(1, 3), (5, 9)])), 6)
+        self.assertEqual(len(IntervalSet([(0, 10), (3, 6)])), 10)
+        self.assertEqual(len(IntervalSet([(1, 5), (3, 7), (10, 13),
+                                          (20, 30)])), 19)
+
+    def compare_intersect(self, input_a, input_b, desired_output):
+        a = IntervalSet(input_a)
+        b = IntervalSet(input_b)
+        o = IntervalSet(desired_output)
+        # Intersect is commutative, so check both orders
+        self.assertEqual(a.intersection(b), o)
+        self.assertEqual(b.intersection(a), o)
+
+    def test_intersect(self):
+        self.compare_intersect([], [], [])
+        self.compare_intersect([], [(1, 3)], [])
+        self.compare_intersect([(1, 3)], [], [])
+        self.compare_intersect([(1, 3), (10, 15)], [(5, 7), (17, 20)], [])
+        self.compare_intersect([(1, 3), (5, 7)], [(1, 3), (5, 7)], [(1, 3),
+                                                                    (5, 7)])
+        self.compare_intersect([(1, 10)], [(3, 7)], [(3, 7)])
+        self.compare_intersect([(2, 100)], [(0, 50)], [(2, 50)])
+        self.compare_intersect([(2, 100), (101, 150)], [(0, 50)], [(2, 50)])
+        self.compare_intersect([(0, 7)], [(4, 10)], [(4, 7)])
+        self.compare_intersect([(1, 5), (10, 15)], [(1, 5),
+                                                    (15, 20)], [(1, 5)])
+        self.compare_intersect([(1, 5), (10, 15)], [(3, 12)], [(3, 5),
+                                                               (10, 12)])
+        self.compare_intersect([(1, 5), (10, 15)], [(12, 20), (25, 30)],
+                               [(12, 15)])
+        self.compare_intersect([(100, 200), (250, 300), (350, 450),
+                                (475, 600)], [(175, 275), (250, 350),
+                                              (400, 500)],
+                               [(175, 200), (250, 300), (400, 450),
+                                (475, 500)])
+
+    def compare_union(self, input_a, input_b, desired_output):
+        a = IntervalSet(input_a)
+        b = IntervalSet(input_b)
+        o = IntervalSet(desired_output)
+        # Union is commutative, so check both orders
+        self.assertEqual(a.union(b), o)
+        self.assertEqual(b.union(a), o)
+
+    def test_union(self):
+        self.compare_union([], [], [])
+        self.compare_union([], [(1, 3)], [(1, 3)])
+        self.compare_union([(1, 3)], [], [(1, 3)])
+        self.compare_union([(1, 3), (10, 15)], [(5, 7), (17, 20)],
+                           [(1, 3), (5, 7), (10, 15), (17, 20)])
+        self.compare_union([(1, 3), (5, 7)], [(1, 3), (5, 7)], [(1, 3),
+                                                                (5, 7)])
+        self.compare_union([(1, 10)], [(3, 7)], [(1, 10)])
+        self.compare_union([(2, 100)], [(0, 50)], [(0, 100)])
+        self.compare_union([(0, 7)], [(4, 10)], [(0, 10)])
+        self.compare_union([(1, 5), (10, 15)], [(1, 5), (15, 20)], [(1, 5),
+                                                                    (10, 20)])
+        self.compare_union([(1, 5), (10, 15)], [(3, 12)], [(1, 15)])
+        self.compare_union([(1, 5), (10, 15)], [(12, 20), (25, 30)],
+                           [(1, 5), (10, 20), (25, 30)])
+        self.compare_union([(100, 200), (250, 300), (350, 450), (475, 600)],
+                           [(175, 275), (250, 350), (400, 500)], [(100, 600)])
+
+    def compare_difference(self, input_a, input_b, desired_output):
+        a = IntervalSet(input_a)
+        b = IntervalSet(input_b)
+        o = IntervalSet(desired_output)
+        self.assertEqual(a.difference(b), o)
+
+    def test_difference(self):
+        self.compare_difference([], [], [])
+        self.compare_difference([], [(1, 3)], [])
+        self.compare_difference([(1, 3)], [], [(1, 3)])
+        self.compare_difference([(1, 3)], [(5, 10)], [(1, 3)])
+        self.compare_difference([(5, 10)], [(1, 3)], [(5, 10)])
+        self.compare_difference([(1, 10)], [(3, 7)], [(1, 3), (7, 10)])
+        self.compare_difference([(1, 10)], [(3, 7), (10, 12)], [(1, 3),
+                                                                (7, 10)])
+        self.compare_difference([(1, 5), (10, 15)], [(3, 7)], [(1, 3),
+                                                               (10, 15)])
+        self.compare_difference([(3, 7)], [(1, 5), (10, 15)], [(5, 7)])
+        self.compare_difference([(1, 5), (10, 15)], [(3, 12)], [(1, 3),
+                                                                (12, 15)])
+        self.compare_difference([(3, 12)], [(1, 5), (10, 15)], [(5, 10)])
+        self.compare_difference([(1, 5), (10, 15), (20, 30)], [(3, 12)],
+                                [(1, 3), (12, 15), (20, 30)])
+        self.compare_difference([(100, 200), (250, 300), (350, 450),
+                                 (475, 600)], [(175, 275), (250, 350),
+                                               (400, 500)],
+                                [(100, 175), (350, 400), (500, 600)])
 
 
 class TestMergeOverlapping(unittest.TestCase):
@@ -26,6 +132,10 @@ class TestMergeOverlapping(unittest.TestCase):
 
     def test_two_touching(self):
         self.compare([(1, 3), (3, 5)], [(1, 5)])
+
+    def test_out_of_order(self):
+        self.compare([(4, 5), (1, 2)], [(1, 2), (4, 5)])
+        self.compare([(3, 5), (1, 3)], [(1, 5)])
 
     def test_three(self):
         self.compare([(1, 5), (3, 7), (9, 12)], [(1, 7), (9, 12)])
