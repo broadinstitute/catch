@@ -4,6 +4,8 @@
 from collections import defaultdict
 import logging
 
+from hybseldesign.utils import interval
+
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
@@ -146,7 +148,8 @@ def approx_multiuniverse(sets,
                          costs=None,
                          universe_p=None,
                          ranks=None,
-                         use_arrays=False):
+                         use_arrays=False,
+                         use_intervalsets=False):
     """Approximates the solution to a "multiuniverse" set problem.
 
     We define the "multiuniverse" set problem to be a version of the
@@ -200,6 +203,16 @@ def approx_multiuniverse(sets,
             overhead and, though the use of array is less time-efficient
             here, it can lead to substantial memory savings depending on
             the type of data.
+        use_intervalsets: when True, the values inside the input 'sets'
+            are expected to be stored as an instance of IntervalSet
+            (one instance per set). For sets that contain many adjacent
+            elements (i.e., stretches of contiguous integers), this
+            should require less memory and less runtime than the use of
+            Python sets or arrays. This cannot be true when 'use_arrays'
+            is also True. This should only be used when the elements
+            (usually integers) are well represented by intervals --
+            i.e., they fit into contiguous stretches -- because otherwise
+            this will run slowly compared to when the option is not set.
 
     Returns:
         a set consisting of the identifiers of the sets chosen to be
@@ -246,6 +259,9 @@ def approx_multiuniverse(sets,
         simply calling this function -- we choose to implement the
         versions separately.
     """
+    if use_arrays and use_intervalsets:
+        raise ValueError("Cannot use both arrays and IntervalSets")
+
     if costs is None:
         # Give each set a default cost of 1
         costs = {set_id: 1 for set_id in sets.keys()}
@@ -259,10 +275,17 @@ def approx_multiuniverse(sets,
                                  set_id)
 
     # Create the universes from given sets
-    universes = defaultdict(set)
+    if use_intervalsets:
+        # Store the elements of each universe in an IntervalSet
+        universes = defaultdict(lambda: interval.IntervalSet([]))
+    else:
+        # Store the elements of each universe in a set
+        universes = defaultdict(set)
     for sets_by_universe in sets.values():
         for universe_id, s in sets_by_universe.iteritems():
-            if use_arrays:
+            if use_intervalsets:
+                universes[universe_id] = universes[universe_id].union(s)
+            elif use_arrays:
                 for v in s:
                     universes[universe_id].add(v)
             else:
@@ -380,6 +403,9 @@ def approx_multiuniverse(sets,
                         # it appears that, in practice, converting s to a set
                         # and using set.intersection is faster.
                         s = set(s)
+                    # If use_intervalsets, then s and universe should already
+                    # be IntervalSets, and the intersection method is defined
+                    # for these
                     num_covered = len(s.intersection(universe))
                     # Memoize num_covered
                     memoized_intersect_counts[universe_id][set_id] = num_covered
@@ -409,7 +435,10 @@ def approx_multiuniverse(sets,
                 continue
             s = sets[id_min_ratio][universe_id]
             prev_universe_size = len(universe)
-            if use_arrays:
+            if use_intervalsets:
+                universe = universe.difference(s)
+                universes[universe_id] = universe
+            elif use_arrays:
                 for v in s:
                     universe.discard(v)
             else:
