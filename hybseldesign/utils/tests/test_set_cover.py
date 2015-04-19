@@ -8,6 +8,7 @@ import unittest
 
 import numpy as np
 
+from hybseldesign.utils import interval
 from hybseldesign.utils import set_cover as sc
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -461,6 +462,23 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                                                  universe_p=universe_p,
                                                  ranks=ranks), desired_output)
 
+    def test_with_intervalsets(self):
+        return
+        sets = {
+            0: {0: interval.IntervalSet([(1, 100)]),
+                1: interval.IntervalSet([(1, 5)])},
+            1: {0: interval.IntervalSet([(20, 30)])},
+            2: {0: interval.IntervalSet([(40, 50)]),
+                1: interval.IntervalSet([(20, 50)])}
+        }
+
+        universe_p = {0: 1.0, 1: 0.1}
+        desired_output = set([0])
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 use_intervalsets=True),
+                         desired_output)
+
     def verify_partial_cover(self, sets, universe_p, output):
         """Verify the coverage achieved in each universe.
 
@@ -507,11 +525,18 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
         return float(sum_of_weights_of_selected_sets) / sum_of_all_weights
 
     def test_random(self):
-        output_set = self.run_random(False)
-        output_array = self.run_random(True)
+        output_set = self.run_random(False, False, False)
+        output_array = self.run_random(True, False, False)
         self.assertEqual(output_set, output_array)
 
-    def run_random(self, use_arrays):
+        # When testing with use_intervalsets, the integers generated should
+        # be contiguous (set cover will run very slowly with use_intervalsets
+        # if the integers are spaced apart)
+        output_set = self.run_random(False, False, True)
+        output_intervalsets = self.run_random(False, True, True)
+        self.assertEqual(output_set, output_intervalsets)
+
+    def run_random(self, use_arrays, use_intervalsets, make_contiguous):
         """Run tests with randomly generated instances of set cover.
 
         This generates random instances of set cover, computes the
@@ -524,37 +549,60 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
             use_arrays: when True, solve set cover where the input
                 sets are actually stored as arrays (for space
                 efficiency reasons)
+            use_intervalsets: when True, solve set cover where the
+                input sets are actually an instance of IntervalSet
+            make_contiguous: when True, the elements (integers) put
+                into the sets form contigous stretches (when False,
+                they tend to be spaced apart)
         """
         np.random.seed(1)
         weight_fracs = []
         outputs = []
         for n in xrange(20):
-            # Generate the universes
-            num_universes = np.random.randint(1, 10)
-            universes = {}
-            for universe_id in xrange(num_universes):
-                universe_size = np.random.randint(100, 500)
-                els = set(np.random.randint(0, 5000, size=universe_size))
-                universes[universe_id] = els
-            # Generate the sets
-            num_sets = np.random.randint(500, 1000)
-            sets = defaultdict(dict)
-            sets_union = defaultdict(set)
-            for set_id in xrange(num_sets):
+            if make_contiguous:
+                # Generate the sets and universes together
+                num_universes = np.random.randint(1, 10)
+                num_sets = np.random.randint(250, 350)
+                sets = {}
+                universes = defaultdict(set)
+                for set_id in xrange(num_sets):
+                    sets[set_id] = defaultdict(set)
+                    for universe_id in xrange(num_universes):
+                        num_stretches = np.random.randint(0, 10)
+                        for stretch in xrange(num_stretches):
+                            stretch_length = np.random.randint(50, 150)
+                            stretch_start = np.random.randint(0, 5000)
+                            for i in xrange(stretch_length):
+                                val = stretch_start + i
+                                sets[set_id][universe_id].add(val)
+                                universes[universe_id].add(val)
+            else:
+                # Generate the universes
+                num_universes = np.random.randint(1, 10)
+                universes = {}
                 for universe_id in xrange(num_universes):
-                    set_size_from_universe = np.random.randint(0, 25)
-                    if set_size_from_universe > 0:
-                        els = set(
-                            np.random.choice(list(universes[universe_id]),
-                                             size=set_size_from_universe,
-                                             replace=False))
-                        sets[set_id][universe_id] = els
-                        sets_union[universe_id].update(els)
-            # Remove from all universes any elements that don't show
-            # up in a set in order to ensure that we correctly verify
-            # partial coverage
-            for universe_id, universe in universes.iteritems():
-                universe.intersection_update(sets_union[universe_id])
+                    universe_size = np.random.randint(100, 500)
+                    els = set(np.random.randint(0, 5000, size=universe_size))
+                    universes[universe_id] = els
+                # Generate the sets
+                num_sets = np.random.randint(500, 1000)
+                sets = defaultdict(dict)
+                sets_union = defaultdict(set)
+                for set_id in xrange(num_sets):
+                    for universe_id in xrange(num_universes):
+                        set_size_from_universe = np.random.randint(0, 25)
+                        if set_size_from_universe > 0:
+                            els = set(
+                                np.random.choice(list(universes[universe_id]),
+                                                 size=set_size_from_universe,
+                                                 replace=False))
+                            sets[set_id][universe_id] = els
+                            sets_union[universe_id].update(els)
+                # Remove from all universes any elements that don't show
+                # up in a set in order to ensure that we correctly verify
+                # partial coverage
+                for universe_id, universe in universes.iteritems():
+                    universe.intersection_update(sets_union[universe_id])
             # Generate random set costs and random coverage fractions
             costs = {
                 set_id: 1.0 + 10.0 * np.random.random()
@@ -565,7 +613,21 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                 for universe_id in xrange(num_universes)
             }
             # Compute the set cover
-            if use_arrays:
+            if use_intervalsets:
+                sets_as_intervalsets = {}
+                for set_id in sets.keys():
+                    sets_as_intervalsets[set_id] = {}
+                    for universe_id in sets[set_id].keys():
+                        els_as_intervals = []
+                        for el in sets[set_id][universe_id]:
+                            els_as_intervals += [(el, el+1)]
+                        sets_as_intervalsets[set_id][universe_id] = \
+                            interval.IntervalSet(els_as_intervals)
+                output = sc.approx_multiuniverse(sets_as_intervalsets, costs,
+                                                 universe_p,
+                                                 use_arrays=False,
+                                                 use_intervalsets=True)
+            elif use_arrays:
                 sets_as_arrays = {}
                 for set_id in sets.keys():
                     sets_as_arrays[set_id] = {}
@@ -575,10 +637,12 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                             sets_as_arrays[set_id][universe_id].append(el)
                 output = sc.approx_multiuniverse(sets_as_arrays, costs,
                                                  universe_p,
-                                                 use_arrays=True)
+                                                 use_arrays=True,
+                                                 use_intervalsets=False)
             else:
                 output = sc.approx_multiuniverse(sets, costs, universe_p,
-                                                 use_arrays=False)
+                                                 use_arrays=False,
+                                                 use_intervalsets=False)
             self.verify_partial_cover(sets, universe_p, output)
             weight_fracs += [self.weight_frac(costs, output)]
             outputs += [output]
@@ -586,6 +650,7 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
         # small, but in the average case it should be so test it anyway
         # (e.g., test that it's less than 0.01)
         self.assertLess(np.median(weight_fracs), 0.01)
+        return outputs
 
     def tearDown(self):
         # Re-enable logging
