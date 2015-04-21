@@ -5,6 +5,7 @@ import argparse
 import importlib
 import logging
 
+from hybseldesign import coverage_analysis
 from hybseldesign.datasets import hg19
 from hybseldesign.filter import adapter_filter
 from hybseldesign.filter import duplicate_filter
@@ -101,6 +102,12 @@ def main(args):
     else:
         print args.mismatches, args.lcf_thres, args.coverage, \
             len(pb.final_probes)
+
+    if args.print_analysis:
+        analyzer = coverage_analysis.Analyzer(pb.final_probes,
+                                              genomes_grouped)
+        analyzer.run()
+        analyzer.print_analysis()
 
 
 if __name__ == "__main__":
@@ -199,6 +206,10 @@ if __name__ == "__main__":
         help=("(Optional) The file to which all final probes should be "
               "written; if not specified, the final probes are not "
               "written to a file"))
+    parser.add_argument("--print_analysis",
+                        dest="print_analysis",
+                        action="store_true",
+                        help="Print analysis of the probe set's coverage")
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",
