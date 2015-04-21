@@ -99,6 +99,10 @@ class SetCoverFilter(BaseFilter):
                 When it is an int > 1, it determines the number of bp of each
                 of the target genomes that must be covered by the selected
                 probes.
+            kmer_size/num_kmers_per_probe: parameters to use when determining
+                what parts of a sequence each probe "covers"; used in calls
+                to probe.construct_kmer_probe_map and
+                probe.find_probe_covers_in_sequence
         """
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
