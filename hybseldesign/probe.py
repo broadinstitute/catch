@@ -363,7 +363,8 @@ def find_probe_covers_in_sequence(
         sequence,
         kmer_probe_map,
         k=15,
-        cover_range_for_probe_in_subsequence_fn=None):
+        cover_range_for_probe_in_subsequence_fn=None,
+        merge_overlapping=True):
     """Find ranges in sequence that a collection of probes cover.
 
     Probes are from the values of kmer_probe_map. A probe is said
@@ -413,6 +414,10 @@ def find_probe_covers_in_sequence(
             of sequence; if it returns None, there is no coverage;
             otherwise it returns the range of the subsequence covered
             by the probe
+        merge_overlapping: when True, merges overlapping ranges into
+            a single range and returns the ranges in sorted order; when
+            False, intervals returned may be overlapping (e.g., if a probe
+            covers two regions that overlap)
 
     Returns:
         dict mapping probes to the set of ranges (each range is a tuple
@@ -500,12 +505,18 @@ def find_probe_covers_in_sequence(
 
     # It's possible that the list of cover ranges for a probe has
     # overlapping ranges. Clean the list of cover ranges by "merging"
-    # overlapping ones.
-    probe_cover_ranges_merged = defaultdict(list)
+    # overlapping ones, if desired. Also, convert the defaultdict to
+    # a regular dict.
+    probe_cover_ranges_cleaned = {}
     for probe, cover_ranges in probe_cover_ranges.iteritems():
-        probe_cover_ranges_merged[probe] = interval.\
-            merge_overlapping(cover_ranges)
-    return dict(probe_cover_ranges_merged)
+        if merge_overlapping:
+            probe_cover_ranges_cleaned[probe] = interval.\
+                merge_overlapping(cover_ranges)
+        else:
+            # The method above will generally give many of the same cover
+            # ranges for a probe, so remove duplicates
+            probe_cover_ranges_cleaned[probe] = sorted(list(set(cover_ranges)))
+    return probe_cover_ranges_cleaned
 
 
 def probe_covers_sequence_by_longest_common_substring(mismatches=0,
