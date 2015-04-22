@@ -344,7 +344,9 @@ def approx_multiuniverse(sets,
     # that universe is unnecessarily computed again.) To avoid this,
     # memoize the sizes of the intersections of universes with sets
     # and discard memoized values for a particular universe U_i when
-    # U_i is updated.
+    # U_i is updated. When using interval sets, it is possible to further
+    # optimize this so that, on an update of U_i, the only values that
+    # are discarded are ones that might change due to the update.
     memoized_intersect_counts = {
         universe_id: {}
         for universe_id in universes.keys()
@@ -435,6 +437,7 @@ def approx_multiuniverse(sets,
                 continue
             s = sets[id_min_ratio][universe_id]
             prev_universe_size = len(universe)
+            # Remove s from universe
             if use_intervalsets:
                 universe = universe.difference(s)
                 universes[universe_id] = universe
@@ -445,9 +448,47 @@ def approx_multiuniverse(sets,
                 universe.difference_update(s)
             num_left_to_cover[universe_id] = max(
                 0, len(universe) - num_that_can_be_uncovered[universe_id])
+            # Discard memoized values
             if len(universe) != prev_universe_size:
-                # The universe was modified, so discard all memoized
-                # intersection counts that involve this universe
-                memoized_intersect_counts[universe_id] = {}
+                if use_intervalsets:
+                    # The universe was modified and since we are using interval
+                    # sets we can optimize what values we choose to discard
+                    # (i.e., invalidate). In particular, only invalidate
+                    # sets whose interval set overlaps the interval set
+                    # deleted from universe (s). Consider some set x that does
+                    # not overlap s (i.e., lies entirely ouside of s); the
+                    # intersection between x and universe cannot have possibly
+                    # changed due to the modification of universe (in which
+                    # s is removed from universe) and hence it would be
+                    # unnecessary to discard/invalidate x's intersection count.
+                    for set_id in memoized_intersect_counts[universe_id].keys():
+                        memoized_set = sets[set_id][universe_id]
+                        if (memoized_set.first_start < s.last_end and
+                                memoized_set.last_end > s.first_start):
+                            # memoized_set overlaps s, so invalidate it
+                            del memoized_intersect_counts[universe_id][set_id]
+                        # Else, memoized_set lies entirely outside of s, so
+                        # there is no need to invalidate its memoized value
+                else:
+                    # The universe was modified. Since we are not using
+                    # interval sets, there are no obvious optimizations --
+                    # simply discard all memoized intersection counts that
+                    # involve this universe.
+                    memoized_intersect_counts[universe_id] = {}
+            else:
+                # Although the universe was not modified, the memoized
+                # intersection count between id_min_ratio and universe_id
+                # is no longer needed (and will never be accessed) because
+                # id_min_ratio will never be considered again, as it was
+                # placed in the set cover. Because the universe did not
+                # change, the count is still valid and therefore there is
+                # no strict need to invalidate (i.e., discard) the memoized
+                # value. However, doing so can yield some modest runtime
+                # improvements when using interval sets because the loop
+                # in the optimization above (over
+                # memoized_intersect_counts[universe_id].keys()) would no
+                # longer needlessly iterate over id_min_ratio.
+                if id_min_ratio in memoized_intersect_counts[universe_id]:
+                    del memoized_intersect_counts[universe_id][id_min_ratio]
 
     return set_ids_in_cover
