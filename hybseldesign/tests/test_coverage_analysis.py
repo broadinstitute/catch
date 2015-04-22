@@ -28,6 +28,7 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         probes = [probe.Probe.from_str(p) for p in probes_str]
         self.analyzer = ca.Analyzer(probes,
                                     [[genome_a], [genome_b]],
+                                    target_genomes_names=["g_a", "g_b"],
                                     mismatches=0,
                                     lcf_thres=6,
                                     kmer_size=3,
@@ -122,10 +123,10 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         expected = [["Genome",
                      "Num bases covered",
                      "Average coverage/depth"],
-                    ["Grouping 0, genome 0", "19 (86.36%)", "1.09"],
-                    ["Grouping 0, genome 0 (rc)", "16 (72.73%)", "0.82"],
-                    ["Grouping 1, genome 0", "6 (46.15%)", "0.46"],
-                    ["Grouping 1, genome 0 (rc)", "0 (<0.01%)", "<0.01"]]
+                    ["g_a, genome 0", "19 (86.36%)", "1.09"],
+                    ["g_a, genome 0 (rc)", "16 (72.73%)", "0.82"],
+                    ["g_b, genome 0", "6 (46.15%)", "0.46"],
+                    ["g_b, genome 0 (rc)", "0 (<0.01%)", "<0.01"]]
         self.assertEqual(data, expected)
 
     def tearDown(self):

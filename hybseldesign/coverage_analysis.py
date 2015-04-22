@@ -19,6 +19,7 @@ class Analyzer:
     def __init__(self,
                  probes,
                  target_genomes,
+                 target_genomes_names=None,
                  mismatches=0,
                  lcf_thres=100,
                  kmer_size=10,
@@ -27,10 +28,13 @@ class Analyzer:
         Args:
             probes: collection of instances of probe.Probe that form a
                 complete probe set
-            target_genomes: list [g_1, g_2, g_m] of m groupings of genomes,
-                where each g_i is a list of genome.Genomes belonging to
-                group i. For example, a group may be a species and each g_i
+            target_genomes: list [g_1, g_2, ..., g_m] of m groupings of
+                genomes, where each g_i is a list of genome.Genomes belonging
+                to group i. For example, a group may be a species and each g_i
                 would be a list of the target genomes of species i.
+            target_genomes_names: list [s_1, s_2, ..., s_m] of strings where
+                the name of the i'th genome grouping (from target_genomes) is
+                s_i. When None, the name of the i'th grouping is "Group i".
             mismatches/lcf_thres: consider a probe to hybridize to a sequence
                 if a stretch of 'lcf_thres' or more bp aligns with
                 'mismatches' or fewer mismatched bp; used to compute whether
@@ -42,6 +46,14 @@ class Analyzer:
         """
         self.probes = probes
         self.target_genomes = target_genomes
+        if target_genomes_names:
+            if len(target_genomes_names) != len(target_genomes):
+                raise ValueError(("Number of target genome names must be same "
+                                  "as the number of target genomes"))
+            self.target_genomes_names = target_genomes_names
+        else:
+            self.target_genomes_names = ["Group %d" % i
+                                         for i in xrange(len(target_genomes))]
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
                 mismatches, lcf_thres)
@@ -90,6 +102,7 @@ class Analyzer:
         be duplicate intervals if two probes cover the same region of a
         sequence.
         """
+        logger.info("Finding probe covers across target genomes")
         logger.info("Building map from k-mers to probes")
         kmer_probe_map = probe.construct_kmer_probe_map(
             self.probes,
@@ -150,6 +163,7 @@ class Analyzer:
         complement of j if b is True, and in the provided sequence if b
         if False).
         """
+        logger.info("Computing bases covered across target genomes")
         self.bp_covered = {}
         for i, j, gnm, rc in self._iter_target_genomes(True):
             if i not in self.bp_covered:
@@ -179,6 +193,7 @@ class Analyzer:
         of the number of probes that hybridize to a region that includes
         a given base.
         """
+        logger.info("Computing average coverage across target genomes")
         self.average_coverage = {}
         for i, j, gnm, rc in self._iter_target_genomes(True):
             if i not in self.average_coverage:
@@ -220,7 +235,7 @@ class Analyzer:
 
         # Create a row for every genome, including reverse complements
         for i, j, gnm, rc in self._iter_target_genomes(True):
-            col_header = "Grouping %d, genome %d" % (i, j)
+            col_header = "%s, genome %d" % (self.target_genomes_names[i], j)
             if rc:
                 col_header += " (rc)"
 
