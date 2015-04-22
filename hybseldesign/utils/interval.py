@@ -26,6 +26,13 @@ class IntervalSet:
         # Save starting endpoints, which is useful for binary search over
         # the intervals
         self.starting_endpoints = [x[0] for x in self.intervals]
+        # Find the very beginning and end of these intervals
+        if len(self.intervals) > 0:
+            self.first_start = self.intervals[0][0]
+            self.last_end = self.intervals[-1][1]
+        else:
+            self.first_start = None
+            self.last_end = None
         self.len_cached = None
 
     def _merge(self, other, include_in_merge, optimize_intersection=False):
