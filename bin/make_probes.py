@@ -24,12 +24,14 @@ hg19.add_fasta_path(
 def main(args):
     # Read the genomes from FASTA sequences
     genomes_grouped = []
+    genomes_grouped_names = []
     for ds in args.dataset:
         try:
             dataset = importlib.import_module('hybseldesign.datasets.' + ds)
         except ImportError:
             raise ValueError("Unknown dataset %s" % ds)
         genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
+        genomes_grouped_names += [ds]
 
     if args.limit_target_genomes:
         genomes_grouped = [genomes[:args.limit_target_genomes]
@@ -105,7 +107,8 @@ def main(args):
 
     if args.print_analysis:
         analyzer = coverage_analysis.Analyzer(pb.final_probes,
-                                              genomes_grouped)
+                                              genomes_grouped,
+                                              genomes_grouped_names)
         analyzer.run()
         analyzer.print_analysis()
 
