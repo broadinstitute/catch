@@ -108,7 +108,9 @@ def main(args):
     if args.print_analysis:
         analyzer = coverage_analysis.Analyzer(pb.final_probes,
                                               genomes_grouped,
-                                              genomes_grouped_names)
+                                              genomes_grouped_names,
+                                              mismatches=args.mismatches,
+                                              lcf_thres=args.lcf_thres)
         analyzer.run()
         analyzer.print_analysis()
 
