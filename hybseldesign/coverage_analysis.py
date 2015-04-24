@@ -103,6 +103,12 @@ class Analyzer:
         """
         logger.info("Finding probe covers across target genomes")
         logger.info("Building map from k-mers to probes")
+        # Note that if adapters are added to the probes before this filter
+        # is run (which would be typical), then self.lcf_thres will likely
+        # be less than the probe length. So the k-mer to probe map will
+        # be constructed using the random approach (yielding many k-mers
+        # and thus a slower runtime in finding probe covers) rather than
+        # the pigeonhole approach.
         kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             self.probes, self.mismatches, self.lcf_thres,
             min_k=self.kmer_probe_map_k, k=self.kmer_probe_map_k)

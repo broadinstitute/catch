@@ -313,7 +313,7 @@ class Probe:
 
 def _construct_rand_kmer_probe_map(probes,
                                    k=10,
-                                   num_kmers_per_probe=20,
+                                   num_kmers_per_probe=30,
                                    include_positions=False):
     """Construct k-mer/probe map by choosing k-mers randomly.
 
