@@ -57,6 +57,9 @@ class TestGenome(unittest.TestCase):
         self.assertEquals(len(s), 2)
         self.assertIn(genome_one_seq, s)
         self.assertIn(genome_two_chrs, s)
+        # run again to ensure the cached value is correct
+        self.assertIn(genome_one_seq, s)
+        self.assertIn(genome_two_chrs, s)
 
     def test_equals(self):
         genome_one_seq1 = genome.Genome.from_one_seq('ATCGCNGAT')
