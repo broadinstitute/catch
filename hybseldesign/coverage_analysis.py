@@ -1,4 +1,49 @@
 """Provides analysis of a probe set for targeted genomes.
+
+This computes the number of bp across each target genome that the
+probes cover, as well as the percentage of each target genome that
+the probes cover. It computes a percentage against the full
+length of the target genome, as well as a percentage against the
+length of the target genome when only counting unambiguous bases
+(non-'N' bases). It also computes the average coverage that the
+probes yield across each target genome: again, one value against
+the full target genome and one against just the unambiguous bases.
+
+A few notes about the percentage of bases covered (in each note,
+assume that we specified a desired coverage of 100% when designing
+the probes, though this could be generalized to any desired coverage):
+ - The percentage of bases covered in the full target genome
+   (including ambiguous bases) may be less than 100%. This is expected
+   if the target genome contains ambiguous bases ('N') because these
+   are not covered. However, if this coverage analysis is run on probes
+   to which adapters have been added, it may also be less than 100%
+   even if the target genome contains no ambiguous bases. The reason is
+   that, when this finds the ranges covered by each probe, it includes
+   the adapters; some number of mismatches may be "used up" by the
+   adapter, leaving fewer mismatches at the end of the true probe for
+   aligning to the sequence, and meaning that the bases at the end of
+   the true probe fail to cover bases of the target genome that they
+   were originally intended to cover. For example, suppose we have
+   a probe "ATCG" which was intended to cover the sequence "ATCC" in
+   a target genome. Now suppose that (2-base) adapters are added to the
+   probe, making it "GGATCGCC" (left adapter is 'GG' and right adapter
+   is 'CC'). Suppose that the region in the target genome around "ATCC"
+   is "GTATCCCC". And suppose we design the probes allowing for one
+   mismatch. The one mismatch is "used up" by the second base on the
+   left adapter ('G' in the adapter mismatches with 'T' in the target
+   genome), so the base 'C' at the end of "ATCC" is not covered. Running
+   the coverage analysis before adding adapters to the probes should
+   alleviate this, making the percentage 100% as desired.
+ - The percentage of bases covered in the target genome, when only
+   counting unambiguous bases, may be less than 100% when adapters have
+   been added to probes. The reason is the same as above.
+ - The percentage of bases covered in the target genome, when only
+   counting unambiguous bases, may be more than 100%. This could happen
+   when allowing mismatches. A probe could cover an ambiguous base
+   (i.e., 'N') of a target genome by simply using a mismatch when
+   aligning to that base. Then, the probes collectively cover more bases
+   than there are unambiguous bases in the target genome, making the
+   percentage more than 100%.
 """
 
 import logging
@@ -212,7 +257,11 @@ class Analyzer:
             total_covered = sum(c[1] - c[0] for c in covers)
 
             # Divide by the genome length to average across bases
-            self.average_coverage[i][j][rc] = float(total_covered) / gnm.size()
+            # (do this including ambiguous bases ('N') and not including them)
+            avg_covg_over_all = float(total_covered) / gnm.size(False)
+            avg_covg_over_unambig = float(total_covered) / gnm.size(True)
+            self.average_coverage[i][j][rc] = (avg_covg_over_all,
+                                               avg_covg_over_unambig)
 
     def run(self):
         """Run all analysis methods.
@@ -233,7 +282,9 @@ class Analyzer:
         # Make row headers
         data = [["Genome",
                  "Num bases covered",
-                 "Average coverage/depth"]]
+                 "Num bases covered\n[over unambig]",
+                 "Average coverage/depth",
+                 "Average coverage/depth\n[over unambig]"]]
 
         # Create a row for every genome, including reverse complements
         for i, j, gnm, rc in self._iter_target_genomes(True):
@@ -243,21 +294,35 @@ class Analyzer:
 
             # Format bp covered
             bp_covered = self.bp_covered[i][j][rc]
-            frac_covered = float(bp_covered) / gnm.size()
-            if frac_covered < 0.0001:
-                prct_covered_str = "<0.01%"
+            frac_covered_all = float(bp_covered) / gnm.size(False)
+            frac_covered_unambig = float(bp_covered) / gnm.size(True)
+            if frac_covered_all < 0.0001:
+                prct_covered_all_str = "<0.01%"
             else:
-                prct_covered_str = "{0:.2%}".format(frac_covered)
-            bp_covered_str = "%d (%s)" % (bp_covered, prct_covered_str)
+                prct_covered_all_str = "{0:.2%}".format(frac_covered_all)
+            if frac_covered_unambig < 0.0001:
+                prct_covered_unambig_str = "<0.01%"
+            else:
+                prct_covered_unambig_str = "{0:.2%}".format(frac_covered_unambig)
+            bp_covered_all_str = "%d (%s)" % (bp_covered, prct_covered_all_str)
+            bp_covered_unambig_str = "(%s)" % prct_covered_unambig_str
 
             # Format average covered
-            average_coverage = self.average_coverage[i][j][rc]
-            if average_coverage < 0.01:
-                average_coverage_str = "<0.01"
+            avg_covg_all, avg_covg_unambig = self.average_coverage[i][j][rc]
+            if avg_covg_all < 0.01:
+                avg_covg_all_str = "<0.01"
             else:
-                average_coverage_str = "{0:.2f}".format(average_coverage)
+                avg_covg_all_str = "{0:.2f}".format(avg_covg_all)
+            if avg_covg_unambig < 0.01:
+                avg_covg_unambig_str = "<0.01"
+            else:
+                avg_covg_unambig_str = "{0:.2f}".format(avg_covg_unambig)
 
-            row = [col_header, bp_covered_str, average_coverage_str]
+            row = [col_header,
+                   bp_covered_all_str,
+                   bp_covered_unambig_str,
+                   avg_covg_all_str,
+                   avg_covg_unambig_str]
             data += [row]
 
         return data
@@ -266,5 +331,5 @@ class Analyzer:
         """Print a table of results of the analysis.
         """
         print pretty_print.table(self._make_data_matrix(),
-                                 ["left", "right", "right"],
+                                 ["left", "right", "right", "right", "right"],
                                  header_underline=True)

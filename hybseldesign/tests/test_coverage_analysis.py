@@ -21,9 +21,9 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         logging.disable(logging.INFO)
 
         # Create Analyzer instance with two target genomes
-        genome_a = genome.Genome.from_one_seq('ATCCATCCATGGGTTTGAAGCG')
+        genome_a = genome.Genome.from_one_seq('ATCCATCCATNGGGTTTGAAGCG')
         genome_b = genome.Genome.from_chrs(OrderedDict([('chr1', 'CCCCCC'),
-                                                        ('chr2', 'TGAAGCG')]))
+                                                        ('chr2', 'NTGAAGCG')]))
         probes_str = ['ATCCAT', 'TTTGAA', 'GAAGCG', 'ATGGAT', 'AAACCC']
         probes = [probe.Probe.from_str(p) for p in probes_str]
         self.analyzer = ca.Analyzer(probes,
@@ -47,13 +47,13 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
 
         # genome_a
         self.assertItemsEqual(self.analyzer.target_covers[0][0][False],
-                              [(0, 6), (4, 10), (13, 19), (16, 22)])
+                              [(0, 6), (4, 10), (14, 20), (17, 23)])
         self.assertItemsEqual(self.analyzer.target_covers[0][0][True],
-                              [(6, 12), (12, 18), (16, 22)])
+                              [(6, 12), (13, 19), (17, 23)])
 
         # genome_b
         self.assertItemsEqual(self.analyzer.target_covers[1][0][False],
-                              [(7, 13)])    # coverage in chr2
+                              [(8, 14)])    # coverage in chr2
         self.assertItemsEqual(self.analyzer.target_covers[1][0][True],
                               [])   # no coverage in reverse complement
 
@@ -69,9 +69,10 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         self.assertEqual(len(self.analyzer.bp_covered[1][0]), 2)  # False/True
 
         # genome_a
-        # GGG is left out in the provided sequence (so 22-3=19 is covered)
+        # NGGG is left out in the provided sequence (so 23-4=19 is covered)
         self.assertEqual(self.analyzer.bp_covered[0][0][False], 19)
-        # CGCTTA is left out of the reverse complement (so 22-6=16 is covered)
+        # CGCTTA and N is left out of the reverse complement
+        # (so 23-7=16 is covered)
         self.assertEqual(self.analyzer.bp_covered[0][0][True], 16)
 
         # genome_b
@@ -93,27 +94,39 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
 
         # genome_a
         # in provided sequence, coverage across the bases is:
-        # A T C C A T C C A T G G G T T T G A A G C G
-        # 1 1 1 1 2 2 1 1 1 1 0 0 0 1 1 1 2 2 2 1 1 1
-        # average = 24/22
-        self.assertEqual(self.analyzer.average_coverage[0][0][False], 24./22)
+        # A T C C A T C C A T N G G G T T T G A A G C G
+        # 1 1 1 1 2 2 1 1 1 1 0 0 0 0 1 1 1 2 2 2 1 1 1
+        # average = 24/23 over all (24/22 over unambig)
+        self.assertEqual(self.analyzer.average_coverage[0][0][False][0],
+                         24./23)
+        self.assertEqual(self.analyzer.average_coverage[0][0][False][1],
+                         24./22)
         # in reverse complement, coverage across the bases is:
-        # C G C T T C A A A C C C A T G G A T G G A T
-        # 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 2 2 1 1 1 1
-        # average = 18/22
-        self.assertEqual(self.analyzer.average_coverage[0][0][True], 18./22)
+        # C G C T T C A A A C C C N A T G G A T G G A T
+        # 0 0 0 0 0 0 1 1 1 1 1 1 0 1 1 1 1 2 2 1 1 1 1
+        # average = 18/23 over all (18/22 over unambig)
+        self.assertEqual(self.analyzer.average_coverage[0][0][True][0],
+                         18./23)
+        self.assertEqual(self.analyzer.average_coverage[0][0][True][1],
+                         18./22)
 
         # genome_b
         # in provided sequence, coverage across the bases is:
-        # C C C C C C ; T G A A G C G
-        # 0 0 0 0 0 0 ; 0 1 1 1 1 1 1
-        # average = 6/13
-        self.assertEqual(self.analyzer.average_coverage[1][0][False], 6./13)
+        # C C C C C C ; N T G A A G C G
+        # 0 0 0 0 0 0 ; 0 0 1 1 1 1 1 1
+        # average = 6/14 over all (6/13 over unambig)
+        self.assertEqual(self.analyzer.average_coverage[1][0][False][0],
+                         6./14)
+        self.assertEqual(self.analyzer.average_coverage[1][0][False][1],
+                         6./13)
         # in reverse complement, coverage across the bases is:
-        # G G G G G G ; C G C T T C A
-        # 0 0 0 0 0 0 ; 0 0 0 0 0 0 0
-        # average = 0/13
-        self.assertEqual(self.analyzer.average_coverage[1][0][True], 0./13)
+        # G G G G G G ; C G C T T C A N
+        # 0 0 0 0 0 0 ; 0 0 0 0 0 0 0 0
+        # average = 0/13 over all (0/12 over unambig)
+        self.assertEqual(self.analyzer.average_coverage[1][0][True][0],
+                         0./13)
+        self.assertEqual(self.analyzer.average_coverage[1][0][True][1],
+                         0./12)
 
     def test_data_matrix(self):
         """Test the data matrix generated.
@@ -121,11 +134,17 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         data = self.analyzer._make_data_matrix()
         expected = [["Genome",
                      "Num bases covered",
-                     "Average coverage/depth"],
-                    ["g_a, genome 0", "19 (86.36%)", "1.09"],
-                    ["g_a, genome 0 (rc)", "16 (72.73%)", "0.82"],
-                    ["g_b, genome 0", "6 (46.15%)", "0.46"],
-                    ["g_b, genome 0 (rc)", "0 (<0.01%)", "<0.01"]]
+                     "Num bases covered\n[over unambig]",
+                     "Average coverage/depth",
+                     "Average coverage/depth\n[over unambig]"],
+                    ["g_a, genome 0", "19 (82.61%)", "(86.36%)",
+                     "1.04", "1.09"],
+                    ["g_a, genome 0 (rc)", "16 (69.57%)", "(72.73%)",
+                     "0.78", "0.82"],
+                    ["g_b, genome 0", "6 (42.86%)", "(46.15%)",
+                     "0.43", "0.46"],
+                    ["g_b, genome 0 (rc)", "0 (<0.01%)", "(<0.01%)",
+                     "<0.01", "<0.01"]]
         self.assertEqual(data, expected)
 
     def tearDown(self):
