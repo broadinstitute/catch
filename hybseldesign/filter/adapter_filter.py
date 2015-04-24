@@ -128,24 +128,21 @@ class AdapterFilter(BaseFilter):
     def __init__(self,
                  mismatches=0,
                  lcf_thres=100,
-                 kmer_size=15,
-                 num_kmers_per_probe=10):
+                 kmer_probe_map_k=10):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a
                 sequence if a stretch of 'lcf_thres' or more bp aligns with
                 'mismatches' or fewer mismatched bp
-            kmer_size: the number of bp in a kmer taken from a probe; this
-                is used when determining alignment to a sequence
-            num_kmers_per_probe: the number of kmers to randomly pick from
-                each probe for use when determining the alignment of probes
-                to a sequence
+            kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
+                uses this value as min_k and k
         """
+        self.mismatches = mismatches
+        self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
                 mismatches=mismatches, lcf_thres=lcf_thres)
-        self.kmer_size = kmer_size
-        self.num_kmers_per_probe = num_kmers_per_probe
+        self.kmer_probe_map_k = kmer_probe_map_k
 
     def _votes_in_sequence(self, probes, sequence, kmer_probe_map):
         """Compute votes for probes based on their overlap.
@@ -172,7 +169,6 @@ class AdapterFilter(BaseFilter):
         """
         probe_cover_ranges = probe.find_probe_covers_in_sequence(
             sequence, kmer_probe_map,
-            k=self.kmer_size,
             cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
         aligned_probes = set(probe_cover_ranges.keys())
         # Make a list of all the intervals covered by all the probes,
@@ -272,11 +268,12 @@ class AdapterFilter(BaseFilter):
             the number of 'B' adapter votes.
         """
         logger.info("Building map from k-mers to probes")
-        kmer_probe_map = probe.construct_kmer_probe_map(
+        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes,
-            k=self.kmer_size,
-            num_kmers_per_probe=self.num_kmers_per_probe,
-            include_positions=True)
+            self.mismatches,
+            self.lcf_thres,
+            min_k=self.kmer_probe_map_k,
+            k=self.kmer_probe_map_k)
 
         def iter_all_seqs():
             for genomes_from_group in self.target_genomes:

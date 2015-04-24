@@ -25,8 +25,7 @@ class TestAdapterFilter(unittest.TestCase):
                               input_probes, k, num_kmers_per_probe):
         f = af.AdapterFilter(mismatches=mismatches,
                              lcf_thres=lcf_thres,
-                             kmer_size=k,
-                             num_kmers_per_probe=num_kmers_per_probe)
+                             kmer_probe_map_k=3)
         f.target_genomes = target_genomes
         f.filter(input_probes)
         return (f, f.output_probes)

@@ -69,8 +69,7 @@ class SetCoverFilter(BaseFilter):
                  identify=False,
                  blacklisted_genomes=[],
                  coverage=1.0,
-                 kmer_size=15,
-                 num_kmers_per_probe=10):
+                 kmer_probe_map_k=10):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a sequence
@@ -99,11 +98,11 @@ class SetCoverFilter(BaseFilter):
                 When it is an int > 1, it determines the number of bp of each
                 of the target genomes that must be covered by the selected
                 probes.
-            kmer_size/num_kmers_per_probe: parameters to use when determining
-                what parts of a sequence each probe "covers"; used in calls
-                to probe.construct_kmer_probe_map and
-                probe.find_probe_covers_in_sequence
+            kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
+                uses this value as min_k and k
         """
+        self.mismatches = mismatches
+        self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
                 mismatches, lcf_thres)
@@ -112,6 +111,8 @@ class SetCoverFilter(BaseFilter):
             mismatches_tolerant = mismatches
         if not lcf_thres_tolerant:
             lcf_thres_tolerant = lcf_thres
+        self.mismatches_tolerant = mismatches_tolerant
+        self.lcf_thres_tolerant = lcf_thres_tolerant
         self.cover_range_tolerant_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
                 mismatches_tolerant, lcf_thres_tolerant)
@@ -127,10 +128,9 @@ class SetCoverFilter(BaseFilter):
         self.identify = identify
         self.blacklisted_genomes = blacklisted_genomes
         self.coverage = coverage
-        self.kmer_size = kmer_size
-        self.num_kmers_per_probe = num_kmers_per_probe
+        self.kmer_probe_map_k = kmer_probe_map_k
 
-    def _make_sets(self, candidate_probes, kmer_probe_map):
+    def _make_sets(self, candidate_probes):
         """Return a collection of sets to use in set cover.
 
         In the returned collection of sets, each set corresponds to a
@@ -143,7 +143,6 @@ class SetCoverFilter(BaseFilter):
 
         Args:
             candidate_probes: list of candidate probes
-            kmer_probe_map: dict mapping kmers to probes
 
         Returns:
             a dict mapping set_ids (from 0 through
@@ -161,6 +160,14 @@ class SetCoverFilter(BaseFilter):
             (as an instance of interval.IntervalSet) covered by probe
             set_id in the target genome universe_id.
         """
+        logger.info("Building map from k-mers to probes")
+        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            candidate_probes,
+            self.mismatches,
+            self.lcf_thres,
+            min_k=self.kmer_probe_map_k,
+            k=self.kmer_probe_map_k)
+
         probe_id = {}
         sets = {}
         for id, p in enumerate(candidate_probes):
@@ -178,7 +185,6 @@ class SetCoverFilter(BaseFilter):
                 for sequence in gnm.seqs:
                     probe_cover_ranges = probe.find_probe_covers_in_sequence(
                         sequence, kmer_probe_map,
-                        k=self.kmer_size,
                         cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
                     # Add the bases of sequence that are covered by all the
                     # probes into sets with universe_id equal to (i,j)
@@ -241,7 +247,6 @@ class SetCoverFilter(BaseFilter):
                 sequence = ''.join([rc_map.get(b, b) for b in sequence[::-1]])
             probe_cover_ranges = probe.find_probe_covers_in_sequence(
                 sequence, kmer_probe_map,
-                k=self.kmer_size,
                 cover_range_for_probe_in_subsequence_fn=self.cover_range_tolerant_fn)
 
             all_cover_ranges = []
@@ -336,7 +341,7 @@ class SetCoverFilter(BaseFilter):
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
 
-    def _make_ranks(self, candidate_probes, kmer_probe_map):
+    def _make_ranks(self, candidate_probes):
         """Return a rank for each candidate probe to use in set cover.
 
         The "rank" of a candidate probe is a level of penalty for that
@@ -384,13 +389,20 @@ class SetCoverFilter(BaseFilter):
 
         Args:
             candidate_probes: list of candidate probes
-            kmer_probe_map: dict mapping kmers to probes
 
         Returns:
             dict mapping set_ids (0 through len(candidate_probes)-1, each
             corresponding to a candidate probe) to a rank (integer) for
             that candidate probe
         """
+        logger.info("Building map from k-mers to probes")
+        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            candidate_probes,
+            self.mismatches_tolerant,
+            self.lcf_thres_tolerant,
+            min_k=self.kmer_probe_map_k,
+            k=self.kmer_probe_map_k)
+
         if self.identify:
             # Find the number of target genome groupings (e.g., species)
             # that each probe "hits". (A probe "hits" a grouping if it
@@ -497,17 +509,10 @@ class SetCoverFilter(BaseFilter):
         # Ensure that the input is a list
         input = list(input)
 
-        logger.info("Building map from k-mers to probes")
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            input,
-            k=self.kmer_size,
-            num_kmers_per_probe=self.num_kmers_per_probe,
-            include_positions=True)
-
         logger.info("Building set cover sets input")
-        sets = self._make_sets(input, kmer_probe_map)
+        sets = self._make_sets(input)
         logger.info("Building set cover ranks input")
-        ranks = self._make_ranks(input, kmer_probe_map)
+        ranks = self._make_ranks(input)
         logger.info("Building set cover costs input")
         costs = self._make_costs(input)
         logger.info("Building set cover universe_p input")

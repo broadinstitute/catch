@@ -149,11 +149,11 @@ class TestProbe(unittest.TestCase):
         """
         a = probe.Probe.from_str('ABCDEFGHI')
         self.assertEqual(a.construct_kmers(4),
-                         set(['ABCD', 'BCDE', 'CDEF', 'DEFG', 'EFGH', 'FGHI']))
+                         ['ABCD', 'BCDE', 'CDEF', 'DEFG', 'EFGH', 'FGHI'])
 
 
-class TestConstructKmerProbeMap(unittest.TestCase):
-    """Tests construct_kmer_probe_map function.
+class TestConstructRandKmerProbeMap(unittest.TestCase):
+    """Tests _construct_rand_kmer_probe_map function.
     """
 
     def make_random_probe(self, length):
@@ -172,7 +172,7 @@ class TestConstructKmerProbeMap(unittest.TestCase):
         k = 15
         num_kmers_per_probe = 10
         probes = [self.make_random_probe(100) for _ in xrange(50)]
-        kmer_map = probe.construct_kmer_probe_map(
+        kmer_map = probe._construct_rand_kmer_probe_map(
             probes,
             k=k,
             num_kmers_per_probe=num_kmers_per_probe)
@@ -190,9 +190,9 @@ class TestConstructKmerProbeMap(unittest.TestCase):
         probes = [a, b]
         # Use a high num_kmers_per_probe to ensure all possible
         # kmers are selected to be put into the map
-        kmer_map = probe.construct_kmer_probe_map(probes,
-                                                  k=3,
-                                                  num_kmers_per_probe=50)
+        kmer_map = probe._construct_rand_kmer_probe_map(probes,
+                                                        k=3,
+                                                        num_kmers_per_probe=50)
         self.assertTrue(a in kmer_map['DEF'])
         self.assertTrue(b in kmer_map['DEF'])
         self.assertTrue(a in kmer_map['ABC'])
@@ -211,15 +211,87 @@ class TestConstructKmerProbeMap(unittest.TestCase):
         probes = [a, b]
         # Use a high num_kmers_per_probe to ensure all possible
         # kmers are selected to be put into the map
-        kmer_map = probe.construct_kmer_probe_map(probes,
-                                                  k=3,
-                                                  num_kmers_per_probe=50,
-                                                  include_positions=True)
+        kmer_map = probe._construct_rand_kmer_probe_map(probes,
+                                                        k=3,
+                                                        num_kmers_per_probe=50,
+                                                        include_positions=True)
         self.assertItemsEqual(kmer_map['DEF'], [(a, 3), (b, 3)])
         self.assertItemsEqual(kmer_map['ABC'], [(a, 0), (a, 7)])
         self.assertItemsEqual(kmer_map['XYZ'], [(b, 0)])
         self.assertItemsEqual(kmer_map['EFG'], [(a, 4)])
         self.assertItemsEqual(kmer_map['EFH'], [(b, 4)])
+
+
+class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
+    """Tests _construct_pigeonholed_kmer_probe_map function.
+    """
+    
+    def test_no_mismatches(self):
+        a = probe.Probe.from_str('ABCDEFGHIJ')
+        b = probe.Probe.from_str('ZYXWVUTSRQ')
+        probes = [a, b]
+        kmer_map = probe._construct_pigeonholed_kmer_probe_map(
+            probes, 0, min_k=5)
+        # k-mers equal to the full length of the probe should be
+        # chosen
+        self.assertTrue(a in kmer_map[a.seq_str])
+        self.assertTrue(b in kmer_map[b.seq_str])
+        self.assertFalse(a in kmer_map[b.seq_str])
+        self.assertFalse(b in kmer_map[a.seq_str])
+
+    def test_too_small_k(self):
+        a = probe.Probe.from_str('ABCDEFGHIJ')
+        b = probe.Probe.from_str('ZYXWVUTSRQ')
+        probes = [a, b]
+        with self.assertRaises(probe.PigeonholeRequiresTooSmallKmerSizeError):
+            # Should pick k=5, but requires k=6
+            probe._construct_pigeonholed_kmer_probe_map(
+                probes, 1, min_k=6)
+        with self.assertRaises(probe.PigeonholeRequiresTooSmallKmerSizeError):
+            # Should pick k=2, but requires k=3
+            probe._construct_pigeonholed_kmer_probe_map(
+                probes, 3, min_k=3)
+
+    def test_one_mismatch(self):
+        a = probe.Probe.from_str('ABCDEFGHIJ')
+        b = probe.Probe.from_str('ZYXWVUTSRQ')
+        probes = [a, b]
+        kmer_map = probe._construct_pigeonholed_kmer_probe_map(
+            probes, 1, min_k=2)
+        # Should pick k=5
+        self.assertEquals(len(kmer_map), 4)
+        self.assertItemsEqual(kmer_map['ABCDE'], [a])
+        self.assertItemsEqual(kmer_map['FGHIJ'], [a])
+        self.assertItemsEqual(kmer_map['ZYXWV'], [b])
+        self.assertItemsEqual(kmer_map['UTSRQ'], [b])
+
+    def test_shared_kmer(self):
+        a = probe.Probe.from_str('ABCDEFGHIJ')
+        b = probe.Probe.from_str('ZYXWVABCDE')
+        probes = [a, b]
+        kmer_map = probe._construct_pigeonholed_kmer_probe_map(
+            probes, 1, min_k=2)
+        # Should pick k=5
+        self.assertEquals(len(kmer_map), 3)
+        self.assertItemsEqual(kmer_map['ABCDE'], [a, b])
+        self.assertItemsEqual(kmer_map['FGHIJ'], [a])
+        self.assertItemsEqual(kmer_map['ZYXWV'], [b])
+
+    def test_positions(self):
+        a = probe.Probe.from_str('ABCDEFGH')
+        b = probe.Probe.from_str('ZYXWVUAB')
+        probes = [a, b]
+        kmer_map = probe._construct_pigeonholed_kmer_probe_map(
+            probes, 3, min_k=2, include_positions=True)
+        # Should pick k=2
+        self.assertEquals(len(kmer_map), 7)
+        self.assertItemsEqual(kmer_map['AB'], [(a, 0), (b, 6)])
+        self.assertItemsEqual(kmer_map['CD'], [(a, 2)])
+        self.assertItemsEqual(kmer_map['EF'], [(a, 4)])
+        self.assertItemsEqual(kmer_map['GH'], [(a, 6)])
+        self.assertItemsEqual(kmer_map['ZY'], [(b, 0)])
+        self.assertItemsEqual(kmer_map['XW'], [(b, 2)])
+        self.assertItemsEqual(kmer_map['VU'], [(b, 4)])
 
 
 class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
@@ -281,7 +353,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     """
 
     def test_one_or_no_occurrence(self):
-        """Tests with short sequence, short probes, and small k
+        """Tests with short sequence and short probes
         where each probe appears zero or one times.
         """
         np.random.seed(1)
@@ -290,20 +362,16 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         b = probe.Probe.from_str('STUVWX')
         c = probe.Probe.from_str('ACEFHJ')
         probes = [a, b, c]
-        k = 2
-        num_kmers_per_probe = 10
-        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
-                                                        num_kmers_per_probe,
-                                                        include_positions=True)
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, min_k=6)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
-                                                    k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
         self.assertItemsEqual(found[a], [(6, 12)])
         self.assertItemsEqual(found[b], [(18, 24)])
         self.assertFalse(c in found)
 
     def test_two_occurrences(self):
-        """Tests with short sequence, short probes, and small k
+        """Tests with short sequence and short probes
         where one probe appears twice.
         """
         np.random.seed(1)
@@ -312,20 +380,16 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         b = probe.Probe.from_str('GHIJKL')
         c = probe.Probe.from_str('STUVWX')
         probes = [a, b, c]
-        k = 2
-        num_kmers_per_probe = 10
-        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
-                                                        num_kmers_per_probe,
-                                                        include_positions=True)
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, min_k=6)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
-                                                    k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
         self.assertItemsEqual(found[a], [(2, 8), (16, 22)])
         self.assertItemsEqual(found[b], [(6, 12)])
         self.assertFalse(c in found)
 
     def test_more_than_cover(self):
-        """Tests with short sequence, short probes, and small k
+        """Tests with short sequence and short probes
         where probes contain more than what they cover.
         """
         np.random.seed(1)
@@ -334,20 +398,18 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         b = probe.Probe.from_str('PQRSGHIJKLMNXYZ')
         c = probe.Probe.from_str('ABCFGHIJKLZAZAZAGHIJKL')
         probes = [a, b, c]
-        k = 4
-        num_kmers_per_probe = 100
-        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
-                                                        num_kmers_per_probe,
-                                                        include_positions=True)
+        # This should default to the random approach, so set k (rather than
+        # min_k)
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, k=6)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
-                                                    k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
         self.assertItemsEqual(found[a], [(2, 11), (118, 124)])
         self.assertItemsEqual(found[b], [(6, 14)])
         self.assertItemsEqual(found[c], [(5, 12)])
 
     def test_repetitive(self):
-        """Tests with short sequence, short probes, and small k
+        """Tests with short sequence and short probes
         where the sequence and probes have repetitive sequences, so that
         one probe can cover a lot of the sequence.
         """
@@ -355,15 +417,49 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         sequence = 'ABCAAAAAAAAAAXYZXYZXYZXYZAAAAAAAAAAAAAXYZ'
         a = probe.Probe.from_str('NAAAAAAN')
         probes = [a]
-        k = 3
-        num_kmers_per_probe = 20
-        kmer_probe_map = probe.construct_kmer_probe_map(probes, k,
-                                                        num_kmers_per_probe,
-                                                        include_positions=True)
+        # This should default to the random approach, so set k (rather than
+        # min_k)
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, k=6)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_probe_map,
-                                                    k, f)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
         self.assertItemsEqual(found[a], [(3, 13), (25, 38)])
+
+    def test_pigeonhole_with_mismatch(self):
+        """Tests with short sequence and short probes
+        where the call to construct_kmer_probe_map_to_find_probe_covers tries
+        the pigeonhole approach.
+        """
+        np.random.seed(1)
+        sequence = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        a = probe.Probe.from_str('GHIJXL')
+        b = probe.Probe.from_str('BTUVWX')
+        c = probe.Probe.from_str('ACEFHJ')
+        probes = [a, b, c]
+
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 1, 6, min_k=3, k=4)
+        # This should try the pigeonhole approach, which should choose k=3
+        for kmer in kmer_map.keys():
+            self.assertEquals(len(kmer), 3)
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
+        self.assertItemsEqual(found[a], [(6, 12)])
+        self.assertItemsEqual(found[b], [(18, 24)])
+        self.assertFalse(c in found)
+        
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 1, 6, min_k=4, k=4)
+        # This should try the pigeonhole approach and fail because it
+        # chooses k=3, but min_k=4. So it should then try the random
+        # approach with k=4.
+        for kmer in kmer_map.keys():
+            self.assertEquals(len(kmer), 4)
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
+        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
+        self.assertItemsEqual(found[a], [(6, 12)])
+        self.assertItemsEqual(found[b], [(18, 24)])
+        self.assertFalse(c in found)
 
     def test_random_small_genome(self):
         self.run_random(100, 15000, 25000, 300)
@@ -378,8 +474,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes are generated from that sequence, and then the probes are
         looked up in the sequence.
 
-        Makes 100 bp probes with k=15 and num_kmers_per_probe=10 and
-        creates the probes with the intention of determining coverage with
+        Creates the probes with the intention of determining coverage with
         a longest common substring.
 
         Args:
@@ -391,6 +486,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         """
         np.random.seed(1)
         for n in xrange(n):
+            # Choose either lcf_thres=80 or lcf_thres=100
+            lcf_thres = np.random.choice([80, 100])
             # Make a random sequence
             seq_length = np.random.randint(genome_min, genome_max)
             sequence = "".join(np.random.choice(['A', 'T', 'C', 'G'],
@@ -403,7 +500,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 probe_length = 100
                 subseq_start = np.random.randint(0, seq_length - probe_length)
                 subseq_end = subseq_start + probe_length
-                cover_length = np.random.randint(80, 100)
+                cover_length = np.random.randint(lcf_thres, 101)
                 cover_start = subseq_start + \
                     np.random.randint(0, probe_length - cover_length + 1)
                 cover_end = min(seq_length, cover_start + cover_length)
@@ -430,15 +527,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 p = probe.Probe.from_str(probe_str)
                 desired_probe_cover_ranges[p].append((cover_start, cover_end))
                 probes += [p]
-            kmer_probe_map = probe.construct_kmer_probe_map(
-                probes,
-                k=15,
-                num_kmers_per_probe=10,
-                include_positions=True)
-            f = probe.probe_covers_sequence_by_longest_common_substring(3, 80)
+            kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+                probes, 3, lcf_thres)
+            f = probe.probe_covers_sequence_by_longest_common_substring(
+                3, lcf_thres)
             found = probe.find_probe_covers_in_sequence(
-                sequence, kmer_probe_map,
-                k=15,
+                sequence, kmer_map,
                 cover_range_for_probe_in_subsequence_fn=f)
             # Check that this didn't find any extraneous probes and that
             # it found at least 95% of the original (it may miss some
