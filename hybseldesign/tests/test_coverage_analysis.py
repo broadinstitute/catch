@@ -31,8 +31,7 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
                                     target_genomes_names=["g_a", "g_b"],
                                     mismatches=0,
                                     lcf_thres=6,
-                                    kmer_size=3,
-                                    num_kmers_per_probe=10)
+                                    kmer_probe_map_k=3)
         self.analyzer.run()
 
     def test_probe_cover_ranges(self):

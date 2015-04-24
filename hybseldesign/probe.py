@@ -136,7 +136,7 @@ class Probe:
         return Probe(new_seq)
 
     def construct_kmers(self, k, include_positions=False):
-        """Return the set of k-mers in this probe.
+        """Return a list of k-mers in this probe.
 
         Args:
             k: the number of bp in a k-mer
@@ -145,15 +145,17 @@ class Probe:
                 position in the probe
 
         Returns:
-            set of all k-mers of length k in this probe
+            list of all k-mers of length k in this probe, where the list
+            is ordered according to the positions of the k-mers in the
+            probe
         """
-        kmers = set()
+        kmers = []
         for i in xrange(len(self.seq) - k + 1):
             kmer = self.seq_str[i:(i + k)]
             if include_positions:
-                kmers.add((kmer, i))
+                kmers += [(kmer, i)]
             else:
-                kmers.add(kmer)
+                kmers += [kmer]
         return kmers
 
     def shares_some_kmers(self, other,
@@ -216,9 +218,9 @@ class Probe:
             # Construct the k-mers for self and other if they have
             # not yet been constructed for the given k
             if len(self.kmers[k]) == 0:
-                self.kmers[k] = self.construct_kmers(k)
+                self.kmers[k] = set(self.construct_kmers(k))
             if len(other.kmers[k]) == 0:
-                other.kmers[k] = other.construct_kmers(k)
+                other.kmers[k] = set(other.construct_kmers(k))
 
             if len(self.kmers_rand_choices[k][num_kmers_to_test]) == 0:
                 rand_kmers = np.random.choice(list(self.kmers[k]),
@@ -309,11 +311,11 @@ class Probe:
         return Probe(np.fromstring(seq_str, dtype='S1'))
 
 
-def construct_kmer_probe_map(probes,
-                             k=15,
-                             num_kmers_per_probe=10,
-                             include_positions=False):
-    """Construct map from k-mers to probes that contain these k-mers.
+def _construct_rand_kmer_probe_map(probes,
+                                   k=10,
+                                   num_kmers_per_probe=20,
+                                   include_positions=False):
+    """Construct k-mer/probe map by choosing k-mers randomly.
 
     Given a collection of probes, this finds the k-mers (of length k)
     in each probe and randomly selects num_kmers_per_probe from each.
@@ -340,7 +342,9 @@ def construct_kmer_probe_map(probes,
     """
     kmer_probe_map = defaultdict(set)
     for probe in probes:
-        kmers = list(probe.construct_kmers(k, include_positions))
+        if k > len(probe.seq):
+            raise ValueError("k is larger than the length of a probe")
+        kmers = probe.construct_kmers(k, include_positions)
         if include_positions:
             # np.random.choice won't directly pick tuples from a list,
             # so instead randomly select indices
@@ -359,10 +363,175 @@ def construct_kmer_probe_map(probes,
     return dict(kmer_probe_map)
 
 
+class PigeonholeRequiresTooSmallKmerSizeError(Exception):
+    """The pigeonhole approach requires a k-mer length that is too small
+    """
+    pass
+
+
+def _construct_pigeonholed_kmer_probe_map(probes,
+                                          mismatches,
+                                          min_k=10,
+                                          include_positions=False):
+    """Construct k-mer/probe map by pigeonholing mismatches into k-mers.
+
+    Given a collection of probes (all of the same length) and some
+    number of mismatches, this selects a k-mer length k so that k-mers 
+    can be selected (non-overlapping) to ensure that all mismatches are
+    pigeonholed into the k-mers such that there is at least one k-mer
+    without a mismatch. Consider some probe p that is some number of
+    mismatches away from another probe q; if all the k-mers in p were
+    looked up in the k-mer probe map generated from q as an input,
+    this method guarantees that at least one match will be found between
+    a k-mer in p and a k-mer in q.
+ 
+    It builds a map from the k-mers to a set of probes from which
+    the k-mer is located. If more than one probe share a k-mer that is
+    randomly selected from those probes, then each of those probes are
+    in the set mapped to by the shared k-mer.
+
+    Note that this function is intended for use when finding probe
+    covers based on longest common substring. For other approaches, it
+    may yield too few k-mers per probe.
+
+    Args:
+        probes: list of probes from which to construct the map; these
+            must all have the same length
+        mismatches: number of mismatches that will be tolerated when
+            this k-mer probe map is used to search for probe coverage;
+            chooses a k-mer length k such that there is always at least
+            one k-mer that does not have a mismatch with a sequence that
+            a probe covers
+        min_k: the smallest k-mer length allowed (if the k-mer length is
+            too small, a map from k-mers to probes can become useless
+            as its use in find_probe_covers_in_sequence will yield too
+            many false positives); an exception will be thrown if the
+            chosen value of k is less than this value, which may happen
+            if mismatches is too large compared to the probe length or if
+            the probe length is not easily divisible
+        include_positions: when True, the set mapped to by each k-mer
+            key consists of tuples in which the first element is a probe
+            containing the k-mer and the second is the k-mer's position
+            in the probe; if a k-mer appears more than once in a probe
+            and it is randomly selected more than once, that probe may
+            appear in more than one tuple mapped to by that k-mer
+
+    Returns:
+        dict mapping k-mers to sets of probes that contains those
+        k-mers
+    """
+    # Find the probe length
+    if len(probes) == 0:
+        return {}
+    probe_length = len(probes[0].seq)
+    for p in probes:
+        if len(p.seq) != probe_length:
+            raise ValueError("All probes must have the same length")
+
+    if mismatches == 0:
+        # Just one k-mer of length probe_length suffices
+        k = probe_length
+    else:
+        # For some k, let us have probe_length/k k-mers. In the worst-case,
+        # we place one mismatch in each k-mer. We want to have at least one
+        # k-mer with no mismatches. So we need probe_length/k > mismatches.
+        # That is, k < probe_length/mismatches.
+        k = probe_length / mismatches
+        if k == float(probe_length) / mismatches:
+            # mismatches divides probe_length, so decrement k
+            k -= 1
+        # We need k to divide probe_length, so keep decrementing k until
+        # this is true
+        while probe_length % k != 0:
+            k -= 1
+
+    if k < min_k:
+        raise PigeonholeRequiresTooSmallKmerSizeError()
+
+    # Construct a map with k-mers from each probe separated by k bp
+    kmer_probe_map = defaultdict(set)
+    for p in probes:
+        kmers = p.construct_kmers(k, include_positions)
+        for i in xrange(0, len(p.seq), k):
+            if include_positions:
+                kmer, pos = kmers[i]
+                kmer_probe_map[kmer].add((p, pos))
+            else:
+                kmer = kmers[i]
+                kmer_probe_map[kmer].add(p)
+    return dict(kmer_probe_map)
+
+
+def construct_kmer_probe_map_to_find_probe_covers(probes,
+                                                  mismatches,
+                                                  lcf_thres,
+                                                  min_k=10,
+                                                  k=10,
+                                                  include_positions=True):
+    """Construct map from k-mers to probes that contain these k-mers.
+
+    This wraps around two other functions for constructing k-mer probe
+    maps: _construct_rand_kmer_probe_map and
+    _construct_pigeonholed_kmer_probe_map. It only calls the "pigeonhole"
+    function if all probes have the same length and this length is
+    equal to lcf_thres. If this length is greater than lcf_thres, then
+    the "pigeonhole" method would not suffice for finding probe covers
+    because it selects k-mers by spreading across the full probe length.
+    If the "pigeonhole" function fails because it requires too small a
+    value for k, then this resorts to calling the "random" function.
+
+    Args:
+        probes: list of probes from which to construct the map
+        mismatches: number of mismatches that will be tolerated when
+            this k-mer probe map is used to search for probe coverage
+        lcf_thres: stretch of aligned bp required when this k-mer probe
+            map is used to search for probe coverage
+        min_k: the smallest k-mer length allowed (if the k-mer length is
+            too small, a map from k-mers to probes can become useless
+            as its use in find_probe_covers_in_sequence will yield too
+            many false positives) when using the pigeonhole approach
+        k: when using the random approach, use this k-mer length
+        include_positions: when True, the set mapped to by each k-mer
+            key consists of tuples in which the first element is a probe
+            containing the k-mer and the second is the k-mer's position
+            in the probe; if a k-mer appears more than once in a probe
+            and it is randomly selected more than once, that probe may
+            appear in more than one tuple mapped to by that k-mer
+
+    Returns:
+        dict mapping k-mers to sets of probes that contains those
+        k-mers
+    """
+    # Find the probe length
+    if len(probes) == 0:
+        return {}
+    probe_length = len(probes[0].seq)
+    probe_lengths_differ = False
+    for p in probes:
+        if len(p.seq) != probe_length:
+            probe_lengths_differ = True
+            break
+
+    if probe_lengths_differ or lcf_thres < probe_length:
+        # Use the random method with its default values for k and
+        # num_kmers_per_probe
+        return _construct_rand_kmer_probe_map(
+            probes, k=k, include_positions=include_positions)
+
+    # Try the pigeonhole approach
+    try:
+        return _construct_pigeonholed_kmer_probe_map(
+            probes, mismatches, min_k=min_k,
+            include_positions=include_positions)
+    except PigeonholeRequiresTooSmallKmerSizeError:
+        # Resort to the random approach
+        return _construct_rand_kmer_probe_map(
+            probes, k=k, include_positions=include_positions)
+
+
 def find_probe_covers_in_sequence(
         sequence,
         kmer_probe_map,
-        k=15,
         cover_range_for_probe_in_subsequence_fn=None,
         merge_overlapping=True):
     """Find ranges in sequence that a collection of probes cover.
@@ -379,8 +548,11 @@ def find_probe_covers_in_sequence(
     determine whether the probe "covers" sequence in this region, where
     coverage is determined by that function.
 
-    Note that kmer_probe_map is generated in a manner that randomly
-    selects a subset of the k-mers from each probe. Thus, this algorithm
+    This determines the k-mer length k from the given kmer_probe_map.
+
+    Note that kmer_probe_map could be generated in a manner that randomly
+    selects a subset of the k-mers from each probe (i.e., by
+    _construct_rand_kmer_probe_map). In such a case, this algorithm
     is a Monte Carlo algorithm and may yield false negatives. That is,
     it is possible that when scanning through the sequence we encounter
     a region that a probe ought to cover, but none of the k-mers in
@@ -406,9 +578,6 @@ def find_probe_covers_in_sequence(
             (of length k) to a set of tuples, in which each tuple
             contains a probe whose sequence contains the k-mer as well
             as the position of the k-mer in the probe.
-        k: extract k-mers of this length from sequence and look them up
-            in kmer_probe_map to find probes that may cover the
-            subsequence around the extracted k-mer
         cover_range_for_probe_in_subsequence_fn: function that
             determines whether a probe "covers" a part of a subsequence
             of sequence; if it returns None, there is no coverage;
@@ -429,12 +598,15 @@ def find_probe_covers_in_sequence(
         cover_range_for_probe_in_subsequence_fn = \
             probe_covers_sequence_by_longest_common_substring()
 
-    # Check that the kmers in the given map are of length k and
-    # that the kmers in the given map come with positions
+    # Find the k-mer length k, check that all k-mers in the map are
+    # of length k, and check that the k-mers in the map come with
+    # positions
+    k = None
     for kmer in kmer_probe_map.keys():
+        if k is None:
+            k = len(kmer)
         if len(kmer) != k:
-            raise ValueError("Given kmer has length %d but expected %d" %
-                             (len(kmer), k))
+            raise ValueError("Inconsistent kmer lengths in kmer_probe_map")
         for v in kmer_probe_map[kmer]:
             if not isinstance(v, tuple):
                 raise ValueError(("Given kmer_probe_map must include kmer "

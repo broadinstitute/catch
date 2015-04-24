@@ -23,7 +23,7 @@ class TestSetCoverFilter(unittest.TestCase):
         logging.disable(logging.WARNING)
 
     def get_filter_and_output(self, lcf_thres, mismatches, target_genomes,
-                              input, coverage, k, num_kmers_per_probe,
+                              input, coverage,
                               mismatches_tolerant=-1,
                               lcf_thres_tolerant=-1,
                               identify=False,
@@ -34,30 +34,26 @@ class TestSetCoverFilter(unittest.TestCase):
         f = scf.SetCoverFilter(mismatches=mismatches,
                                lcf_thres=lcf_thres,
                                coverage=coverage,
-                               kmer_size=k,
-                               num_kmers_per_probe=num_kmers_per_probe,
                                mismatches_tolerant=mismatches_tolerant,
                                lcf_thres_tolerant=lcf_thres_tolerant,
                                identify=identify,
-                               blacklisted_genomes=blacklisted_genomes)
+                               blacklisted_genomes=blacklisted_genomes,
+                               kmer_probe_map_k=3)
         f.target_genomes = target_genomes
         f.filter(input_probes)
         return (f, f.output_probes)
 
-    def verify_target_genome_coverage(self, selected_probes, target_genomes, k,
-                                      num_kmers_per_probe, filter,
-                                      desired_coverage):
-        kmer_probe_map = probe.construct_kmer_probe_map(selected_probes,
-                                                        k=k,
-                                                        num_kmers_per_probe=10,
-                                                        include_positions=True)
+    def verify_target_genome_coverage(self, selected_probes, target_genomes,
+                                      filter, desired_coverage):
+        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            selected_probes, filter.mismatches, filter.lcf_thres,
+            min_k=3, k=3)
         for tg in [g for genomes_from_group in target_genomes
                    for g in genomes_from_group]:
             num_bp_covered = 0
             for seq in tg.seqs:
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(
                     seq, kmer_probe_map,
-                    k=k,
                     cover_range_for_probe_in_subsequence_fn=filter.cover_range_fn)
                 all_cover_ranges = []
                 for cover_ranges in probe_cover_ranges.values():
@@ -82,13 +78,12 @@ class TestSetCoverFilter(unittest.TestCase):
                 input += [seq[i:(i + 6)] for i in xrange(len(seq) - 6 + 1)]
         must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
         f, output = self.get_filter_and_output(6, 0, target_genomes, input,
-                                               1.0, 3, 10)
+                                               1.0)
         # output must have probes in must_have_output
         for o in must_have_output:
             self.assertTrue(probe.Probe.from_str(o) in output)
         # verify that each of the target genomes is fully covered
-        self.verify_target_genome_coverage(output, target_genomes, 3, 10, f,
-                                           1.0)
+        self.verify_target_genome_coverage(output, target_genomes, f, 1.0)
 
     def convert_target_genomes(self, target_genomes):
         """Convert genomes to instances of genome.Genome.
@@ -139,7 +134,7 @@ class TestSetCoverFilter(unittest.TestCase):
         # 100 for this parameter makes the probability of this
         # happening incredibly small.
         f, output = self.get_filter_and_output(
-            6, 0, target_genomes, input, cover, 3, 100,
+            6, 0, target_genomes, input, cover,
             mismatches_tolerant=mismatches_tolerant,
             lcf_thres_tolerant=lcf_thres_tolerant,
             identify=identify,
@@ -177,7 +172,7 @@ class TestSetCoverFilter(unittest.TestCase):
             # probes ('ABCDEF' and one other)
             min_num_probes = {0.1: 1, 0.5: 2, 0.8: 4, 1.0: 5}
             self.assertEqual(len(probes), min_num_probes[cover_frac])
-            self.verify_target_genome_coverage(probes, target_genomes, 3, 10,
+            self.verify_target_genome_coverage(probes, target_genomes,
                                                f, cover_frac)
 
     def test_explicit_bp_coverage(self):
@@ -190,7 +185,7 @@ class TestSetCoverFilter(unittest.TestCase):
             # ('ABCDEF')
             min_num_probes = {2: 1, 5: 1, 10: 1, 15: 2, 20: 3}
             self.assertEqual(len(probes), min_num_probes[num_bp])
-            self.verify_target_genome_coverage(probes, target_genomes, 3, 10,
+            self.verify_target_genome_coverage(probes, target_genomes,
                                                f, num_bp)
 
     def test_identify_one_group(self):
@@ -447,8 +442,7 @@ class TestSetCoverFilter(unittest.TestCase):
         self.assertNotIn(probe.Probe.from_str('ABCDEF'), probes)
         # Should avoid ATCGGG because it's blacklisted
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
-        self.verify_target_genome_coverage(probes, target_genomes, 3, 10, f,
-                                           12)
+        self.verify_target_genome_coverage(probes, target_genomes, f, 12)
 
         bl_file.close()
 

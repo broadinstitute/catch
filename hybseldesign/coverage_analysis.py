@@ -22,8 +22,7 @@ class Analyzer:
                  target_genomes_names=None,
                  mismatches=0,
                  lcf_thres=100,
-                 kmer_size=10,
-                 num_kmers_per_probe=20):
+                 kmer_probe_map_k=10):
         """
         Args:
             probes: collection of instances of probe.Probe that form a
@@ -39,10 +38,8 @@ class Analyzer:
                 if a stretch of 'lcf_thres' or more bp aligns with
                 'mismatches' or fewer mismatched bp; used to compute whether
                 a probe "covers" a portion of a sequence
-            kmer_size/num_kmers_per_probe: parameters to use when determining
-                what parts of a sequence each probe "covers"; used in calls
-                to probe.construct_kmer_probe_map and
-                probe.find_probe_covers_in_sequence
+            kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
+                uses this value as min_k and k
         """
         self.probes = probes
         self.target_genomes = target_genomes
@@ -54,11 +51,13 @@ class Analyzer:
         else:
             self.target_genomes_names = ["Group %d" % i
                                          for i in xrange(len(target_genomes))]
+
+        self.mismatches = mismatches
+        self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
                 mismatches, lcf_thres)
-        self.kmer_size = kmer_size
-        self.num_kmers_per_probe = num_kmers_per_probe
+        self.kmer_probe_map_k = kmer_probe_map_k
 
     def _iter_target_genomes(self, rc_too=False):
         """Yield target genomes across groupings to iterate over.
@@ -104,11 +103,9 @@ class Analyzer:
         """
         logger.info("Finding probe covers across target genomes")
         logger.info("Building map from k-mers to probes")
-        kmer_probe_map = probe.construct_kmer_probe_map(
-            self.probes,
-            k=self.kmer_size,
-            num_kmers_per_probe=self.num_kmers_per_probe,
-            include_positions=True)
+        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            self.probes, self.mismatches, self.lcf_thres,
+            min_k=self.kmer_probe_map_k, k=self.kmer_probe_map_k)
 
         self.target_covers = {}
         for i, j, gnm, rc in self._iter_target_genomes(True):
@@ -136,7 +133,6 @@ class Analyzer:
                 # overlap)
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(
                     sequence, kmer_probe_map,
-                    k=self.kmer_size,
                     cover_range_for_probe_in_subsequence_fn=self.cover_range_fn,
                     merge_overlapping=False)
                 for p, cover_ranges in probe_cover_ranges.iteritems():
