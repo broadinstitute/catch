@@ -28,9 +28,10 @@ class Genome:
         if len(seqs) > 1 and chrs is None:
             raise ValueError(("When there is more than one sequence, chrs "
                               "should also be specified"))
-        self.seqs = tuple(seqs)
+        self.seqs = seqs
         self.chrs = chrs
 
+        self.hash_cached = None
         self.size_cached = None
         self.size_unambig_cached = None
 
@@ -59,7 +60,9 @@ class Genome:
             return self.size_cached
 
     def __hash__(self):
-        return hash(self.seqs)
+        if self.hash_cached is None:
+            self.hash_cached = hash(tuple(self.seqs))
+        return self.hash_cached
 
     def __eq__(self, other):
         return isinstance(other, Genome) and \
