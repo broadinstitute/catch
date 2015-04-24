@@ -33,28 +33,49 @@ def table(data, col_justify, header_underline=True):
         raise ValueError("col_justify has incorrect number of entries")
 
     # Determine each column's width (maximum length of an entry)
-    col_widths = [0 for i in xrange(num_rows)]
+    col_widths = [0 for j in xrange(num_cols)]
     for row in data:
         for j, col in enumerate(row):
-            col_widths[j] = max(col_widths[j], len(col))
+            entry = str(col).rstrip()
+            # The length of the entry is the maximum length over
+            # all of its lines
+            entry_len = max(len(line) for line in entry.split('\n'))
+            col_widths[j] = max(col_widths[j], entry_len)
+
+    # Determine each row's height (maximum lines of an entry)
+    row_heights = [0 for i in xrange(num_rows)]
+    for i, row in enumerate(data):
+        for j, col in enumerate(row):
+            entry = str(col).rstrip()
+            num_lines = 1 + entry.count('\n')
+            row_heights[i] = max(row_heights[i], num_lines)
 
     table = ''
     for i, row in enumerate(data):
-        row_str = ''
-        for j, col in enumerate(row):
-            if j > 0:
-                # Add a space between columns
-                row_str += ' '
-            if col_justify[j] == "left":
-                row_str += str(data[i][j]).ljust(col_widths[j])
-            elif col_justify[j] == "right":
-                row_str += str(data[i][j]).rjust(col_widths[j])
-            elif col_justify[j] == "center":
-                row_str += str(data[i][j]).center(col_widths[j])
-            else:
-                raise ValueError("Unknown column justification at %d" % j)
-        table += row_str + '\n'
-
+        row_height = row_heights[i]
+        for h in xrange(row_height):
+            row_str = ''
+            for j, col in enumerate(row):
+                if j > 0:
+                    # Add a space between columns
+                    row_str += ' '
+                entry = str(data[i][j]).rstrip()
+                # Extract line h of entry
+                if h > entry.count('\n'):
+                    # Make this line empty
+                    val = ""
+                else:
+                    val = entry.split('\n')[h]
+                # Justify the value in the column
+                if col_justify[j] == "left":
+                    row_str += val.ljust(col_widths[j])
+                elif col_justify[j] == "right":
+                    row_str += val.rjust(col_widths[j])
+                elif col_justify[j] == "center":
+                    row_str += val.center(col_widths[j])
+                else:
+                    raise ValueError("Unknown column justification at %d" % j)
+            table += row_str + '\n'
         if i == 0 and header_underline:
             # Add a row of dashes
             row_str = ''
