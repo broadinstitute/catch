@@ -28,18 +28,35 @@ class Genome:
         if len(seqs) > 1 and chrs is None:
             raise ValueError(("When there is more than one sequence, chrs "
                               "should also be specified"))
-        self.seqs = seqs
+        self.seqs = tuple(seqs)
         self.chrs = chrs
+
+        self.size_cached = None
+        self.size_unambig_cached = None
 
     def divided_into_chrs(self):
         """Return if the genome is broken into more than one chromosome.
         """
         return len(self.seqs) > 1
 
-    def size(self):
+    def size(self, only_unambig=False):
         """Return the total length of the genome across all chromosomes.
+
+        Args:
+            only_unambig: when True, only counts unambiguous bases (i.e.,
+                'A', 'T', 'C', and 'G'); when False, counts all bases
         """
-        return sum(len(seq) for seq in self.seqs)
+        if only_unambig:
+            if self.size_unambig_cached is None:
+                count = 0
+                for b in ['A', 'T', 'C', 'G']:
+                    count += sum(seq.count(b) for seq in self.seqs)
+                self.size_unambig_cached = count
+            return self.size_unambig_cached
+        else:
+            if self.size_cached is None:
+                self.size_cached = sum(len(seq) for seq in self.seqs)
+            return self.size_cached
 
     def __hash__(self):
         return hash(self.seqs)
@@ -60,6 +77,9 @@ class Genome:
         Returns:
             instance of Genome from the input chromosome sequences
         """
+        for seq in seqs_by_chr.values():
+            if not isinstance(seq, str):
+                raise TypeError("Sequences must be strings")
         return Genome(seqs_by_chr.values(), seqs_by_chr)
 
     @staticmethod
@@ -75,4 +95,6 @@ class Genome:
         Returns:
             instance of Genome from the input sequence
         """
+        if not isinstance(seq, str):
+            raise TypeError("seq must be a string")
         return Genome([seq])
