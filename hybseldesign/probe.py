@@ -376,7 +376,7 @@ def _construct_pigeonholed_kmer_probe_map(probes,
     """Construct k-mer/probe map by pigeonholing mismatches into k-mers.
 
     Given a collection of probes (all of the same length) and some
-    number of mismatches, this selects a k-mer length k so that k-mers 
+    number of mismatches, this selects a k-mer length k so that k-mers
     can be selected (non-overlapping) to ensure that all mismatches are
     pigeonholed into the k-mers such that there is at least one k-mer
     without a mismatch. Consider some probe p that is some number of
@@ -384,7 +384,7 @@ def _construct_pigeonholed_kmer_probe_map(probes,
     looked up in the k-mer probe map generated from q as an input,
     this method guarantees that at least one match will be found between
     a k-mer in p and a k-mer in q.
- 
+
     It builds a map from the k-mers to a set of probes from which
     the k-mer is located. If more than one probe share a k-mer that is
     randomly selected from those probes, then each of those probes are
