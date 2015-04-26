@@ -62,11 +62,14 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
 
         Check in given sequence and its reverse complement.
         """
-        self.assertEqual(len(self.analyzer.bp_covered), 2)  # two groupings
-        self.assertEqual(len(self.analyzer.bp_covered[0]), 1)  # one genome
-        self.assertEqual(len(self.analyzer.bp_covered[1]), 1)  # one genome
-        self.assertEqual(len(self.analyzer.bp_covered[0][0]), 2)  # False/True
-        self.assertEqual(len(self.analyzer.bp_covered[1][0]), 2)  # False/True
+        # two groupings
+        self.assertEqual(len(self.analyzer.bp_covered), 2)
+        # one genome per grouping
+        self.assertEqual(len(self.analyzer.bp_covered[0]), 1)
+        self.assertEqual(len(self.analyzer.bp_covered[1]), 1)
+        # False/True for each genome (reverse complement)
+        self.assertEqual(len(self.analyzer.bp_covered[0][0]), 2)
+        self.assertEqual(len(self.analyzer.bp_covered[1][0]), 2)
 
         # genome_a
         # NGGG is left out in the provided sequence (so 23-4=19 is covered)
@@ -86,11 +89,14 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
 
         Check in the given sequence and its reverse complement.
         """
-        self.assertEqual(len(self.analyzer.average_coverage), 2)  # two groupings
-        self.assertEqual(len(self.analyzer.average_coverage[0]), 1)  # one genome
-        self.assertEqual(len(self.analyzer.average_coverage[1]), 1)  # one genome
-        self.assertEqual(len(self.analyzer.average_coverage[0][0]), 2)  # False/True
-        self.assertEqual(len(self.analyzer.average_coverage[1][0]), 2)  # False/True
+        # two groupings
+        self.assertEqual(len(self.analyzer.average_coverage), 2)
+        # one genome per grouping
+        self.assertEqual(len(self.analyzer.average_coverage[0]), 1)
+        self.assertEqual(len(self.analyzer.average_coverage[1]), 1)
+        # False/True for each genome (reverse complement)
+        self.assertEqual(len(self.analyzer.average_coverage[0][0]), 2)
+        self.assertEqual(len(self.analyzer.average_coverage[1][0]), 2)
 
         # genome_a
         # in provided sequence, coverage across the bases is:
@@ -98,17 +104,17 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         # 1 1 1 1 2 2 1 1 1 1 0 0 0 0 1 1 1 2 2 2 1 1 1
         # average = 24/23 over all (24/22 over unambig)
         self.assertEqual(self.analyzer.average_coverage[0][0][False][0],
-                         24./23)
+                         24. / 23)
         self.assertEqual(self.analyzer.average_coverage[0][0][False][1],
-                         24./22)
+                         24. / 22)
         # in reverse complement, coverage across the bases is:
         # C G C T T C A A A C C C N A T G G A T G G A T
         # 0 0 0 0 0 0 1 1 1 1 1 1 0 1 1 1 1 2 2 1 1 1 1
         # average = 18/23 over all (18/22 over unambig)
         self.assertEqual(self.analyzer.average_coverage[0][0][True][0],
-                         18./23)
+                         18. / 23)
         self.assertEqual(self.analyzer.average_coverage[0][0][True][1],
-                         18./22)
+                         18. / 22)
 
         # genome_b
         # in provided sequence, coverage across the bases is:
@@ -116,17 +122,17 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         # 0 0 0 0 0 0 ; 0 0 1 1 1 1 1 1
         # average = 6/14 over all (6/13 over unambig)
         self.assertEqual(self.analyzer.average_coverage[1][0][False][0],
-                         6./14)
+                         6. / 14)
         self.assertEqual(self.analyzer.average_coverage[1][0][False][1],
-                         6./13)
+                         6. / 13)
         # in reverse complement, coverage across the bases is:
         # G G G G G G ; C G C T T C A N
         # 0 0 0 0 0 0 ; 0 0 0 0 0 0 0 0
         # average = 0/13 over all (0/12 over unambig)
         self.assertEqual(self.analyzer.average_coverage[1][0][True][0],
-                         0./13)
+                         0. / 13)
         self.assertEqual(self.analyzer.average_coverage[1][0][True][1],
-                         0./12)
+                         0. / 12)
 
     def test_data_matrix(self):
         """Test the data matrix generated.

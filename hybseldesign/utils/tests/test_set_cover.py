@@ -620,7 +620,7 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                     for universe_id in sets[set_id].keys():
                         els_as_intervals = []
                         for el in sets[set_id][universe_id]:
-                            els_as_intervals += [(el, el+1)]
+                            els_as_intervals += [(el, el + 1)]
                         sets_as_intervalsets[set_id][universe_id] = \
                             interval.IntervalSet(els_as_intervals)
                 output = sc.approx_multiuniverse(sets_as_intervalsets, costs,

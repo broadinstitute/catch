@@ -225,7 +225,7 @@ class TestConstructRandKmerProbeMap(unittest.TestCase):
 class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
     """Tests _construct_pigeonholed_kmer_probe_map function.
     """
-    
+
     def test_no_mismatches(self):
         a = probe.Probe.from_str('ABCDEFGHIJ')
         b = probe.Probe.from_str('ZYXWVUTSRQ')
@@ -447,7 +447,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         self.assertItemsEqual(found[a], [(6, 12)])
         self.assertItemsEqual(found[b], [(18, 24)])
         self.assertFalse(c in found)
-        
+
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 1, 6, min_k=4, k=4)
         # This should try the pigeonhole approach and fail because it
