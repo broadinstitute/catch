@@ -69,6 +69,7 @@ class SetCoverFilter(BaseFilter):
                  identify=False,
                  blacklisted_genomes=[],
                  coverage=1.0,
+                 cover_groupings_separately=False,
                  kmer_probe_map_k=10):
         """
         Args:
@@ -87,7 +88,7 @@ class SetCoverFilter(BaseFilter):
                 to capture more potential hybridizations (i.e., be more
                 sensitive). When not set, they are by default equal to
                 'mismatches' and 'lcf_thres'.
-            identity: when True, indicates that probes should be designed
+            identify: when True, indicates that probes should be designed
                 with the identification option enabled (default is False)
             blacklisted_genomes: list of paths to FASTA files of genomes
                 that should be blacklisted (i.e., probes are penalized by the
@@ -98,6 +99,15 @@ class SetCoverFilter(BaseFilter):
                 When it is an int > 1, it determines the number of bp of each
                 of the target genomes that must be covered by the selected
                 probes.
+            cover_groupings_separately: when True, runs a separate instance
+                of set cover with the target genomes from each grouping and
+                yields the probes selected across (the union of) all the runs.
+                (When False, just one instance of set cover is run.) This
+                improves runtime by reducing the number of universes (and thus
+                overall universe size) given to each instance of set cover, but
+                it may yield more probes than just one instance would yield,
+                particularly when the genomes across groupings are similar at
+                a nucleotide level.
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
         """
@@ -128,6 +138,7 @@ class SetCoverFilter(BaseFilter):
         self.identify = identify
         self.blacklisted_genomes = blacklisted_genomes
         self.coverage = coverage
+        self.cover_groupings_separately = cover_groupings_separately
         self.kmer_probe_map_k = kmer_probe_map_k
 
     def _make_sets(self, candidate_probes):
@@ -503,6 +514,85 @@ class SetCoverFilter(BaseFilter):
                     universe_p[(i, j)] = float(self.coverage) / gnm.size()
         return universe_p
 
+    def _compute_set_cover(self, sets, costs, universe_p, ranks):
+        """Compute set cover approximation(s) for one or more instances.
+
+        When self.cover_groupings_separately is True, this uses the input
+        to construct and solve a separate instance of set cover to find the
+        probes for each grouping of target genomes (i.e., to cover all the
+        target genomes in each grouping). Then, it returns the union of all
+        the selected probes (namely, the union of all the selected set ids).
+        This may yield more probes than running just one instance in total
+        (across all groupings), but should run more quickly because the
+        input size for each instance is smaller.
+
+        When self.cover_groupings_separately is False, this uses the input
+        to construct and solve just one instance of set cover (for all target
+        genomes across all groupings).
+
+        Args:
+            sets: sets input to set_cover.approx_multiuniverse for a full
+                instance of set cover (i.e., covering target genomes across
+                all groupings)
+            costs: costs input to set_cover.approx_multiuniverse for a full
+                instance of set cover (i.e., contains costs for probes that
+                come from all target genomes across all groupings)
+            universe_p: universe_p input to set_cover.approxmultiuniverse for
+                a full instance of set cover (i.e., give universe_p coverage
+                value for every universe corresponding each target genome
+                across all groupings)
+            ranks: ranks input to set_cover.approxmultiuniverse for a full
+                instance of set cover (i.e., contains ranks for probes that
+                come from all target genomes across all groupings)
+
+        Returns:
+            set ids (corresponding to indices in the sets input) that give
+            the probes selected to be in the set cover
+        """
+        if self.cover_groupings_separately:
+            # For each grouping, construct a set cover instance and solve it
+            set_ids_in_cover = set()
+            for i in xrange(len(self.target_genomes)):
+                # The costs, universe_p, and ranks input may have extra
+                # information for this instance, but should still be valid
+                # input to the solver (i.e., they contain all the necessary
+                # information to solve the instance)
+                # We construct the instance by reducing sets -- namely, by
+                # only giving coverage for universes corresponding to target
+                # genomes that come from this grouping.
+                sets_for_instance = {}
+                for set_id in sets.keys():
+                    # For a universe_id, universe_id[0] gives the grouping
+                    # of that universe and should equal i to be included in
+                    # this instance
+                    coverage_for_set_id = {
+                        universe_id: sets[set_id][universe_id]
+                        for universe_id in sets[set_id].keys()
+                        if universe_id[0] == i
+                    }
+                    if len(coverage_for_set_id) > 0:
+                        sets_for_instance[set_id] = coverage_for_set_id
+                logger.info(("Approximating the solution to an instance of "
+                             "set cover, corresponding to grouping %d (of %d)"),
+                            i, len(self.target_genomes))
+                set_ids_for_instance = set_cover.approx_multiuniverse(
+                    sets_for_instance,
+                    costs=costs,
+                    universe_p=universe_p,
+                    ranks=ranks,
+                    use_intervalsets=True)
+                set_ids_in_cover.update(set_ids_for_instance)
+        else:
+            logger.info(("Approximating the solution to a single set cover "
+                         "instance across all groupings"))
+            set_ids_in_cover = set_cover.approx_multiuniverse(
+                sets,
+                costs=costs,
+                universe_p=universe_p,
+                ranks=ranks,
+                use_intervalsets=True)
+        return set_ids_in_cover
+
     def _filter(self, input):
         """Return a subset of the input probes.
         """
@@ -519,13 +609,10 @@ class SetCoverFilter(BaseFilter):
         universe_p = self._make_universe_p()
 
         # Run the set cover approximation algorithm
-        logger.info(("Approximating the solution to the set cover "
-                     "instance"))
-        set_ids_in_cover = set_cover.approx_multiuniverse(sets,
-                                                          costs=costs,
-                                                          universe_p=universe_p,
-                                                          ranks=ranks,
-                                                          use_intervalsets=True)
+        set_ids_in_cover = self._compute_set_cover(sets,
+                                                   costs,
+                                                   universe_p,
+                                                   ranks)
 
         # Save ranks and costs
         self.probe_ranks = ranks
