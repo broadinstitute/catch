@@ -27,18 +27,21 @@ class TestSetCoverFilter(unittest.TestCase):
                               mismatches_tolerant=-1,
                               lcf_thres_tolerant=-1,
                               identify=False,
-                              blacklisted_genomes=[]):
+                              blacklisted_genomes=[],
+                              cover_groupings_separately=False):
         input_probes = [probe.Probe.from_str(s) for s in input]
         # Remove duplicates
         input_probes = list(OrderedDict.fromkeys(input_probes))
-        f = scf.SetCoverFilter(mismatches=mismatches,
-                               lcf_thres=lcf_thres,
-                               coverage=coverage,
-                               mismatches_tolerant=mismatches_tolerant,
-                               lcf_thres_tolerant=lcf_thres_tolerant,
-                               identify=identify,
-                               blacklisted_genomes=blacklisted_genomes,
-                               kmer_probe_map_k=3)
+        f = scf.SetCoverFilter(
+            mismatches=mismatches,
+            lcf_thres=lcf_thres,
+            coverage=coverage,
+            mismatches_tolerant=mismatches_tolerant,
+            lcf_thres_tolerant=lcf_thres_tolerant,
+            identify=identify,
+            blacklisted_genomes=blacklisted_genomes,
+            cover_groupings_separately=cover_groupings_separately,
+            kmer_probe_map_k=3)
         f.target_genomes = target_genomes
         f.filter(input_probes)
         return (f, f.output_probes)
@@ -70,15 +73,17 @@ class TestSetCoverFilter(unittest.TestCase):
                 # directly check num bp covered
                 self.assertGreaterEqual(num_bp_covered, desired_coverage)
 
-    def run_full_coverage_check_for_target_genomes(self, target_genomes):
+    def run_full_coverage_check_for_target_genomes(
+            self, target_genomes, cover_groupings_separately=False):
         input = []
         for tg in [g for genomes_from_group in target_genomes
                    for g in genomes_from_group]:
             for seq in tg.seqs:
                 input += [seq[i:(i + 6)] for i in xrange(len(seq) - 6 + 1)]
         must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
-        f, output = self.get_filter_and_output(6, 0, target_genomes, input,
-                                               1.0)
+        f, output = self.get_filter_and_output(
+            6, 0, target_genomes, input, 1.0,
+            cover_groupings_separately=cover_groupings_separately)
         # output must have probes in must_have_output
         for o in must_have_output:
             self.assertTrue(probe.Probe.from_str(o) in output)
@@ -122,7 +127,8 @@ class TestSetCoverFilter(unittest.TestCase):
                        identify=False,
                        mismatches_tolerant=0,
                        lcf_thres_tolerant=6,
-                       blacklisted_genomes=[]):
+                       blacklisted_genomes=[],
+                       cover_groupings_separately=False):
         input = []
         for tg in [g for genomes_from_group in target_genomes
                    for g in genomes_from_group]:
@@ -138,7 +144,8 @@ class TestSetCoverFilter(unittest.TestCase):
             mismatches_tolerant=mismatches_tolerant,
             lcf_thres_tolerant=lcf_thres_tolerant,
             identify=identify,
-            blacklisted_genomes=blacklisted_genomes)
+            blacklisted_genomes=blacklisted_genomes,
+            cover_groupings_separately=cover_groupings_separately)
         return f, output
 
     def test_same_output_with_duplicated_species(self):
@@ -445,6 +452,23 @@ class TestSetCoverFilter(unittest.TestCase):
         self.verify_target_genome_coverage(probes, target_genomes, f, 12)
 
         bl_file.close()
+
+    def test_cover_separately_two_groupings(self):
+        target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
+                          ['ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        self.run_full_coverage_check_for_target_genomes(
+            target_genomes, cover_groupings_separately=True)
+
+    def test_cover_separately_identify_two_groups(self):
+        target_genomes = [['ABCDEFXXIJKXMNOPQRXTUXWXYXABCDEF',
+                           'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
+                          ['ATATATABCDEFATATATATATATATATATAT']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True,
+                                        cover_groupings_separately=True)
+        self.assertEqual(set(probes), set([probe.Probe.from_str('MNOPQR'),
+                                           probe.Probe.from_str('ATATAT')]))
 
     def tearDown(self):
         # Re-enable logging

@@ -69,7 +69,8 @@ def main(args):
         lcf_thres_tolerant=args.lcf_thres_tolerant,
         identify=args.identify,
         blacklisted_genomes=blacklisted_genomes_fasta,
-        coverage=args.coverage)
+        coverage=args.coverage,
+        cover_groupings_separately=args.cover_groupings_separately)
     #  3) Adapter filter (af) -- add adapters to both the 5' and 3' ends
     #     of each probe
     af = adapter_filter.AdapterFilter(mismatches=args.mismatches,
@@ -196,6 +197,14 @@ if __name__ == "__main__":
         help=("One or more blacklisted genomes; penalize probes based "
               "on how much of each of these genomes they cover; the "
               "label should be a dataset (e.g., 'hg19' or 'marburg')"))
+    parser.add_argument(
+        "--cover_groupings_separately",
+        dest="cover_groupings_separately",
+        action="store_true",
+        help=("Run a separate instance of set cover with the target genomes "
+              "from each grouping and pool (union) the resulting probes. "
+              "When set, the software will run faster than when not set, but "
+              "it may yield more probes than when it is not set."))
     parser.add_argument("-d", "--dataset",
                         nargs='+',
                         required=True,
