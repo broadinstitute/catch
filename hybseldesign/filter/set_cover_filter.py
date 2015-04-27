@@ -188,8 +188,8 @@ class SetCoverFilter(BaseFilter):
         for i, genomes_from_group in enumerate(self.target_genomes):
             for j, gnm in enumerate(genomes_from_group):
                 logger.info(("Computing coverage in grouping %d (of %d), "
-                             "with target genome %d (of %d)"), i,
-                            len(self.target_genomes), j,
+                             "with target genome %d (of %d)"), i + 1,
+                            len(self.target_genomes), j + 1,
                             len(genomes_from_group))
                 universe_id = (i, j)
                 length_so_far = 0
@@ -287,7 +287,7 @@ class SetCoverFilter(BaseFilter):
         num_groupings_hit = {p: 0 for p in candidate_probes}
         for i, genomes_from_group in enumerate(self.target_genomes):
             logger.info(("Computing coverage in grouping %d (of %d) to "
-                         "count number of groupings hit"), i,
+                         "count number of groupings hit"), i + 1,
                         len(self.target_genomes))
             num_bp_covered_in_grouping = defaultdict(int)
             for j, gnm in enumerate(genomes_from_group):
@@ -574,7 +574,7 @@ class SetCoverFilter(BaseFilter):
                         sets_for_instance[set_id] = coverage_for_set_id
                 logger.info(("Approximating the solution to an instance of "
                              "set cover, corresponding to grouping %d (of %d)"),
-                            i, len(self.target_genomes))
+                            i + 1, len(self.target_genomes))
                 set_ids_for_instance = set_cover.approx_multiuniverse(
                     sets_for_instance,
                     costs=costs,

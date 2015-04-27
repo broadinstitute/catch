@@ -69,7 +69,7 @@ class DominatingSetFilter(BaseFilter):
         sets = defaultdict(set)
         for i in xrange(len(input)):
             if i % 100 == 0:
-                logger.info("Making set for candidate probe %d of %d", i,
+                logger.info("Making set for candidate probe %d of %d", i + 1,
                             len(input))
             probe_a = input[i]
             # Put probe_a into its set
