@@ -162,8 +162,8 @@ class Analyzer:
         for i, j, gnm, rc in self._iter_target_genomes(True):
             if not rc:
                 logger.info(("Computing coverage in grouping %d (of %d), "
-                             "with target genome %d (of %d)"), i,
-                            len(self.target_genomes), j,
+                             "with target genome %d (of %d)"), i + 1,
+                            len(self.target_genomes), j + 1,
                             len(self.target_genomes[i]))
             if i not in self.target_covers:
                 self.target_covers[i] = {}
