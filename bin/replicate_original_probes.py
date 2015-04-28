@@ -9,6 +9,7 @@ import argparse
 import importlib
 import logging
 
+from hybseldesign import coverage_analysis
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import naive_redundant_filter
 from hybseldesign.filter import probe_designer
@@ -54,10 +55,16 @@ def main(args):
                                       replicate_first_version=True)
     pb.design()
 
-    # Print the arguments and the number of final probes
-    # (The final probes are stored in pb.final_probes if their
-    #  sequences are desired)
-    print args.shift, args.mismatch_thres, len(pb.final_probes)
+    if args.print_analysis:
+        analyzer = coverage_analysis.Analyzer(pb.final_probes,
+                                              seqs,
+                                              [args.dataset],
+                                              mismatches=args.mismatch_thres)
+        analyzer.run()
+        analyzer.print_analysis()
+    else:
+        # Just print the number of probes
+        print len(pb.final_probes)
 
 
 if __name__ == "__main__":
@@ -78,6 +85,10 @@ if __name__ == "__main__":
         help=("Deem one probe redundant to another if, as one is "
               "shifted relative to the other, the minimum number of "
               "mismatches between them is <= 'mismatch_thres'"))
+    parser.add_argument("--print_analysis",
+                        dest="print_analysis",
+                        action="store_true",
+                        help="Print analysis of the probe set's coverage")
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",
