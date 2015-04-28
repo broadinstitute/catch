@@ -139,18 +139,16 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         """
         data = self.analyzer._make_data_matrix()
         expected = [["Genome",
-                     "Num bases covered",
                      "Num bases covered\n[over unambig]",
-                     "Average coverage/depth",
                      "Average coverage/depth\n[over unambig]"],
-                    ["g_a, genome 0", "19 (82.61%)", "(86.36%)",
-                     "1.04", "1.09"],
-                    ["g_a, genome 0 (rc)", "16 (69.57%)", "(72.73%)",
-                     "0.78", "0.82"],
-                    ["g_b, genome 0", "6 (42.86%)", "(46.15%)",
-                     "0.43", "0.46"],
-                    ["g_b, genome 0 (rc)", "0 (<0.01%)", "(<0.01%)",
-                     "<0.01", "<0.01"]]
+                    ["g_a, genome 0", "19 (82.61%) [86.36%]",
+                     "1.04 [1.09]"],
+                    ["g_a, genome 0 (rc)", "16 (69.57%) [72.73%]",
+                     "0.78 [0.82]"],
+                    ["g_b, genome 0", "6 (42.86%) [46.15%]",
+                     "0.43 [0.46]"],
+                    ["g_b, genome 0 (rc)", "0 (<0.01%) [<0.01%]",
+                     "<0.01 [<0.01]"]]
         self.assertEqual(data, expected)
 
     def tearDown(self):
