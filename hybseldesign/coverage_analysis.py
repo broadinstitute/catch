@@ -281,9 +281,7 @@ class Analyzer:
         """
         # Make row headers
         data = [["Genome",
-                 "Num bases covered",
                  "Num bases covered\n[over unambig]",
-                 "Average coverage/depth",
                  "Average coverage/depth\n[over unambig]"]]
 
         # Create a row for every genome, including reverse complements
@@ -304,8 +302,9 @@ class Analyzer:
                 prct_covered_unambig_str = "<0.01%"
             else:
                 prct_covered_unambig_str = "{0:.2%}".format(frac_covered_unambig)
-            bp_covered_all_str = "%d (%s)" % (bp_covered, prct_covered_all_str)
-            bp_covered_unambig_str = "(%s)" % prct_covered_unambig_str
+            bp_covered_str = "%d (%s) [%s]" % (bp_covered,
+                                                prct_covered_all_str,
+                                                prct_covered_unambig_str)
 
             # Format average covered
             avg_covg_all, avg_covg_unambig = self.average_coverage[i][j][rc]
@@ -317,12 +316,12 @@ class Analyzer:
                 avg_covg_unambig_str = "<0.01"
             else:
                 avg_covg_unambig_str = "{0:.2f}".format(avg_covg_unambig)
+            avg_covg_str = "%s [%s]" % (avg_covg_all_str,
+                                         avg_covg_unambig_str)
 
             row = [col_header,
-                   bp_covered_all_str,
-                   bp_covered_unambig_str,
-                   avg_covg_all_str,
-                   avg_covg_unambig_str]
+                   bp_covered_str,
+                   avg_covg_str]
             data += [row]
 
         return data
@@ -331,5 +330,5 @@ class Analyzer:
         """Print a table of results of the analysis.
         """
         print pretty_print.table(self._make_data_matrix(),
-                                 ["left", "right", "right", "right", "right"],
+                                 ["left", "right", "right"],
                                  header_underline=True)
