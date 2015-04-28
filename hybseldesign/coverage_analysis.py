@@ -327,8 +327,10 @@ class Analyzer:
         return data
 
     def print_analysis(self):
-        """Print a table of results of the analysis.
+        """Print the number of probes and a table of results of the analysis.
         """
+        print "NUMBER OF PROBES: %d" % len(self.probes)
+        print
         print pretty_print.table(self._make_data_matrix(),
                                  ["left", "right", "right"],
                                  header_underline=True)

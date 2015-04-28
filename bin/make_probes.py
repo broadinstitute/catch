@@ -96,16 +96,6 @@ def main(args):
         # Write the final probes to the file args.output_probes
         seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
-    # Print the arguments and the number of final probes
-    # (The final probes are stored in pb.final_probes if their
-    #  sequences are desired)
-    if args.limit_target_genomes:
-        print args.mismatches, args.lcf_thres, args.coverage, \
-            args.limit_target_genomes, len(pb.final_probes)
-    else:
-        print args.mismatches, args.lcf_thres, args.coverage, \
-            len(pb.final_probes)
-
     if args.print_analysis:
         analyzer = coverage_analysis.Analyzer(pb.final_probes,
                                               genomes_grouped,
@@ -114,6 +104,9 @@ def main(args):
                                               lcf_thres=args.lcf_thres)
         analyzer.run()
         analyzer.print_analysis()
+    else:
+        # Just print the number of probes
+        print len(pb.final_probes)
 
 
 if __name__ == "__main__":
