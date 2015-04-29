@@ -1,6 +1,6 @@
 """Dataset with Chikungunya sequences.
 
-A dataset with 213 Chikungunya sequences. There are 181 complete
+A dataset with 213 Chikungunya samples. There are 181 complete
 genomes from NCBI and 32 isolates from VBRC.
 """
 

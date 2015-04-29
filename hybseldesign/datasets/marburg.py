@@ -1,6 +1,6 @@
 """Dataset with Marburg sequences.
 
-A dataset with 78 Marburg samples.
+A dataset with 78 Marburg genomes.
 """
 
 import sys

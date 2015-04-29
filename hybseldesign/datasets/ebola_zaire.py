@@ -1,6 +1,8 @@
-"""Dataset with Ebola sequences from within Zaire.
+"""Dataset with Zaire Ebola sequences.
 
-A dataset with 140 Ebola samples taken from Zaire.
+A dataset with 140 Ebola Zaire genomes. These do not include
+samples from the ebola2014 dataset (i.e., from the 2014
+West Africa Ebola outbreak).
 """
 
 import sys
