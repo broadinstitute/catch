@@ -1,6 +1,6 @@
 """Dataset with Hepatitis-A sequences.
 
-A dataset with 34 Hepatitis-A samples.
+A dataset with 34 Hepatitis-A genomes.
 """
 
 import sys

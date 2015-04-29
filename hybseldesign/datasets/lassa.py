@@ -1,9 +1,8 @@
 """Dataset with Lassa virus sequences.
 
-A dataset with 107 Lassa virus samples. Each sequence corresponds
-to either a small (S) or large (L) segment of the genome; for a
-particular sample, the sequences for its two segments are adjacent
-in the FASTA file.
+A dataset with 214 Lassa virus segments. Each segment is either
+a small (S) or large (L) segment of a genome. Most are paired
+with another, but some are unmatched.
 """
 
 import sys
