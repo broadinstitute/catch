@@ -36,13 +36,9 @@ def read_dataset_genomes(dataset):
                      dataset.__name__)
         for fn in dataset.fasta_paths:
             seq_map = read_fasta(fn)
-            seqs = OrderedDict()
-            for chr in dataset.chrs:
-                if chr not in seq_map:
-                    raise ValueError(("Chromosome %s is not in the FASTA file "
-                                      "%s for dataset %s, but should be") %
-                                     (chr, fn, dataset.__name__))
-                seqs[chr] = seq_map[chr]
+            seq_map_by_chr = {dataset.seq_header_to_chr(header): seq_map[header]
+                              for header in seq_map.keys()}
+            seqs = OrderedDict(seq_map_by_chr)
             genomes += [genome.Genome.from_chrs(seqs)]
     else:
         # There is just one sequence (chromosome) for each genome in
