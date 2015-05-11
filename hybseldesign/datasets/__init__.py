@@ -75,7 +75,7 @@ class GenomesDatasetMultiChrom(GenomesDataset):
     each be added with add_fasta_path().
     """
 
-    def __init__(self, __name__, __file__, chrs):
+    def __init__(self, __name__, __file__, chrs, seq_header_to_chr):
         """
         Args:
             __name__: name of this dataset (module)
@@ -83,6 +83,9 @@ class GenomesDatasetMultiChrom(GenomesDataset):
             chrs: list of chromosomes for the genome held by this dataset;
                 these should be the header of each sequence in the FASTA
                 files
+            seq_header_to_chr: function that takes a sequence header from
+                a FASTA file and returns the chr (as a string) from that
+                header
         """
         if len(chrs) == 1:
             logger.critical(("Typically when there is just one chromosome, "
@@ -94,6 +97,7 @@ class GenomesDatasetMultiChrom(GenomesDataset):
 
         GenomesDataset.__init__(self, __name__, __file__)
         self.chrs = chrs
+        self.seq_header_to_chr = seq_header_to_chr
         self.fasta_paths = []
 
     def add_fasta_path(self, path, relative=False):
