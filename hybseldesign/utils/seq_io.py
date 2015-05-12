@@ -55,7 +55,8 @@ def read_dataset_genomes(dataset):
     return genomes
 
 
-def read_fasta(fn, data_type='str', replace_degenerate=True):
+def read_fasta(fn, data_type='str', replace_degenerate=True,
+               skip_gaps=True):
     """Read a FASTA file.
 
     Args:
@@ -65,6 +66,8 @@ def read_fasta(fn, data_type='str', replace_degenerate=True):
             ('np')
         replace_degenerate: when True, replace the degenerate
             bases ('Y','R','W','S','M','K') with 'N'
+        skip_gaps: when True, do not read dashes ('-'), which
+            represent gaps
 
     Returns:
         dict mapping the name of each sequence to the sequence
@@ -95,6 +98,8 @@ def read_fasta(fn, data_type='str', replace_degenerate=True):
                 # Append the sequence
                 if replace_degenerate:
                     line = degenerate_pattern.sub('N', line)
+                if skip_gaps:
+                    line = line.replace('-', '')
                 m[curr_seq_name] += line
 
     if data_type == 'str':
