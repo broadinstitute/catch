@@ -20,7 +20,7 @@ chrs = ["segment_S", "segment_L"]
 
 def seq_header_to_chr(header):
     import re
-    c = re.compile(r'segment ([S|L])')
+    c = re.compile(r'segment ([SL])')
     m = c.search(header)
     if not m:
         raise ValueError("Unknown segment in header %s" % header)
