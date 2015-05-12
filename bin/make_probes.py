@@ -96,14 +96,17 @@ def main(args):
         # Write the final probes to the file args.output_probes
         seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
-    if args.print_analysis:
+    if args.print_analysis or args.write_analysis_to_tsv:
         analyzer = coverage_analysis.Analyzer(pb.final_probes,
                                               genomes_grouped,
                                               genomes_grouped_names,
                                               mismatches=args.mismatches,
                                               lcf_thres=args.lcf_thres)
         analyzer.run()
-        analyzer.print_analysis()
+        if args.write_analysis_to_tsv:
+            analyzer.write_data_matrix_as_tsv(args.write_analysis_to_tsv)
+        if args.print_analysis:
+            analyzer.print_analysis()
     else:
         # Just print the number of probes
         print len(pb.final_probes)
@@ -217,6 +220,10 @@ if __name__ == "__main__":
                         dest="print_analysis",
                         action="store_true",
                         help="Print analysis of the probe set's coverage")
+    parser.add_argument(
+        "--write_analysis_to_tsv",
+        help=("The file to which to write a TSV-formatted matrix of the "
+              "probe set's coverage analysis"))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",

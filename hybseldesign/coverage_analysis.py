@@ -272,7 +272,47 @@ class Analyzer:
         self._compute_bp_covered_in_target_genomes()
         self._compute_average_coverage_in_target_genomes()
 
-    def _make_data_matrix(self):
+    def write_data_matrix_as_tsv(self, fn):
+        """Write 2D array representing results as a TSV file.
+
+        Args:
+            fn: path to file to write to
+        """
+        # Make row headers
+        data = [["Genome",
+                 "Num bases covered",
+                 "Frac bases covered",
+                 "Frac bases covered over unambig",
+                 "Average coverage/depth",
+                 "Average coverage/depth over unambig"]]
+
+        # Create a row for every genome, including reverse complements
+        for i, j, gnm, rc in self._iter_target_genomes(True):
+            col_header = "%s, genome %d" % (self.target_genomes_names[i], j)
+            if rc:
+                col_header += " (rc)"
+
+            bp_covered = self.bp_covered[i][j][rc]
+            frac_covered_all = float(bp_covered) / gnm.size(False)
+            frac_covered_unambig = float(bp_covered) / gnm.size(True)
+
+            avg_covg_all, avg_covg_unambig = self.average_coverage[i][j][rc]
+
+            row = [col_header,
+                   bp_covered,
+                   frac_covered_all,
+                   frac_covered_unambig,
+                   avg_covg_all,
+                   avg_covg_unambig]
+            data += [row]
+
+        # Write to fn as a TSV
+        with open(fn, 'w') as f:
+            for row in data:
+                line = '\t'.join([str(entry) for entry in row])
+                f.write(line + '\n')
+
+    def _make_data_matrix_string(self):
         """Return 2D array representing results (as strings) to output.
 
         Returns:
@@ -331,6 +371,6 @@ class Analyzer:
         """
         print "NUMBER OF PROBES: %d" % len(self.probes)
         print
-        print pretty_print.table(self._make_data_matrix(),
+        print pretty_print.table(self._make_data_matrix_string(),
                                  ["left", "right", "right"],
                                  header_underline=True)
