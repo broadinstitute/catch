@@ -134,10 +134,10 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         self.assertEqual(self.analyzer.average_coverage[1][0][True][1],
                          0. / 12)
 
-    def test_data_matrix(self):
+    def test_data_matrix_string(self):
         """Test the data matrix generated.
         """
-        data = self.analyzer._make_data_matrix()
+        data = self.analyzer._make_data_matrix_string()
         expected = [["Genome",
                      "Num bases covered\n[over unambig]",
                      "Average coverage/depth\n[over unambig]"],
