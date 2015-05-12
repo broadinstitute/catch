@@ -32,7 +32,7 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
                                     mismatches=0,
                                     lcf_thres=6,
                                     kmer_probe_map_k=3)
-        self.analyzer.run()
+        self.analyzer.run(window_length=6, window_stride=3)
 
     def test_probe_cover_ranges(self):
         """Test the probe cover ranges that are found.
@@ -133,6 +133,72 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
                          0. / 13)
         self.assertEqual(self.analyzer.average_coverage[1][0][True][1],
                          0. / 12)
+
+    def test_sliding_coverage(self):
+        """Check the calculation of a coverage across sliding windows.
+
+        Check in the given sequence and its reverse complement.
+        """
+        # two groupings
+        self.assertEqual(len(self.analyzer.average_coverage), 2)
+        # one genome per grouping
+        self.assertEqual(len(self.analyzer.average_coverage[0]), 1)
+        self.assertEqual(len(self.analyzer.average_coverage[1]), 1)
+        # False/True for each genome (reverse complement)
+        self.assertEqual(len(self.analyzer.average_coverage[0][0]), 2)
+        self.assertEqual(len(self.analyzer.average_coverage[1][0]), 2)
+
+        # genome_a
+        # in provided sequence, coverage across the bases is (underneath
+        # is average across a 6 bp window, sliding by 3 bp):
+        # A T C C A T C C A T N G G G T T T G A A G C G
+        # 1 1 1 1 2 2 1 1 1 1 0 0 0 0 1 1 1 2 2 2 1 1 1
+        # -----|-----|-----|-----|-----|-----|---|-----
+        #     8/6   8/6   4/6   2/6   5/6   9/6 9/6
+        #      3     6     9     12    15   18   20
+        expected = {3: 8/6., 6: 8/6., 9: 4/6., 12: 2/6., 15: 5/6.,
+                    18: 9/6., 20: 9/6.}
+        self.assertEqual(self.analyzer.sliding_coverage[0][0][False],
+                         expected)
+        # in reverse complement, coverage across the bases is (underneath
+        # is average across a 6 bp window, sliding by 3 bp):
+        # C G C T T C A A A C C C N A T G G A T G G A T
+        # 0 0 0 0 0 0 1 1 1 1 1 1 0 1 1 1 1 2 2 1 1 1 1
+        # -----|-----|-----|-----|-----|-----|---|-----
+        #      0    1/2    1    5/6    1    8/6 8/6
+        #      3     6     9     12    15   18   20
+        expected = {3: 0, 6: 1/2., 9: 1, 12: 5/6., 15: 1, 18: 8/6.,
+                    20: 8/6.}
+        self.assertEqual(self.analyzer.sliding_coverage[0][0][True],
+                         expected)
+
+        # genome_b
+        # in provided sequence, coverage across the bases is (underneath
+        # is average across a 6 bp window, sliding by 3 bp):
+        # C C C C C C ; N T G A A G C G
+        # 0 0 0 0 0 0 ; 0 0 1 1 1 1 1 1
+        # -----|----- | -----|---|-----
+        #      0     1/6    4/6  1
+        #      3      6      9   11
+        # (The window centered at 6 is meaningless because it is between
+        # chromosomes; it's an artifact of the fact that the chromosomes
+        # are concatenated for this analysis.)
+        expected = {3: 0, 6: 1/6., 9: 4/6., 11: 1}
+        self.assertEqual(self.analyzer.sliding_coverage[1][0][False],
+                         expected)
+        # in reverse complement, coverage across the bases is (underneath
+        # is average across a 6 bp window, sliding by 3 bp):
+        # G G G G G G ; C G C T T C A N
+        # 0 0 0 0 0 0 ; 0 0 0 0 0 0 0 0
+        # -----|----- | -----|---|-----
+        #      0      0      0   0
+        #      3      6      9   11
+        # (The window centered at 6 is meaningless because it is between
+        # chromosomes; it's an artifact of the fact that the chromosomes
+        # are concatenated for this analysis.)
+        expected = {3: 0, 6: 0, 9: 0, 11: 0}
+        self.assertEqual(self.analyzer.sliding_coverage[1][0][True],
+                         expected)
 
     def test_data_matrix_string(self):
         """Test the data matrix generated.

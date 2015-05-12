@@ -46,7 +46,10 @@ the probes, though this could be generalized to any desired coverage):
    percentage more than 100%.
 """
 
+from collections import defaultdict
 import logging
+
+import numpy as np
 
 from hybseldesign import probe
 from hybseldesign.utils import interval
@@ -263,14 +266,101 @@ class Analyzer:
             self.average_coverage[i][j][rc] = (avg_covg_over_all,
                                                avg_covg_over_unambig)
 
-    def run(self):
+    def _compute_sliding_coverage_in_target_genomes(self,
+                                                    window_length,
+                                                    window_stride):
+        """Calculate the coverage over a sliding window in each target genome.
+
+        self._find_covers_in_target_genomes() must be called prior to this,
+        so that self.target_covers can be accessed.
+
+        This saves a dict, self.sliding_coverage, as follows:
+        self.sliding_coverage[i][j][b] gives a dict D provided by the probes
+        in genome j of target genome grouping i (in the reverse complement
+        of j if b is True, and in the provided sequence if b is False).
+        D is a dict mapping a position p of a target genome to the average
+        coverage/depth provided by the probes in a window centered at p.
+
+        The value is the average, taken across the bases in the window, of
+        the number of probes that hybridize to a region that includes each base
+        in the window.
+
+        This includes ambiguous bases in the sliding windows.
+        """
+        logger.info("Computing sliding coverage across target genomes")
+        self.sliding_coverage = {}
+        for i, j, gnm, rc in self._iter_target_genomes(True):
+            if i not in self.sliding_coverage:
+                self.sliding_coverage[i] = {}
+            if j not in self.sliding_coverage[i]:
+                self.sliding_coverage[i][j] = {False: None, True: None}
+            covers = self.target_covers[i][j][rc]
+
+            # Build a dict mapping endpoints to a list of False/True
+            # values, where False indicates the endpoint is an end of
+            # a probe and True indicates the endpoint is a start of a
+            # probe
+            endpoints = defaultdict(list)
+            for c in covers:
+                endpoints[c[0]].append(True)
+                endpoints[c[1]].append(False)
+
+            # Store, at each base in gnm, the number of probes that cover
+            # a region including the base
+            probe_counts = np.zeros(gnm.size(False), dtype='uint16')
+            curr_count = 0
+            prev_endpoint = None
+            for endpoint in sorted(endpoints.keys()):
+                if prev_endpoint != None:
+                    # Update number of probes between prev_endpoint and
+                    # endpoint
+                    for pos in xrange(prev_endpoint, endpoint):
+                        probe_counts[pos] = curr_count
+                # Compute the net change in number of probe covers at
+                # this endpoint, which will last until the next endpoint
+                endpoint_types = endpoints[endpoint]
+                net_change = sum([1 if t == True else -1
+                                  for t in endpoint_types])
+                curr_count += net_change
+                prev_endpoint = endpoint
+            # Don't bother updating counts between prev_endpoint and the end of
+            # the genome because all probes should have been ended, so
+            # curr_count should equal 0
+            # (also, if probes cover the very end of the genome, prev_endpoint
+            # might equal the end of the genome)
+
+            # Slide over windows and fill in the dict gnm_sliding_coverage
+            gnm_sliding_coverage = {}
+            for window_start in np.arange(0, gnm.size(False), window_stride):
+                window_end = window_start + window_length
+                if window_end > gnm.size(False):
+                    # This window stretches past the end of the genome, so
+                    # make a new one that goes up to the very end
+                    window_end = gnm.size(False)
+                    window_start = window_end - window_length
+                middle = window_start + (window_length / 2)
+                window_average_count = np.average(
+                    probe_counts[window_start:window_end])
+                gnm_sliding_coverage[middle] = window_average_count
+
+            self.sliding_coverage[i][j][rc] = gnm_sliding_coverage
+
+    def run(self, window_length=50, window_stride=25):
         """Run all analysis methods.
 
         The methods called save their output to self.
+
+        Args:
+            window_length: number of bp in a window (for use in computing
+                coverage over sliding windows)
+            window_stride: number of bp by which to step (for use in computing
+                coverage over sliding windows)
         """
         self._find_covers_in_target_genomes()
         self._compute_bp_covered_in_target_genomes()
         self._compute_average_coverage_in_target_genomes()
+        self._compute_sliding_coverage_in_target_genomes(
+            window_length, window_stride)
 
     def write_data_matrix_as_tsv(self, fn):
         """Write 2D array representing results as a TSV file.
@@ -374,3 +464,21 @@ class Analyzer:
         print pretty_print.table(self._make_data_matrix_string(),
                                  ["left", "right", "right"],
                                  header_underline=True)
+
+    def write_sliding_window_coverage(self, fn):
+        """Write coverage in sliding windows to a file.
+
+        Args:
+            fn: path to file to write to
+        """
+        with open(fn, 'w') as f:
+            # Create an entry for every genome, including reverse complements
+            for i, j, gnm, rc in self._iter_target_genomes(True):
+                header = "%s, genome %d" % (self.target_genomes_names[i], j)
+                if rc:
+                    header += " (rc)"
+                gnm_sliding_coverage = self.sliding_coverage[i][j][rc]
+                for pos in sorted(gnm_sliding_coverage.keys()):
+                    covg = gnm_sliding_coverage[pos]
+                    line = '\t'.join([str(x) for x in [header, pos, covg]])
+                    f.write(line + '\n')
