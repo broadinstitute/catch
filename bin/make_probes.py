@@ -96,7 +96,8 @@ def main(args):
         # Write the final probes to the file args.output_probes
         seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
-    if args.print_analysis or args.write_analysis_to_tsv:
+    if (args.print_analysis or args.write_analysis_to_tsv or
+            args.write_sliding_window_coverage):
         analyzer = coverage_analysis.Analyzer(pb.final_probes,
                                               genomes_grouped,
                                               genomes_grouped_names,
@@ -104,7 +105,11 @@ def main(args):
                                               lcf_thres=args.lcf_thres)
         analyzer.run()
         if args.write_analysis_to_tsv:
-            analyzer.write_data_matrix_as_tsv(args.write_analysis_to_tsv)
+            analyzer.write_data_matrix_as_tsv(
+                args.write_analysis_to_tsv)
+        if args.write_sliding_window_coverage:
+            analyzer.write_sliding_window_coverage(
+                args.write_sliding_window_coverage)
         if args.print_analysis:
             analyzer.print_analysis()
     else:
@@ -224,6 +229,11 @@ if __name__ == "__main__":
         "--write_analysis_to_tsv",
         help=("The file to which to write a TSV-formatted matrix of the "
               "probe set's coverage analysis"))
+    parser.add_argument(
+        "--write_sliding_window_coverage",
+        help=("The file to which to write the average coverage achieved "
+              "by the probe set within sliding windows of each target "
+              "genome"))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",
