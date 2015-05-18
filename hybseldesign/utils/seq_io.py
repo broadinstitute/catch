@@ -56,7 +56,7 @@ def read_dataset_genomes(dataset):
 
 
 def read_fasta(fn, data_type='str', replace_degenerate=True,
-               skip_gaps=True):
+               skip_gaps=True, make_uppercase=True):
     """Read a FASTA file.
 
     Args:
@@ -68,6 +68,8 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
             bases ('Y','R','W','S','M','K') with 'N'
         skip_gaps: when True, do not read dashes ('-'), which
             represent gaps
+        make_uppercase: when True, change all bases to be
+            uppercase
 
     Returns:
         dict mapping the name of each sequence to the sequence
@@ -96,6 +98,8 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
                 m[curr_seq_name] = ''
             else:
                 # Append the sequence
+                if make_uppercase:
+                    line = line.upper()
                 if replace_degenerate:
                     line = degenerate_pattern.sub('N', line)
                 if skip_gaps:
