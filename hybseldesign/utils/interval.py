@@ -6,13 +6,21 @@ import bisect
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
-class IntervalSet:
+class IntervalSet(object):
     """Immutable collection of intervals.
 
     Each interval is a tuple of the form (start, end) where start
     is inclusive and end is exclusive. The intervals that are
     stored by this structure are sorted and non-overlapping.
     """
+
+    # Since an IntervalSet may be instantiated many times (e.g., for each
+    # occurrence of a probe aligning to an interval of a genome), it is
+    # useful to optimize its memory usage. Defining __slots__ helps save
+    # space by reducing overhead because it allows Python to avoid
+    # having to make a dict for every IntervalSet object.
+    __slots__ = ('intervals', 'starting_endpoints', 'first_start',
+                 'last_end', 'len_cached')
 
     def __init__(self, intervals):
         """
@@ -25,7 +33,7 @@ class IntervalSet:
         self.intervals = tuple(merge_overlapping(list(intervals)))
         # Save starting endpoints, which is useful for binary search over
         # the intervals
-        self.starting_endpoints = [x[0] for x in self.intervals]
+        self.starting_endpoints = tuple(x[0] for x in self.intervals)
         # Find the very beginning and end of these intervals
         if len(self.intervals) > 0:
             self.first_start = self.intervals[0][0]

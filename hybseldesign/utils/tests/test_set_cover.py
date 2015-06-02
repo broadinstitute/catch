@@ -463,13 +463,31 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                                                  ranks=ranks), desired_output)
 
     def test_with_intervalsets(self):
-        return
         sets = {
             0: {0: interval.IntervalSet([(1, 100)]),
                 1: interval.IntervalSet([(1, 5)])},
             1: {0: interval.IntervalSet([(20, 30)])},
             2: {0: interval.IntervalSet([(40, 50)]),
                 1: interval.IntervalSet([(20, 50)])}
+        }
+
+        universe_p = {0: 1.0, 1: 0.1}
+        desired_output = set([0])
+        self.assertEqual(sc.approx_multiuniverse(sets,
+                                                 universe_p=universe_p,
+                                                 use_intervalsets=True),
+                         desired_output)
+
+    def test_with_intervalsets_single_interval(self):
+        """Give a single interval directly as a tuple rather than as an
+        instance of IntervalSet.
+        """
+        sets = {
+            0: {0: interval.IntervalSet([(1, 100)]),
+                1: (1, 5)},
+            1: {0: (20, 30)},
+            2: {0: interval.IntervalSet([(40, 50)]),
+                1: (20, 50)}
         }
 
         universe_p = {0: 1.0, 1: 0.1}
@@ -621,8 +639,18 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                         els_as_intervals = []
                         for el in sets[set_id][universe_id]:
                             els_as_intervals += [(el, el + 1)]
-                        sets_as_intervalsets[set_id][universe_id] = \
-                            interval.IntervalSet(els_as_intervals)
+                        els_as_intervals_merged = \
+                            interval.merge_overlapping(els_as_intervals)
+                        if len(els_as_intervals_merged) == 1:
+                            # There is just one contiguous interval ("stretch")
+                            # so test the space-efficient option of giving
+                            # this interval directly as a tuple rather than
+                            # as an IntervalSet object
+                            sets_as_intervalsets[set_id][universe_id] = \
+                                els_as_intervals_merged[0]
+                        else:
+                            sets_as_intervalsets[set_id][universe_id] = \
+                                interval.IntervalSet(els_as_intervals)
                 output = sc.approx_multiuniverse(sets_as_intervalsets, costs,
                                                  universe_p,
                                                  use_arrays=False,
