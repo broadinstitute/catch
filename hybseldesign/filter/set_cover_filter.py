@@ -169,7 +169,11 @@ class SetCoverFilter(BaseFilter):
             target genomes in the i'th group. In the returned value
             (sets), sets[set_id][universe_id] is a set of all the bases
             (as an instance of interval.IntervalSet) covered by probe
-            set_id in the target genome universe_id.
+            set_id in the target genome universe_id. (If
+            sets[set_id][universe_id] contains just one interval, then that
+            interval is stored directly as a tuple -- not in an instance
+            of interval.IntervalSet -- to save space and it should be
+            coverted to an interval.IntervalSet when needed.)
         """
         logger.info("Building map from k-mers to probes")
         kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
@@ -183,7 +187,7 @@ class SetCoverFilter(BaseFilter):
         sets = {}
         for id, p in enumerate(candidate_probes):
             probe_id[p] = id
-            sets[id] = defaultdict(list)
+            sets[id] = {}
 
         for i, genomes_from_group in enumerate(self.target_genomes):
             for j, gnm in enumerate(genomes_from_group):
@@ -209,16 +213,31 @@ class SetCoverFilter(BaseFilter):
                             # integer positions in the genome gnm
                             adjusted_cover = (cover_range[0] + length_so_far,
                                               cover_range[1] + length_so_far)
-                            sets[set_id][universe_id].append(adjusted_cover)
+                            if universe_id not in sets[set_id]:
+                                # Since a list has a lot of overhead and most
+                                # probes align to just one interval, simply
+                                # store that interval alone (not in a list)
+                                sets[set_id][universe_id] = adjusted_cover
+                            else:
+                                prev_cover = sets[set_id][universe_id]
+                                if isinstance(prev_cover, tuple):
+                                    # This probe now aligns to two intervals in
+                                    # this universe/genome, so store them in
+                                    # a list
+                                    sets[set_id][universe_id] = [prev_cover]
+                                sets[set_id][universe_id].append(adjusted_cover)
                     length_so_far += len(sequence)
 
-        # Convert each defaultdict to a dict and make an IntervalSet out of
-        # the intervals of each set
+        # Make an IntervalSet out of the intervals of each set. But if
+        # there is just one interval in a set, then save space by leaving
+        # that entry as a tuple.
         for set_id in sets.keys():
-            sets[set_id] = dict(sets[set_id])
             for universe_id in sets[set_id].keys():
                 intervals = sets[set_id][universe_id]
-                sets[set_id][universe_id] = interval.IntervalSet(intervals)
+                if not isinstance(intervals, tuple):
+                    sets[set_id][universe_id] = interval.IntervalSet(intervals)
+                # Else, there is just one interval in this set; leave it
+                # stored directly as a tuple
 
         return sets
 

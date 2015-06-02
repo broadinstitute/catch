@@ -213,6 +213,11 @@ def approx_multiuniverse(sets,
             (usually integers) are well represented by intervals --
             i.e., they fit into contiguous stretches -- because otherwise
             this will run slowly compared to when the option is not set.
+            If this is true and the value inside the input 'sets' at some
+            entry is a tuple, then it is assumed that the set at that entry
+            has just one interval (i.e., the one specified by the tuple),
+            which is useful for saving space, and the interval is converted
+            into an instance of IntervalSet as needed.
 
     Returns:
         a set consisting of the identifiers of the sets chosen to be
@@ -284,6 +289,9 @@ def approx_multiuniverse(sets,
     for sets_by_universe in sets.values():
         for universe_id, s in sets_by_universe.iteritems():
             if use_intervalsets:
+                if isinstance(s, tuple):
+                    # s is a single interval
+                    s = interval.IntervalSet([s])
                 universes[universe_id] = universes[universe_id].union(s)
             elif use_arrays:
                 for v in s:
@@ -405,6 +413,9 @@ def approx_multiuniverse(sets,
                         # it appears that, in practice, converting s to a set
                         # and using set.intersection is faster.
                         s = set(s)
+                    if use_intervalsets and isinstance(s, tuple):
+                        # s is a single interval
+                        s = interval.IntervalSet([s])
                     # If use_intervalsets, then s and universe should already
                     # be IntervalSets, and the intersection method is defined
                     # for these
@@ -439,6 +450,9 @@ def approx_multiuniverse(sets,
             prev_universe_size = len(universe)
             # Remove s from universe
             if use_intervalsets:
+                if isinstance(s, tuple):
+                    # s is a single interval
+                    s = interval.IntervalSet([s])
                 universe = universe.difference(s)
                 universes[universe_id] = universe
             elif use_arrays:
@@ -463,8 +477,14 @@ def approx_multiuniverse(sets,
                     # unnecessary to discard/invalidate x's intersection count.
                     for set_id in memoized_intersect_counts[universe_id].keys():
                         memoized_set = sets[set_id][universe_id]
-                        if (memoized_set.first_start < s.last_end and
-                                memoized_set.last_end > s.first_start):
+                        if isinstance(memoized_set, tuple):
+                            # memoized_set is a single interval
+                            memoized_set_start, memoized_set_end = memoized_set
+                        else:
+                            memoized_set_start = memoized_set.first_start
+                            memoized_set_end = memoized_set.last_end
+                        if (memoized_set_start < s.last_end and
+                                memoized_set_end > s.first_start):
                             # memoized_set overlaps s, so invalidate it
                             del memoized_intersect_counts[universe_id][set_id]
                         # Else, memoized_set lies entirely outside of s, so
