@@ -263,6 +263,23 @@ def approx_multiuniverse(sets,
         although the approx(..) function could be greatly shortened by
         simply calling this function -- we choose to implement the
         versions separately.
+      - In practice, often the computed minimum ratio in one iteration of
+        the set cover algorithm is equal to the minimum ratio from the
+        previous iteration. We exploit this fact to improve the running
+        time of the greedy algorithm without affecting the output. We store
+        the minimum ratio from the previous iteration (last_min_ratio) as
+        well as all the sets whose ratio, as computed in that previous
+        iteration, was equal to last_min_ratio
+        (set_ids_with_same_ratio_as_last_min). On each iteration, we first
+        check if there is a set whose ratio is equal to the last minimum
+        ratio and is valid for being put into the set cover. Because the
+        minimum ratio is nondecreasing as we step through iterations, such
+        a set would have the minimum ratio on this iteration; thus, we
+        simply add it to the set cover and progress to the next iteration
+        of the greedy algorithm. If there is no such set, we must take
+        the usual approach that would not use this heuristic -- i.e.,
+        compute the ratios for all sets not yet in the set cover and find
+        the set with the minimum ratio.
     """
     if use_arrays and use_intervalsets:
         raise ValueError("Cannot use both arrays and IntervalSets")
@@ -360,6 +377,57 @@ def approx_multiuniverse(sets,
         for universe_id in universes.keys()
     }
 
+    def compute_ratio_for_set(set_id):
+        # By iterating over all universes covered by set_id, compute the ratio
+        # for set_id that will be used to determine whether it should be placed
+        # in the set cover
+        num_needed_covered_across_universes = 0
+        for universe_id in sets[set_id].keys():
+            if set_id in memoized_intersect_counts[universe_id]:
+                # We have num_covered memoized
+                num_covered = memoized_intersect_counts[universe_id][set_id]
+            else:
+                s = sets[set_id][universe_id]
+                universe = universes[universe_id]
+                if use_arrays:
+                    # It may seem faster to compute, in the case where s is
+                    # an array, num_covered as
+                    # sum([1 for v in s if v in universe])
+                    # in order to avoid converting s to a set. However,
+                    # it appears that, in practice, converting s to a set
+                    # and using set.intersection is faster.
+                    s = set(s)
+                if use_intervalsets and isinstance(s, tuple):
+                    # s is a single interval
+                    s = interval.IntervalSet([s])
+                # If use_intervalsets, then s and universe should already
+                # be IntervalSets, and the intersection method is defined
+                # for these
+                num_covered = len(s.intersection(universe))
+                # Memoize num_covered
+                memoized_intersect_counts[universe_id][set_id] = num_covered
+            # There is no need to cover more than num_left_to_cover
+            # elements for this universe
+            num_needed_covered = min(num_left_to_cover[universe_id],
+                                     num_covered)
+            num_needed_covered_across_universes += num_needed_covered
+        if num_needed_covered_across_universes == 0:
+            # s covers no elements that need to be covered, so it should
+            # not be in the set cover; give it an infinite ratio
+            ratio = float('inf')
+        else:
+            ratio = float(costs[set_id]) / num_needed_covered_across_universes
+        return ratio
+
+    # Track the computed ratio of the set that was last added to the set cover
+    last_min_ratio = None
+    # When ratios must be computed to find the minimum, this is done across
+    # all sets not in the set cover; track the sets whose computed ratio is
+    # equal to last_min_ratio. Note that this collection does not include the
+    # set with ratio last_min_ratio that was initially put into the set
+    # cover when last_min_ratio was first computed.
+    set_ids_with_same_ratio_as_last_min = []
+
     set_ids_not_in_cover = set(sets.keys())
     set_ids_in_cover = set()
     # Keep iterating until desired partial cover of each universe
@@ -374,71 +442,75 @@ def approx_multiuniverse(sets,
         # Find the set that minimizes the ratio of its cost to the
         # number of uncovered elements (that need to be covered) that
         # it covers
-        id_min_ratio, min_ratio = None, float('inf')
-        for set_id in set_ids_not_in_cover:
-            # There is no strict need to keep track of set_ids_not_in_cover
-            # and iterate through these; we could have iterated over
-            # all input sets. However, sets that are already put into the
-            # set cover have zero intersection with any universe (i.e., cover
-            # none of it), so there is no reason to iterate over the sets
-            # already placed in the cover. Not doing so should yield some
-            # runtime improvements.
-            if ranks[set_id] != rank_vals[curr_rank_index]:
-                # Skip this set because its rank is not the current rank
-                # being considered.
-                # We could (correctly) use '>' instead of '!='. But doing so
-                # would also consider any sets whose rank is less than the
-                # current rank being considered (rank_vals[curr_rank_index]).
-                # Because the rank being considered is strictly increasing,
-                # these sets should have already been considered at a previous
-                # point. Since the rank increased without these sets having
-                # been put into the cover, it must have been the case that
-                # they did not cover any elements that needed to be covered;
-                # this would still hold true for these sets, so there is no
-                # reason to consider them again.
-                continue
-            num_needed_covered_across_universes = 0
-            for universe_id in sets[set_id].keys():
-                if set_id in memoized_intersect_counts[universe_id]:
-                    # We have num_covered memoized
-                    num_covered = memoized_intersect_counts[universe_id][set_id]
-                else:
-                    s = sets[set_id][universe_id]
-                    universe = universes[universe_id]
-                    if use_arrays:
-                        # It may seem faster to compute, in the case where s is
-                        # an array, num_covered as
-                        # sum([1 for v in s if v in universe])
-                        # in order to avoid converting s to a set. However,
-                        # it appears that, in practice, converting s to a set
-                        # and using set.intersection is faster.
-                        s = set(s)
-                    if use_intervalsets and isinstance(s, tuple):
-                        # s is a single interval
-                        s = interval.IntervalSet([s])
-                    # If use_intervalsets, then s and universe should already
-                    # be IntervalSets, and the intersection method is defined
-                    # for these
-                    num_covered = len(s.intersection(universe))
-                    # Memoize num_covered
-                    memoized_intersect_counts[universe_id][set_id] = num_covered
-                # There is no need to cover more than num_left_to_cover
-                # elements for this universe
-                num_needed_covered = min(num_left_to_cover[universe_id],
-                                         num_covered)
-                num_needed_covered_across_universes += num_needed_covered
-            if num_needed_covered_across_universes == 0:
-                # s covers no elements that need to be covered, so it should
-                # not be in the set cover
-                continue
-            ratio = float(costs[set_id]) / num_needed_covered_across_universes
-            if ratio < min_ratio:
+        id_min_ratio = None
+
+        # First, look among all sets whose ratio equals the last minimum
+        # ratio. Because the minimum ratio is nondecreasing across iterations,
+        # if one set's ratio equals the last minimum ratio, this one must also
+        # be a minimum on this iteration.
+        for set_id in set_ids_with_same_ratio_as_last_min:
+            # Check that set_id was not yet chosen (i.e., is in
+            # set_ids_not_in_cover); it may be the case that
+            # set_ids_with_same_ratio_as_last_min was the same on a previous
+            # iteration and set_id was chosen to be id_min_ratio on that
+            # previous iteration.
+            # Also, re-compute the ratio for set_id and check that it is
+            # still equal to last_min_ratio; it may be the case that, on a
+            # previous iteration, choosing a set with ratio last_min_ratio
+            # altered the ratio of set_id. For example, that set may cover
+            # some of the same elements as set_id covers, which would have
+            # caused an invalidation to memoized_intersect_counts and would
+            # increase the ratio for set_id.
+            if (set_id in set_ids_not_in_cover and
+                    compute_ratio_for_set(set_id) == last_min_ratio):
                 id_min_ratio = set_id
-                min_ratio = ratio
+                break
+
+        if id_min_ratio == None:
+            # The above heuristic -- which looks for sets whose ratio equals
+            # last_min_ratio -- failed to find a set for this iteration. So
+            # simply iterate over all sets in set_ids_not_in_cover, compute
+            # the ratio for each set, and find the one with the minimum ratio.
+            min_ratio = float('inf')
+            for set_id in set_ids_not_in_cover:
+                # There is no strict need to keep track of set_ids_not_in_cover
+                # and iterate through these; we could have iterated over
+                # all input sets. However, sets that are already put into the
+                # set cover have zero intersection with any universe (i.e.,
+                # cover none of it), so there is no reason to iterate over the
+                # sets already placed in the cover. Not doing so should yield
+                # some runtime improvements.
+                if ranks[set_id] != rank_vals[curr_rank_index]:
+                    # Skip this set because its rank is not the current rank
+                    # being considered.
+                    # We could (correctly) use '>' instead of '!='. But doing so
+                    # would also consider any sets whose rank is less than the
+                    # current rank being considered (rank_vals[curr_rank_index]).
+                    # Because the rank being considered is strictly increasing,
+                    # these sets should have already been considered at a
+                    # previous point. Since the rank increased without these
+                    # sets having been put into the cover, it must have been the
+                    # case that they did not cover any elements that needed to
+                    # be covered; this would still hold true for these sets, so
+                    # there is no reason to consider them again.
+                    continue
+                ratio = compute_ratio_for_set(set_id)
+                if ratio < min_ratio:
+                    id_min_ratio = set_id
+                    min_ratio = ratio
+                    # Since there is a new min_ratio, reset the collection
+                    # of sets whose ratio equals last_min_ratio
+                    set_ids_with_same_ratio_as_last_min = []
+                elif ratio == min_ratio:
+                    set_ids_with_same_ratio_as_last_min += [set_id]
+            last_min_ratio = min_ratio
+
         if id_min_ratio is None:
             # Increase the rank being considered and try again
             curr_rank_index += 1
+            set_ids_with_same_ratio_as_last_min = []
             continue
+
         # id_min_ratio goes into the set cover
         set_ids_in_cover.add(id_min_ratio)
         set_ids_not_in_cover.remove(id_min_ratio)
