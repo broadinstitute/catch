@@ -220,3 +220,45 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
+
+
+class TestAnalyzerCoversWithCoverExtension(unittest.TestCase):
+    """Tests the probe covers found when extending a probe's coverage.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+        # Create Analyzer instance with two target genomes
+        genome_a = genome.Genome.from_one_seq('ATCCATCCATNGGGTTTGAAGCG')
+        genome_b = genome.Genome.from_chrs(OrderedDict([('chr1', 'CCCCCCA'),
+                                                        ('chr2', 'ANTGAAGCG')]))
+        probes_str = ['ATCCAT', 'TTTGAA', 'GAAGCG', 'ATGGAT', 
+                      'CCCCCC', 'AAACCC']
+        probes = [probe.Probe.from_str(p) for p in probes_str]
+        self.analyzer = ca.Analyzer(probes,
+                                    [[genome_a], [genome_b]],
+                                    target_genomes_names=["g_a", "g_b"],
+                                    mismatches=0,
+                                    lcf_thres=6,
+                                    cover_extension=2,
+                                    kmer_probe_map_k=3)
+        self.analyzer.run(window_length=6, window_stride=3)
+
+    def test_probe_cover_ranges(self):
+        """Test the probe cover ranges that are found.
+
+        Check in given sequence and in its reverse complement.
+        """
+        # genome_a
+        self.assertItemsEqual(self.analyzer.target_covers[0][0][False],
+                              [(0, 8), (2, 12), (12, 22), (15, 23)])
+        self.assertItemsEqual(self.analyzer.target_covers[0][0][True],
+                              [(4, 14), (11, 21), (15, 23)])
+
+        # genome_b
+        self.assertItemsEqual(self.analyzer.target_covers[1][0][False],
+                              [(0, 7), (8, 16)])    # coverage in chr1 and chr2
+        self.assertItemsEqual(self.analyzer.target_covers[1][0][True],
+                              [])   # no coverage in reverse complement

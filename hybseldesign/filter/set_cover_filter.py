@@ -69,6 +69,7 @@ class SetCoverFilter(BaseFilter):
                  identify=False,
                  blacklisted_genomes=[],
                  coverage=1.0,
+                 cover_extension=0,
                  cover_groupings_separately=False,
                  kmer_probe_map_k=10):
         """
@@ -99,6 +100,21 @@ class SetCoverFilter(BaseFilter):
                 When it is an int > 1, it determines the number of bp of each
                 of the target genomes that must be covered by the selected
                 probes.
+            cover_extension: number of bp by which to extend the coverage of
+                a probe on both sides. When this is 0, a probe "covers" exactly
+                the portion of the sequence that it hybridizes to, as
+                determined with the 'mismatches' and 'lcf_thres' parameters.
+                This parameter allows a probe to cover a region surrounding
+                and including the portion of the sequence that it hybridizes
+                to. The probe covers the portion of the sequence that it
+                hybridizes to, as well as 'cover_extension' bp on each side
+                of that portion. (So the length of the region a probe covers
+                is the length of the probe plus 2*'cover_extension' bp.)
+                This may more realistically model hybrid selection because
+                a probe hybridizes to a fragment of DNA, which includes the
+                region targeted by the probe as well as the surrounding region,
+                and this entire fragment is sequenced. Increasing the value
+                of this parameter should reduce the number of required probes.
             cover_groupings_separately: when True, runs a separate instance
                 of set cover with the target genomes from each grouping and
                 yields the probes selected across (the union of) all the runs.
@@ -138,6 +154,7 @@ class SetCoverFilter(BaseFilter):
         self.identify = identify
         self.blacklisted_genomes = blacklisted_genomes
         self.coverage = coverage
+        self.cover_extension = cover_extension
         self.cover_groupings_separately = cover_groupings_separately
         self.kmer_probe_map_k = kmer_probe_map_k
 
@@ -206,13 +223,19 @@ class SetCoverFilter(BaseFilter):
                     for p, cover_ranges in probe_cover_ranges.iteritems():
                         set_id = probe_id[p]
                         for cover_range in cover_ranges:
-                            # The endpoints of cover_range give positions in
+                            # Extend the range covered by probe p on both sides
+                            # by self.cover_extension
+                            cover_start = max(0,
+                                cover_range[0] - self.cover_extension)
+                            cover_end = min(len(sequence),
+                                cover_range[1] + self.cover_extension)
+                            # The endpoints of the cover give positions in
                             # just this sequence (chromosome), so adding the
                             # lengths of all the sequences previously iterated
                             # (length_so_far) onto them gives unique
                             # integer positions in the genome gnm
-                            adjusted_cover = (cover_range[0] + length_so_far,
-                                              cover_range[1] + length_so_far)
+                            adjusted_cover = (cover_start + length_so_far,
+                                              cover_end + length_so_far)
                             if universe_id not in sets[set_id]:
                                 # Since a list has a lot of overhead and most
                                 # probes align to just one interval, simply

@@ -78,6 +78,7 @@ class Analyzer:
                  target_genomes_names=None,
                  mismatches=0,
                  lcf_thres=100,
+                 cover_extension=0,
                  kmer_probe_map_k=10):
         """
         Args:
@@ -94,6 +95,10 @@ class Analyzer:
                 if a stretch of 'lcf_thres' or more bp aligns with
                 'mismatches' or fewer mismatched bp; used to compute whether
                 a probe "covers" a portion of a sequence
+            cover_extension: number of bp by which to extend the coverage on
+                each side of a probe; a probe "covers" the portion of the
+                sequence that it hybridizes to, as well as 'cover_extension'
+                bp on each side of that portion
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
         """
@@ -113,6 +118,7 @@ class Analyzer:
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
                 mismatches, lcf_thres)
+        self.cover_extension = cover_extension
         self.kmer_probe_map_k = kmer_probe_map_k
 
     def _iter_target_genomes(self, rc_too=False):
@@ -199,12 +205,18 @@ class Analyzer:
                     merge_overlapping=False)
                 for p, cover_ranges in probe_cover_ranges.iteritems():
                     for cover_range in cover_ranges:
-                        # The endpoints of cover_range give positions in just
+                        # Extend the range covered by probe p on both sides
+                        # by self.cover_extension
+                        cover_start = max(0,
+                            cover_range[0] - self.cover_extension)
+                        cover_end = min(len(sequence),
+                            cover_range[1] + self.cover_extension)
+                        # The endpoints of the cover give positions in just
                         # this sequence (chromosome), so adjust them (according
                         # to length_so_far) to give a unique integer position
                         # in the genome gnm
-                        adjusted_cover = (cover_range[0] + length_so_far,
-                                          cover_range[1] + length_so_far)
+                        adjusted_cover = (cover_start + length_so_far,
+                                          cover_end + length_so_far)
                         gnm_covers += [adjusted_cover]
                 length_so_far += len(sequence)
             self.target_covers[i][j][rc] = gnm_covers
