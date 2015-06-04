@@ -70,6 +70,7 @@ def main(args):
         identify=args.identify,
         blacklisted_genomes=blacklisted_genomes_fasta,
         coverage=args.coverage,
+        cover_extension=args.cover_extension,
         cover_groupings_separately=args.cover_groupings_separately)
     #  3) Adapter filter (af) -- add adapters to both the 5' and 3' ends
     #     of each probe
@@ -98,11 +99,13 @@ def main(args):
 
     if (args.print_analysis or args.write_analysis_to_tsv or
             args.write_sliding_window_coverage):
-        analyzer = coverage_analysis.Analyzer(pb.final_probes,
-                                              genomes_grouped,
-                                              genomes_grouped_names,
-                                              mismatches=args.mismatches,
-                                              lcf_thres=args.lcf_thres)
+        analyzer = coverage_analysis.Analyzer(
+            pb.final_probes,
+            genomes_grouped,
+            genomes_grouped_names,
+            mismatches=args.mismatches,
+            lcf_thres=args.lcf_thres,
+            cover_extension=args.cover_extension)
         analyzer.run()
         if args.write_analysis_to_tsv:
             analyzer.write_data_matrix_as_tsv(
@@ -180,6 +183,19 @@ if __name__ == "__main__":
               "probes; if this is an int > 1, it gives the number of "
               "bp of each target genome that must be covered by the "
               "selected probes"))
+    parser.add_argument(
+        "-e", "--cover_extension",
+        type=int,
+        default=0,
+        help=("Extend the coverage of each side of a probe by this number "
+              "of bp. That is, a probe covers a region that consists of the "
+              "portion of a sequence it hybridizes to, as well as this "
+              "number of bp on each side of that portion. This is useful "
+              "in modeling hybrid selection, where a probe hybridizes to"
+              "a fragment that includes the region targeted by the probe, "
+              "along with surrounding portions of the sequence. Increasing "
+              "its value should reduce the number of probes required to "
+              "achieve the desired coverage."))
     parser.add_argument(
         "--skip_set_cover",
         dest="skip_set_cover",

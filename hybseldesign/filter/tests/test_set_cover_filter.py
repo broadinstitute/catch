@@ -26,6 +26,7 @@ class TestSetCoverFilter(unittest.TestCase):
                               input, coverage,
                               mismatches_tolerant=-1,
                               lcf_thres_tolerant=-1,
+                              cover_extension=0,
                               identify=False,
                               blacklisted_genomes=[],
                               cover_groupings_separately=False):
@@ -36,6 +37,7 @@ class TestSetCoverFilter(unittest.TestCase):
             mismatches=mismatches,
             lcf_thres=lcf_thres,
             coverage=coverage,
+            cover_extension=cover_extension,
             mismatches_tolerant=mismatches_tolerant,
             lcf_thres_tolerant=lcf_thres_tolerant,
             identify=identify,
@@ -47,7 +49,8 @@ class TestSetCoverFilter(unittest.TestCase):
         return (f, f.output_probes)
 
     def verify_target_genome_coverage(self, selected_probes, target_genomes,
-                                      filter, desired_coverage):
+                                      filter, desired_coverage,
+                                      cover_extension=0):
         kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             selected_probes, filter.mismatches, filter.lcf_thres,
             min_k=3, k=3)
@@ -61,7 +64,9 @@ class TestSetCoverFilter(unittest.TestCase):
                 all_cover_ranges = []
                 for cover_ranges in probe_cover_ranges.values():
                     for cv in cover_ranges:
-                        all_cover_ranges += [cv]
+                        start = max(0, cv[0] - cover_extension)
+                        end = min(len(seq), cv[1] + cover_extension)
+                        all_cover_ranges += [(start, end)]
                 all_cover_ranges = interval.merge_overlapping(all_cover_ranges)
                 for cover_range in all_cover_ranges:
                     num_bp_covered += cover_range[1] - cover_range[0]
@@ -124,6 +129,7 @@ class TestSetCoverFilter(unittest.TestCase):
 
     def get_6bp_probes(self, target_genomes,
                        cover=1.0,
+                       cover_extension=0,
                        identify=False,
                        mismatches_tolerant=0,
                        lcf_thres_tolerant=6,
@@ -143,6 +149,7 @@ class TestSetCoverFilter(unittest.TestCase):
             6, 0, target_genomes, input, cover,
             mismatches_tolerant=mismatches_tolerant,
             lcf_thres_tolerant=lcf_thres_tolerant,
+            cover_extension=cover_extension,
             identify=identify,
             blacklisted_genomes=blacklisted_genomes,
             cover_groupings_separately=cover_groupings_separately)
@@ -194,6 +201,55 @@ class TestSetCoverFilter(unittest.TestCase):
             self.assertEqual(len(probes), min_num_probes[num_bp])
             self.verify_target_genome_coverage(probes, target_genomes,
                                                f, num_bp)
+
+    def test_cover_extension1(self):
+        target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                           'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        f, probes = self.get_6bp_probes(target_genomes, cover_extension=2)
+        # It is possible to achieve full coverage (counting the extensions)
+        # with 3 probes
+        self.assertEqual(len(probes), 3)
+        self.verify_target_genome_coverage(probes, target_genomes,
+                                           f, 1.0,
+                                           cover_extension=2)
+
+    def test_cover_extension2(self):
+        target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                           'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        f, probes = self.get_6bp_probes(target_genomes, cover_extension=3)
+        # It is possible to achieve full coverage (counting the extensions)
+        # with 5 probes
+        self.assertEqual(len(probes), 5)
+        self.verify_target_genome_coverage(probes, target_genomes,
+                                           f, 1.0,
+                                           cover_extension=3)
+
+    def test_cover_extension3(self):
+        target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                           'ZYXWVFGHIJWUTSOPQRSTFED']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        f, probes = self.get_6bp_probes(target_genomes, cover_extension=3)
+        # It is possible to achieve full coverage (counting the extensions)
+        # with 4 probes
+        self.assertEqual(len(probes), 4)
+        self.verify_target_genome_coverage(probes, target_genomes,
+                                           f, 1.0,
+                                           cover_extension=3)
+
+    def test_cover_extension_with_partial_coverage(self):
+        target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
+                           'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        f, probes = self.get_6bp_probes(target_genomes,
+                                        cover=0.5, cover_extension=3)
+        # It is possible to achieve 50% coverage (counting the extensions)
+        # with 3 probes
+        self.assertEqual(len(probes), 3)
+        self.verify_target_genome_coverage(probes, target_genomes,
+                                           f, 0.5,
+                                           cover_extension=3)
 
     def test_identify_one_group(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
