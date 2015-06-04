@@ -38,6 +38,14 @@ the probes, though this could be generalized to any desired coverage):
    counting unambiguous bases, may be less than 100% when adapters have
    been added to probes. The reason is the same as above.
  - The percentage of bases covered in the target genome, when only
+   counting unambiguous bases, may be less than 100% even when adapters
+   have not been added to probes. This can occur if there are bases
+   in between two stretches of ambiguous bases ('N'). It may not be
+   possible to cover the (unambiguous) bases in between these two
+   stretches using a probe, so these bases then go uncovered. For example,
+   consider the region 'NNNNNNATCGNNNNNN'; the four unambiguous bases
+   ('ATCG') may not be covered by any probe.
+ - The percentage of bases covered in the target genome, when only
    counting unambiguous bases, may be more than 100%. This could happen
    when allowing mismatches. A probe could cover an ambiguous base
    (i.e., 'N') of a target genome by simply using a mismatch when
