@@ -9,6 +9,7 @@ from hybseldesign import coverage_analysis
 from hybseldesign.datasets import hg19
 from hybseldesign.filter import adapter_filter
 from hybseldesign.filter import duplicate_filter
+from hybseldesign.filter import fasta_filter
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import set_cover_filter
@@ -80,6 +81,12 @@ def main(args):
     #     probe that remains
     rc = reverse_complement_filter.ReverseComplementFilter()
     filters = [df, scf, af, rc]
+
+    # Add a FASTA filter to the beginning if desired
+    if args.filter_from_fasta:
+        ff = fasta_filter.FastaFilter(args.filter_from_fasta,
+                                      skip_reverse_complements=True)
+        filters.insert(0, ff)
 
     # Don't apply the set cover filter if desired
     if args.skip_set_cover:
@@ -208,6 +215,25 @@ if __name__ == "__main__":
                         dest="skip_adapters",
                         action="store_true",
                         help=("Do not add adapters to the ends of probes"))
+    parser.add_argument(
+        "--filter_from_fasta",
+        help=("(Optional) A FASTA file from which to select candidate probes. "
+              "Before running any other filters, keep only the candidate "
+              "probes that are equal to sequences in the file and remove "
+              "all probes not equal to any of these sequences. This, by "
+              "default, ignores sequences in the file whose header contains "
+              "the string 'reverse complement'; that is, if there is some "
+              "probe with sequence S, it may be filtered out (even if there "
+              "is a sequence S in the file) if the header of S in the file "
+              "contains 'reverse complement'. This is useful if we already "
+              "have probes decided by the set cover filter, but simply "
+              "want to process them further by, e.g., adding adapters or "
+              "running a coverage analysis. For example, if we have already "
+              "run the time-consuming set cover filter and have a FASTA "
+              "containing those probes, we can provide a path to that "
+              "FASTA file for this argument, and also provide the "
+              "'--skip_set_cover' argument, in order to add adapters to "
+              "those probes without having to re-run the set cover filter."))
     parser.add_argument(
         "--blacklist_genomes",
         nargs='+',
