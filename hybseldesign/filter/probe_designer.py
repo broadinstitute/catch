@@ -16,7 +16,8 @@ class ProbeDesigner:
     There is an (ordered) list of one or more provided filters.
     """
 
-    def __init__(self, genomes, filters, replicate_first_version=False):
+    def __init__(self, genomes, filters, probe_length=100,
+            probe_stride=50, replicate_first_version=False):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
@@ -25,12 +26,17 @@ class ProbeDesigner:
                 a list of the target genomes of species i.
             filters: an (ordered) list of filters, each of which should be
                 an instance of a subclass of BaseFilter
+            probe_length: generate candidate probes with this number of bp
+            probe_stride: generate probes from each sequence separated by
+                this number of bp
             replicate_first_version: when True, candidate probes are
                 explicitly designed in a (buggy) way intended to replicate
                 the first version (Matlab code) of probe design
         """
         self.genomes = genomes
         self.filters = filters
+        self.probe_length = probe_length
+        self.probe_stride = probe_stride
         self.replicate_first_version = replicate_first_version
 
     def design(self):
@@ -53,8 +59,9 @@ class ProbeDesigner:
         for genomes_from_group in self.genomes:
             for g in genomes_from_group:
                 self.candidate_probes += candidate_probes.\
-                    make_candidate_probes_from_sequences(g.seqs,
-                                                         **replicate_args)
+                    make_candidate_probes_from_sequences(
+                        g.seqs, probe_length=self.probe_length,
+                        probe_stride=self.probe_stride, **replicate_args)
 
         probes = self.candidate_probes
         for f in self.filters:

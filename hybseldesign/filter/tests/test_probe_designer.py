@@ -38,7 +38,8 @@ class TestProbeDesigner(unittest.TestCase):
         desired_final_probes = \
             [probe.Probe.from_str(s) for s in desired_final_probes]
         df = duplicate_filter.DuplicateFilter()
-        pb = probe_designer.ProbeDesigner(seqs, [df])
+        pb = probe_designer.ProbeDesigner(seqs, [df], probe_length=100,
+            probe_stride=50)
         pb.design()
         self.assertEqual(pb.candidate_probes, desired_candidate_probes)
         self.assertEqual(pb.final_probes, desired_final_probes)
@@ -63,7 +64,8 @@ class TestProbeDesigner(unittest.TestCase):
         desired_final_probes = \
             [probe.Probe.from_str(s) for s in desired_final_probes]
         df = duplicate_filter.DuplicateFilter()
-        pb = probe_designer.ProbeDesigner(seqs, [df])
+        pb = probe_designer.ProbeDesigner(seqs, [df], probe_length=100,
+            probe_stride=50)
         pb.design()
         self.assertEqual(pb.candidate_probes, desired_candidate_probes)
         self.assertEqual(pb.final_probes, desired_final_probes)
