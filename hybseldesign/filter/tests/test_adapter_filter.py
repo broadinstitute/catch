@@ -21,9 +21,17 @@ class TestAdapterFilter(unittest.TestCase):
         # Disable logging
         logging.disable(logging.INFO)
 
+        # Specify default adapter sequences
+        self.ADAPTER_A_5END = 'ATACGCCATGCTGGGTCTCC'
+        self.ADAPTER_A_3END = 'CGTACTTGGGAGTCGGCCAT'
+        self.ADAPTER_B_5END = 'AGGCCCTGGCTGCTGATATG'
+        self.ADAPTER_B_3END = 'GACCTTTTGGGACAGCGGTG'
+
     def get_filter_and_output(self, lcf_thres, mismatches, target_genomes,
                               input_probes, k, num_kmers_per_probe):
-        f = af.AdapterFilter(mismatches=mismatches,
+        f = af.AdapterFilter((self.ADAPTER_A_5END, self.ADAPTER_A_3END),
+                             (self.ADAPTER_B_5END, self.ADAPTER_B_3END),
+                             mismatches=mismatches,
                              lcf_thres=lcf_thres,
                              kmer_probe_map_k=3)
         f.target_genomes = target_genomes
@@ -42,11 +50,11 @@ class TestAdapterFilter(unittest.TestCase):
             adapter, as specified by 'adapter'
         """
         if adapter == 'A':
-            start = af.ADAPTER_A_5END
-            end = af.ADAPTER_A_3END
+            start = self.ADAPTER_A_5END
+            end = self.ADAPTER_A_3END
         elif adapter == 'B':
-            start = af.ADAPTER_B_5END
-            end = af.ADAPTER_B_3END
+            start = self.ADAPTER_B_5END
+            end = self.ADAPTER_B_3END
         else:
             raise ValueError("Unknown adapter %s" % adapter)
         self.assertTrue(self.probe.seq_str.startswith(start))
@@ -68,10 +76,10 @@ class TestAdapterFilter(unittest.TestCase):
         probes = []
         for p_str in probe_str_a:
             probes += [probe.Probe.from_str(p_str).with_prepended_str(
-                af.ADAPTER_A_5END).with_appended_str(af.ADAPTER_A_3END)]
+                self.ADAPTER_A_5END).with_appended_str(self.ADAPTER_A_3END)]
         for p_str in probe_str_b:
             probes += [probe.Probe.from_str(p_str).with_prepended_str(
-                af.ADAPTER_B_5END).with_appended_str(af.ADAPTER_B_3END)]
+                self.ADAPTER_B_5END).with_appended_str(self.ADAPTER_B_3END)]
         return probes
 
     def convert_target_genomes(self, target_genomes):

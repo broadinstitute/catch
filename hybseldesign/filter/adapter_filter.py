@@ -115,17 +115,14 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
 
-ADAPTER_A_5END = 'ATACGCCATGCTGGGTCTCC'
-ADAPTER_A_3END = 'CGTACTTGGGAGTCGGCCAT'
-ADAPTER_B_5END = 'AGGCCCTGGCTGCTGATATG'
-ADAPTER_B_3END = 'GACCTTTTGGGACAGCGGTG'
-
 
 class AdapterFilter(BaseFilter):
     """Filter that adds adapters to probes.
     """
 
     def __init__(self,
+                 adapter_a,
+                 adapter_b,
                  mismatches=0,
                  lcf_thres=100,
                  kmer_probe_map_k=10):
@@ -136,7 +133,20 @@ class AdapterFilter(BaseFilter):
                 'mismatches' or fewer mismatched bp
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
+            adapter_a: tuple (x, y) where x gives the A adapter sequence to
+                add onto the 5' end of a probe and y gives the A adapter
+                sequence to add onto the 3' end of a probe
+            adapter_b: tuple (x, y) where x gives the B adapter sequence to
+                add onto the 5' end of a probe and y gives the B adapter
+                sequence to add onto the 3' end of a probe
         """
+        if len(adapter_a) != 2 or len(adapter_b) != 2:
+            raise ValueError(("adapter_a/adapter_b arguments must be tuples "
+                              "of length 2, giving the sequences to add onto "
+                              "the 5' and 3' ends"))
+
+        self.adapter_a_5end, self.adapter_a_3end = adapter_a
+        self.adapter_b_5end, self.adapter_b_3end = adapter_b
         self.mismatches = mismatches
         self.lcf_thres = lcf_thres
         self.cover_range_fn = \
@@ -334,11 +344,11 @@ class AdapterFilter(BaseFilter):
             assert len(vote) == 2
             if vote[0] > vote[1]:
                 # Add an 'A' adapter
-                new_p = p.with_prepended_str(ADAPTER_A_5END).\
-                    with_appended_str(ADAPTER_A_3END)
+                new_p = p.with_prepended_str(self.adapter_a_5end).\
+                    with_appended_str(self.adapter_a_3end)
             else:
                 # Add a 'B' adapter
-                new_p = p.with_prepended_str(ADAPTER_B_5END).\
-                    with_appended_str(ADAPTER_B_3END)
+                new_p = p.with_prepended_str(self.adapter_b_5end).\
+                    with_appended_str(self.adapter_b_3end)
             input_with_adapters += [new_p]
         return input_with_adapters

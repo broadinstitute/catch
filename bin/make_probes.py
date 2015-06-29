@@ -75,7 +75,9 @@ def main(args):
         cover_groupings_separately=args.cover_groupings_separately)
     #  3) Adapter filter (af) -- add adapters to both the 5' and 3' ends
     #     of each probe
-    af = adapter_filter.AdapterFilter(mismatches=args.mismatches,
+    af = adapter_filter.AdapterFilter(tuple(args.adapter_a),
+                                      tuple(args.adapter_b),
+                                      mismatches=args.mismatches,
                                       lcf_thres=args.lcf_thres)
     #  4) Reverse complement (rc) -- add the reverse complement of each
     #     probe that remains
@@ -258,6 +260,22 @@ if __name__ == "__main__":
         type=int,
         help=("(Optional) Use only the first N target genomes in the "
               "dataset"))
+    parser.add_argument(
+        "--adapter_a",
+        nargs=2,
+        default=['ATACGCCATGCTGGGTCTCC', 'CGTACTTGGGAGTCGGCCAT'],
+        help=("(Optional) Custom A adapter to use; two ordered arguments x "
+              "and y such that x is the A adapter sequence to place on the "
+              "5' end of a probe and y is the A adapter sequence to place "
+              "on the 3' end of a probe"))
+    parser.add_argument(
+        "--adapter_b",
+        nargs=2,
+        default=['AGGCCCTGGCTGCTGATATG', 'GACCTTTTGGGACAGCGGTG'],
+        help=("(Optional) Custom B adapter to use; two ordered arguments x "
+              "and y such that x is the B adapter sequence to place on the "
+              "5' end of a probe and y is the B adapter sequence to place "
+              "on the 3' end of a probe"))
     parser.add_argument(
         "-o", "--output_probes",
         help=("(Optional) The file to which all final probes should be "
