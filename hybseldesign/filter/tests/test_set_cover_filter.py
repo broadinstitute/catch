@@ -76,7 +76,9 @@ class TestSetCoverFilter(unittest.TestCase):
                 self.assertGreaterEqual(num_bp_covered, desired_bp_covered)
             else:
                 # directly check num bp covered
-                self.assertGreaterEqual(num_bp_covered, desired_coverage)
+                desired_coverage_adjusted = min(desired_coverage, tg.size())
+                self.assertGreaterEqual(num_bp_covered,
+                                        desired_coverage_adjusted)
 
     def run_full_coverage_check_for_target_genomes(
             self, target_genomes, cover_groupings_separately=False):
@@ -193,11 +195,11 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                            'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        for num_bp in [2, 5, 10, 15, 20]:
+        for num_bp in [2, 5, 10, 15, 20, 1000]:
             f, probes = self.get_6bp_probes(target_genomes, num_bp)
             # Note that with num_bp==10, it can be done with just 1 probe
             # ('ABCDEF')
-            min_num_probes = {2: 1, 5: 1, 10: 1, 15: 2, 20: 3}
+            min_num_probes = {2: 1, 5: 1, 10: 1, 15: 2, 20: 3, 1000: 5}
             self.assertEqual(len(probes), min_num_probes[num_bp])
             self.verify_target_genome_coverage(probes, target_genomes,
                                                f, num_bp)
