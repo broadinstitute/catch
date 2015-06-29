@@ -553,7 +553,8 @@ class SetCoverFilter(BaseFilter):
                          "to cover"))
             for i in xrange(len(self.target_genomes)):
                 for j, gnm in enumerate(self.target_genomes[i]):
-                    universe_p[(i, j)] = float(self.coverage) / gnm.size()
+                    desired_coverage = min(self.coverage, gnm.size())
+                    universe_p[(i, j)] = float(desired_coverage) / gnm.size()
         return universe_p
 
     def _compute_set_cover(self, sets, costs, universe_p, ranks):
