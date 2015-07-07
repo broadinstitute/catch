@@ -71,7 +71,7 @@ class SetCoverFilter(BaseFilter):
                  coverage=1.0,
                  cover_extension=0,
                  cover_groupings_separately=False,
-                 kmer_probe_map_k=10):
+                 kmer_probe_map_k=20):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a sequence

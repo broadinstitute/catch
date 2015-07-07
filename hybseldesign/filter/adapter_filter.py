@@ -125,7 +125,7 @@ class AdapterFilter(BaseFilter):
                  adapter_b,
                  mismatches=0,
                  lcf_thres=100,
-                 kmer_probe_map_k=10):
+                 kmer_probe_map_k=20):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a
