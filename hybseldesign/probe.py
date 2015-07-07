@@ -312,8 +312,8 @@ class Probe:
 
 
 def _construct_rand_kmer_probe_map(probes,
-                                   k=10,
-                                   num_kmers_per_probe=30,
+                                   k=20,
+                                   num_kmers_per_probe=20,
                                    include_positions=False):
     """Construct k-mer/probe map by choosing k-mers randomly.
 
@@ -371,7 +371,7 @@ class PigeonholeRequiresTooSmallKmerSizeError(Exception):
 
 def _construct_pigeonholed_kmer_probe_map(probes,
                                           mismatches,
-                                          min_k=10,
+                                          min_k=20,
                                           include_positions=False):
     """Construct k-mer/probe map by pigeonholing mismatches into k-mers.
 
