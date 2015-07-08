@@ -264,18 +264,18 @@ class SetCoverFilter(BaseFilter):
 
         return sets
 
-    def _compute_tolerant_bp_covered_within_sequence(self, candidate_probes,
-                                                     kmer_probe_map, sequence,
+    def _compute_tolerant_bp_covered_within_sequence(self, kmer_probe_map,
+                                                     sequence,
                                                      rc_too=True):
         """Compute number of bp captured in sequence by each input probe.
+
+        The input probes are values in the dict kmer_probe_map.
 
         Uses self.coverage_range_tolerant_fn for determining coverage (i.e.,
         the coverage is determined in a relatively tolerant way so that
         more potential hybridizations are included).
 
         Args:
-            candidate_probes: list of candidate probes for which to
-                determine coverage
             kmer_probe_map: dict mapping kmers to probes
             sequence: sequence as a string in which to determine the
                 coverage of the probes
@@ -336,8 +336,7 @@ class SetCoverFilter(BaseFilter):
                 for sequence in gnm.seqs:
                     # Count hits in both sequence and its reverse complement
                     num_bp = self._compute_tolerant_bp_covered_within_sequence(
-                        candidate_probes, kmer_probe_map, sequence,
-                        rc_too=True)
+                        kmer_probe_map, sequence, rc_too=True)
                     for p in num_bp.keys():
                         num_bp_covered_in_grouping[p] += num_bp[p]
             # If a probe covers at least one bp in this grouping (i),
@@ -388,8 +387,7 @@ class SetCoverFilter(BaseFilter):
                              "sequence"))
                 # Blacklist both sequence and its reverse complement
                 num_bp = self._compute_tolerant_bp_covered_within_sequence(
-                    candidate_probes, kmer_probe_map, sequence,
-                    rc_too=True)
+                    kmer_probe_map, sequence, rc_too=True)
                 for p in num_bp.keys():
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
