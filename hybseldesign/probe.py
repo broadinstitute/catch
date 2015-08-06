@@ -1,15 +1,25 @@
 """Structure(s) and functions for directly working with probes.
 """
 
+import atexit
+import bisect
+import ctypes
 from collections import defaultdict
+from functools import partial
 import hashlib
+import logging
+import multiprocessing
+from multiprocessing import sharedctypes
 
 import numpy as np
 
 from hybseldesign.utils import interval
 from hybseldesign.utils import longest_common_substring
+from hybseldesign.utils import timeout
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
+
+logger = logging.getLogger(__name__)
 
 
 class Probe:
@@ -529,12 +539,502 @@ def construct_kmer_probe_map_to_find_probe_covers(probes,
             probes, k=k, include_positions=include_positions)
 
 
-def find_probe_covers_in_sequence(
-        sequence,
-        kmer_probe_map,
-        cover_range_for_probe_in_subsequence_fn=None,
-        merge_overlapping=True):
+class SharedKmerProbeMap:
+    """A read-only kmer_probe_map that can be shared by processes.
+
+    Suppose we are using multiple processes (via Python's multiprocessing
+    module) and want these processes to read from the dict kmer_probe_map.
+    Because this dict may be large, we do not want to copy it to each of
+    the processes; it would be preferable it they could access the dict
+    in shared memory. This should be simplified by the fact that the dict
+    is intended to be read-only. This is, on some level, possible using
+    a kmer_probe_map as a global variable. Since multiprocessing calls
+    os.fork, and on Linux a fork gives copy-on-write memory, as long as
+    we do not modify the dict it should not be copied to the processes
+    that do the reading. Unfortunately, when we access a key from a dict
+    in Python, Python's dict implementation increments a reference counter
+    for the value of that key. (Python wraps each value in the dict with
+    its own object.) When this reference counter is incremented, that is
+    a write and therefore the memory page containing the reference is
+    copied to the memory space of the process doing the read. Since a page
+    is about 4 KB and we have a lot of keys/values in this dict, a
+    substantial amount of memory is copied to each process that reads from
+    the dict.
+
+    This class avoids that problem by using lower-level structures (from
+    the multiprocessing.sharedctypes module) that can be shared by
+    processes. It implements the same functionality as kmer_probe_map. 
+    While a dict is not an available shared ctype, arrays of primitive types
+    are. Thus, this implementation is based on arrays of shared primitive
+    types. For example, it does not store instances of probe.Probe, but does
+    store just the sequence strings of the probes (as these are all that
+    are needed).
+    """
+
+    def __init__(self, keys, probe_seqs_ind, probe_pos, probe_seqs, k,
+            probe_seqs_to_probe):
+        """Accepts arrays containing the information of a kmer_probe_map.
+
+        These arrays are allocated using multiprocessing.sharedctypes.RawArray
+        because the read/write synchronization (as offered by Array) is not
+        needed.
+
+        Args:
+            keys: Contains the k-mers (keys) from kmer_probe_map, as strings,
+                in sorted order. This is used for lookup. The same k-mer may
+                appear multiple times if there are multiple probes that contain
+                that k-mer (e.g., ['abc', 'def', 'def', 'ghi'] means that the
+                k-mer 'def' appears at positions in two probes.
+            probe_seqs_ind: For a k-mer keys[i], the value probe_seqs_ind[i]
+                gives an index in the array probe_seqs whose value contains the
+                sequence of a probe that contains the k-mer keys[i]. That is,
+                the sequence probe_seqs[probe_seqs_ind[i]] contains the k-mer
+                keys[i].
+            probe_pos: Contains the position of k-mers in probes. A k-mer
+                keys[i] appears at the position probe_pos[i] in the probe whose
+                sequence is given by probe_seqs[probe_seqs_ind[i]].
+            probe_seqs: The sequences of all the probes that appear in values
+                in the kmer_probe_map. Note that there may be many k-mers/keys
+                that map to the same probe; that probe's sequence appears just
+                once in the probe_seqs array. If we were to make a direct
+                mapping between indices in keys and indices in probe_seqs, we
+                would have to store the same probe sequence many times.
+            k: length of the k-mers (as an int) in keys
+            probe_seqs_to_probe: dict mapping probe sequences (as strings)
+                to the instances of probe.Probe from which these sequences
+                came
+        """
+        self.keys = keys
+        self.probe_seqs_ind = probe_seqs_ind
+        self.probe_pos = probe_pos
+        self.probe_seqs = probe_seqs
+        self.k = k
+        self.probe_seqs_to_probe = probe_seqs_to_probe
+
+    def get(self, kmer):
+        """Get the value in kmer_probe_map for the given kmer.
+
+        Args:
+            kmer: k-mer (string) to lookup
+
+        Returns:
+            list of tuples (seq, pos) where seq is the sequence (string) of
+            a probe that contains kmer and pos is the position of kmer in
+            the sequence; returns None if kmer is not found as a key
+        """
+        # The kmers in self.keys are sorted, so do a binary search to
+        # find kmer
+        i = bisect.bisect_left(self.keys, kmer)
+        if i == len(self.keys) or self.keys[i] != kmer:
+            # The key kmer is not present
+            return None
+
+        # There may be more than one match for the key kmer, so keep
+        # scanning while there is a match
+        matches = []
+        while i < len(self.keys) and self.keys[i] == kmer:
+            seq = self.probe_seqs[self.probe_seqs_ind[i]]
+            pos = self.probe_pos[i]
+            matches += [(seq, pos)]
+            i += 1
+        return matches
+
+    @staticmethod
+    def construct(kmer_probe_map):
+        """Construct a SharedKmerProbeMap instance from a kmer_probe_map dict.
+
+        Args:
+            kmer_probe_map: dict as output by the function
+                probe.construct_kmer_probe_map_to_find_probe_covers
+
+        Returns:
+            instance of SharedKmerProbeMap that offers the same functionality
+            and stores the same information as kmer_probe_map
+
+        Raises:
+            ValueError if k-mers have different lengths or the kmer_probe_map
+            does not include positions
+        """
+        # Find the k-mer length k, check that all k-mers in the map are
+        # of length k, and check that the k-mers in the map come with
+        # positions
+        k = None
+        for kmer in kmer_probe_map.keys():
+            if k is None:
+                k = len(kmer)
+            if len(kmer) != k:
+                raise ValueError("Inconsistent kmer lengths in kmer_probe_map")
+            for v in kmer_probe_map[kmer]:
+                if not isinstance(v, tuple):
+                    raise ValueError(("Given kmer_probe_map must include kmer "
+                                      "positions"))
+
+        # First copy all the (unique) probe sequences to an array probe_seqs
+        # While filling in probe_seqs, save the position of a seq in probe_seqs
+        # as unique_probe_seqs[seq]
+        # Also, save a mapping of all the probe sequences back to the instances
+        # of Probe
+        unique_probe_seqs = {}
+        probe_seqs_to_probe = {}
+        for kmer, kmer_alignments in kmer_probe_map.iteritems():
+            for probe, pos in kmer_alignments:
+                unique_probe_seqs[probe.seq_str] = True
+                probe_seqs_to_probe[probe.seq_str] = probe
+        probe_seqs = multiprocessing.sharedctypes.RawArray(
+            ctypes.c_char_p, len(unique_probe_seqs))
+        for i, (seq, _) in enumerate(unique_probe_seqs.iteritems()):
+            probe_seqs[i] = seq
+            unique_probe_seqs[seq] = i
+
+        # Find the number of keys that are needed and allocate the keys array
+        num_keys = sum(len(kmer_alignments)
+                       for kmer, kmer_alignments in kmer_probe_map.iteritems())
+        keys = multiprocessing.sharedctypes.RawArray(ctypes.c_char_p, num_keys)
+
+        # Allocate the probe_seqs_ind and probe_pos arrays; their indices map
+        # to indices in key, so their length is also num_keys
+        probe_seqs_ind = multiprocessing.sharedctypes.RawArray(
+            ctypes.c_uint, num_keys)
+        probe_pos = multiprocessing.sharedctypes.RawArray(
+            ctypes.c_uint, num_keys)
+
+        # Fill in keys, probe_seqs_ind, and probe_pos
+        i = 0
+        for kmer in sorted(kmer_probe_map.keys()):
+            num_alignments = len(kmer_probe_map[kmer])
+            for probe, pos in kmer_probe_map[kmer]:
+                keys[i] = kmer
+                probe_seqs_ind[i] = unique_probe_seqs[probe.seq_str]
+                probe_pos[i] = pos
+                i += 1
+
+        return SharedKmerProbeMap(keys, probe_seqs_ind, probe_pos, probe_seqs,
+                                  k, probe_seqs_to_probe)
+
+
+def set_max_num_processes_for_probe_finding_pools(max_num_processes=8):
+    """Set the maximum number of processes to use in a probe finding pool.
+
+    Args:
+        max_num_processes: an int (>= 1) specifying the maximum number of
+            processes to use in a multiprocessing.Pool when a num_processes
+            argument is not provided to probe.open_probe_finding_pool; uses
+            min(the number of CPUs in the system, max_num_processes) processes
+            when num_processes is not provided to
+            probe.open_probe_finding_pool
+    """
+    global _pfp_max_num_processes
+    _pfp_max_num_processes = max_num_processes
+set_max_num_processes_for_probe_finding_pools()
+
+
+def open_probe_finding_pool(kmer_probe_map,
+                            cover_range_for_probe_in_subsequence_fn=None,
+                            num_processes=None):
+    """Open a pool for calling find_probe_covers_in_sequence().
+
+    The variables to share with the processes (e.g., kmer_probe_map.keys)
+    cannot be pickled and are not intended to be. But all variables that are
+    global in a module (prior to making the pool) are accessible to processes
+    in the pool that are executing a top-level function in the module
+    (like _find_probe_covers_in_subsequence()). Thus, this function -- along
+    with opening a multiprocessing pool -- also makes global the variables
+    that should be shared with the worker processes.
+
+    All the global variables that are part of this probe finding pool are
+    prefixed with '_pfp'.
+
+    Args:
+        kmer_probe_map: instance of SharedKmerProbeMap
+        cover_range_for_probe_in_subsequence_fn: function that
+            determines whether a probe "covers" a part of a subsequence
+            of sequence; if it returns None, there is no coverage;
+            otherwise it returns the range of the subsequence covered
+            by the probe
+        num_processes: number of processes/workers to have in the pool;
+            if None, uses min(the number of CPUs in the system,
+            _pfp_max_num_processes)
+
+    Raises:
+        RuntimeError if the pool is already open; only one pool may be
+        open at a time
+    """
+    global _pfp_is_open
+    global _pfp_max_num_processes
+    global _pfp_pool
+    global _pfp_work_was_submitted
+    global _pfp_cover_range_for_probe_in_subsequence_fn
+    global _pfp_kmer_probe_map_keys
+    global _pfp_kmer_probe_map_probe_seqs_ind
+    global _pfp_kmer_probe_map_probe_pos
+    global _pfp_kmer_probe_map_probe_seqs
+    global _pfp_kmer_probe_map_probe_seqs_to_probe
+    global _pfp_kmer_probe_map_k
+    global _pfp_num_processes
+
+    try:
+        if _pfp_is_open:
+            raise RuntimeError("Probe finding pool is already open")
+    except NameError:
+        pass
+
+    if cover_range_for_probe_in_subsequence_fn is None:
+        # By default, determine a cover range using a longest common
+        # substring with its default parameters
+        cover_range_for_probe_in_subsequence_fn = \
+            probe_covers_sequence_by_longest_common_substring()
+
+    if num_processes is None:
+        num_processes = min(multiprocessing.cpu_count(),
+                            _pfp_max_num_processes)
+
+    logger.debug("Opening a probe finding pool with %d processes",
+                 num_processes)
+
+    _pfp_is_open = True
+
+    _pfp_cover_range_for_probe_in_subsequence_fn = \
+        cover_range_for_probe_in_subsequence_fn
+
+    # Rather than saving kmer_probe_map directly, save pointers to individual
+    # variables and have the function a process executes reconstruct an
+    # instance of SharedKmerProbeMap from these variables
+    # This way, we can be careful to only share in memory with other processes
+    # variables that do not have to be copied -- i.e., those processes explicitly
+    # access certain variables and we can ensure that variables that would
+    # need to be copied (like kmer_probe_map.probe_seqs_to_probe) are not
+    # accidentally accessed by a process
+    _pfp_kmer_probe_map_keys = kmer_probe_map.keys
+    _pfp_kmer_probe_map_probe_seqs_ind = kmer_probe_map.probe_seqs_ind
+    _pfp_kmer_probe_map_probe_pos = kmer_probe_map.probe_pos
+    _pfp_kmer_probe_map_probe_seqs = kmer_probe_map.probe_seqs
+    _pfp_kmer_probe_map_probe_seqs_to_probe = \
+        kmer_probe_map.probe_seqs_to_probe
+    _pfp_kmer_probe_map_k = kmer_probe_map.k
+
+    # Note that the pool must be created at the very end of this function
+    # because the only global variables shared with processes in this
+    # pool are those that are created prior to creating the pool
+
+    # Sometimes opening a pool (via multiprocessing.Pool) hangs indefinitely,
+    # particularly when many pools are opened/closed repeatedly by a master
+    # process; this likely stems from issues in multiprocessing.Pool. So set
+    # a timeout on opening the pool, and try again if it times out. It
+    # appears, from testing, that opening a pool may timeout a few times in
+    # a row, but eventually succeeds.
+    while True:
+        try:
+            with timeout.time_limit(5):
+                _pfp_pool = multiprocessing.Pool(num_processes)
+            break
+        except timeout.TimeoutException:
+            # Try again
+            pass
+    _pfp_work_was_submitted = False
+
+
+def close_probe_finding_pool():
+    """Close the pool for calling find_probe_covers_in_sequence().
+
+    This closes the multiprocessing pool and also deletes pointers to the
+    variables that were made global in this module in order to be shared
+    with worker processes.
+
+    Raises:
+        RuntimeError if the pool is not open
+    """
+    global _pfp_is_open
+    global _pfp_pool
+    global _pfp_work_was_submitted
+    global _pfp_cover_range_for_probe_in_subsequence_fn
+    global _pfp_kmer_probe_map_keys
+    global _pfp_kmer_probe_map_probe_seqs_ind
+    global _pfp_kmer_probe_map_probe_pos
+    global _pfp_kmer_probe_map_probe_seqs
+    global _pfp_kmer_probe_map_probe_seqs_to_probe
+    global _pfp_kmer_probe_map_k
+
+    pfp_is_open = False
+    try:
+        if _pfp_is_open:
+            pfp_is_open = True
+    except NameError:
+        pass
+    if not pfp_is_open:
+        raise RuntimeError("Probe finding pool is not open")
+
+    logger.debug("Closing the probe finding pool of processes")
+
+    del _pfp_cover_range_for_probe_in_subsequence_fn
+
+    del _pfp_kmer_probe_map_keys
+    del _pfp_kmer_probe_map_probe_seqs_ind
+    del _pfp_kmer_probe_map_probe_pos
+    del _pfp_kmer_probe_map_probe_seqs
+    del _pfp_kmer_probe_map_probe_seqs_to_probe
+    del _pfp_kmer_probe_map_k
+
+    # In Python versions earlier than 2.7.3 there is a bug (see
+    # http://bugs.python.org/issue12157) that occurs if a pool p is
+    # created and p.join() is called, but p.map() is never called (i.e.,
+    # no work is submitted to the processes in the pool); the bug
+    # causes p.join() to sometimes hang indefinitely.
+    # That could happen here if a probe finding pool is opened/closed
+    # but find_probe_covers_in_sequence() is never called; the variable
+    # _pfp_work_was_submitted ensures that join() is only called on
+    # the pool if work was indeed submitted.
+    _pfp_pool.close()
+    if _pfp_work_was_submitted:
+        # Due to issues that likely stem from bugs in the multiprocessing
+        # module, calls to _pfp_pool.terminate() and _pfp_pool.join()
+        # sometimes hang indefinitely (even when work was indeed submitted
+        # to the processes). So make a best effort in calling these functions
+        # -- i.e., use a timeout around calls to these functions
+        try:
+            with timeout.time_limit(5):
+                _pfp_pool.terminate()
+                _pfp_pool.join()
+        except timeout.TimeoutException:
+            # Ignore the timeout
+            # If _pfp_pool.terminate() or _pfp_pool.join() fails this will
+            # not affect correctness and will not necessarily prevent
+            # additional pools from being created, so let the program continue
+            # to execute because it will generally be able to keep making
+            # progress
+            pass
+        except:
+            # _pfp_pool.terminate() occassionally raises another exception
+            # (NoneType) if it tries to terminate a process that has already
+            # been terminated; ignoring that exception should not affect
+            # correctness or prevent additional pools from being created, so
+            # is better to ignore it than to let the exception crash the
+            # program
+            pass
+
+    del _pfp_pool
+    _pfp_is_open = False
+
+    del _pfp_work_was_submitted
+
+
+def _find_probe_covers_in_subsequence(bounds,
+                                      sequence,
+                                      merge_overlapping=True):
+    """Helper function for find_probe_covers_in_sequence().
+
+    Scans through a subsequence of sequence, as specified by bounds, and
+    looks for probes that cover a range of the subsequence.
+
+    Args:
+        bounds: tuple of the form (start, end); scan through each k-mer
+            in sequence beginning with the k-mer whose first base is
+            at start and ending with the k-mer whose first base is at
+            end-1
+        sequence: sequence (as a string) in which to find ranges that
+            probes cover
+        merge_overlapping: when True, merges overlapping ranges into
+            a single range and returns the ranges in sorted order; when
+            False, intervals returned may be overlapping (e.g., if a
+            probe covers two regions that overlap)
+
+    Returns:
+        dict mapping probe sequences (as strings) to the set of ranges
+        (each range is a tuple of the form (start, end)) that each probe
+        "covers" in the scanned subsequence
+    """
+    if bounds is None:
+        return {}
+
+    global _pfp_cover_range_for_probe_in_subsequence_fn
+    global _pfp_kmer_probe_map_keys
+    global _pfp_kmer_probe_map_probe_seqs_ind
+    global _pfp_kmer_probe_map_probe_pos
+    global _pfp_kmer_probe_map_probe_seqs
+    global _pfp_kmer_probe_map_k
+
+    shared_kmer_probe_map = SharedKmerProbeMap(
+        _pfp_kmer_probe_map_keys,
+        _pfp_kmer_probe_map_probe_seqs_ind,
+        _pfp_kmer_probe_map_probe_pos,
+        _pfp_kmer_probe_map_probe_seqs,
+        _pfp_kmer_probe_map_k,
+        None)
+    k = _pfp_kmer_probe_map_k
+    # Each time a probe is found to cover a range of sequence,
+    # add that range, as a tuple, to the probe's entry in
+    # subseq_probe_cover_ranges
+    start, end = bounds
+    subseq_probe_cover_ranges = defaultdict(list)
+    for i in xrange(start, end):
+        kmer = sequence[i:(i + k)]
+        # Find the probes with this kmer (with the potential to miss
+        # some probes due to false negatives)
+        probes_to_align = shared_kmer_probe_map.get(kmer)
+        if probes_to_align is None:
+            # No probes (from kmer_probe_map) share this kmer
+            continue
+        for probe_seq_str, pos in probes_to_align:
+            # kmer appears in probe at position pos. So align probe
+            # to sequence at i-pos and see how much of the subsequence
+            # starting here the probe covers.
+            probe_seq_full = np.fromstring(probe_seq_str, dtype='S1')
+            subseq_left = max(0, i - pos)
+            subseq_right = min(len(sequence), i - pos + len(probe_seq_full))
+            subsequence = sequence[subseq_left:subseq_right]
+            if i - pos < 0:
+                # An edge case where probe is cutoff on left end because it
+                # extends further left than where sequence begins
+                probe_seq = probe_seq_full[-(i - pos):]
+                # Shift kmer_start left from pos to determine its new
+                # position in probe_seq (equivalently its position in
+                # subsequence, which is i)
+                kmer_start = pos + (i - pos)
+            elif i - pos + len(probe_seq_full) > len(sequence):
+                # An edge case where probe is cutoff on right end because it
+                # extends further right than where sequence ends
+                probe_seq = probe_seq_full[:-(i - pos + len(probe_seq_full) -
+                                            len(sequence))]
+                kmer_start = pos
+            else:
+                probe_seq = probe_seq_full
+                kmer_start = pos
+            cover_range = \
+                _pfp_cover_range_for_probe_in_subsequence_fn(
+                    probe_seq, subsequence, kmer_start, kmer_start + k)
+            if cover_range is None:
+                # probe does not meet the threshold for covering this
+                # subsequence
+                continue
+            cover_start, cover_end = cover_range
+            # cover_start and cover_end are relative to subsequence, so
+            # adjust these to be relative to sequence
+            cover_start += subseq_left
+            cover_end += subseq_left
+            subseq_probe_cover_ranges[probe_seq_str].append(
+                (cover_start, cover_end))
+            if merge_overlapping:
+                # Save some memory in each process by merging cover ranges,
+                # since many found by this method will overlap
+                # (This is not necessary because all the cover ranges for
+                # each probe will be merged across processes at the end of
+                # find_probe_covers_in_sequence(), but it can save
+                # considerable memory before that final merge.)
+                subseq_probe_cover_ranges[probe_seq_str] = interval.\
+                    merge_overlapping(subseq_probe_cover_ranges[probe_seq_str])
+    return dict(subseq_probe_cover_ranges)
+
+
+def find_probe_covers_in_sequence(sequence,
+                                  merge_overlapping=True):
     """Find ranges in sequence that a collection of probes cover.
+
+    This uses multiple processes to scan through sequence in parallel.
+    Prior to calling this function, a pool of processes must have been
+    created by calling open_probe_finding_pool(). That function takes
+    arguments (like kmer_probe_map and cover_range_for_probe_in_sequence_fn)
+    that the worker processes use in finding ranges that the probes cover.
+    Those variables are made global in this module so that the worker
+    processes can access them without having to copy the memory.
 
     Probes are from the values of kmer_probe_map. A probe is said
     to "cover" (i.e., hybridize to) a region as determined by the
@@ -548,7 +1048,8 @@ def find_probe_covers_in_sequence(
     determine whether the probe "covers" sequence in this region, where
     coverage is determined by that function.
 
-    This determines the k-mer length k from the given kmer_probe_map.
+    This determines the k-mer length k from the kmer_probe_map that was
+    given to open_probe_finding_pool().
 
     Note that kmer_probe_map could be generated in a manner that randomly
     selects a subset of the k-mers from each probe (i.e., by
@@ -574,106 +1075,82 @@ def find_probe_covers_in_sequence(
     Args:
         sequence: sequence (as a string) in which to find ranges that
             probes cover
-        kmer_probe_map: dict mapping kmers to probes; must map k-mers
-            (of length k) to a set of tuples, in which each tuple
-            contains a probe whose sequence contains the k-mer as well
-            as the position of the k-mer in the probe.
-        cover_range_for_probe_in_subsequence_fn: function that
-            determines whether a probe "covers" a part of a subsequence
-            of sequence; if it returns None, there is no coverage;
-            otherwise it returns the range of the subsequence covered
-            by the probe
         merge_overlapping: when True, merges overlapping ranges into
             a single range and returns the ranges in sorted order; when
-            False, intervals returned may be overlapping (e.g., if a probe
-            covers two regions that overlap)
+            False, intervals returned may be overlapping (e.g., if a
+            probe covers two regions that overlap)
 
     Returns:
         dict mapping probes to the set of ranges (each range is a tuple
         of the form (start, end)) that each probe "covers"
+
+    Raises:
+        RuntimeError if a pool for finding probes is not open; a pool
+        must be opened prior to calling this function by calling
+        open_probe_finding_pool()
     """
-    if cover_range_for_probe_in_subsequence_fn is None:
-        # By default, determine a cover range using a longest common
-        # substring with its default parameters
-        cover_range_for_probe_in_subsequence_fn = \
-            probe_covers_sequence_by_longest_common_substring()
+    global _pfp_is_open
+    global _pfp_pool
+    global _pfp_work_was_submitted
+    global _pfp_kmer_probe_map_probe_seqs_to_probe
+    global _pfp_kmer_probe_map_k
+    global _pfp_num_processes
 
-    # Find the k-mer length k, check that all k-mers in the map are
-    # of length k, and check that the k-mers in the map come with
-    # positions
-    k = None
-    for kmer in kmer_probe_map.keys():
-        if k is None:
-            k = len(kmer)
-        if len(kmer) != k:
-            raise ValueError("Inconsistent kmer lengths in kmer_probe_map")
-        for v in kmer_probe_map[kmer]:
-            if not isinstance(v, tuple):
-                raise ValueError(("Given kmer_probe_map must include kmer "
-                                  "positions"))
+    pfp_is_open = False
+    try:
+        if _pfp_is_open:
+            pfp_is_open = True
+    except NameError:
+        pass
+    if not pfp_is_open:
+        raise RuntimeError("Probe finding pool is not open")
 
-    # Iterate through every kmer in sequence
-    # Each time a probe is found to cover a range of sequence,
-    # add that range, as a tuple, to the probe's entry in
-    # probe_cover_ranges
+    k = _pfp_kmer_probe_map_k
+
+    # Setup a function that the processes can execute; do this using
+    # functools.partial so that the created function (scan_subsequence)
+    # takes just the argument 'bounds' and all the other arguments to
+    # _find_probe_covers_in_subsequence are filled in
+    scan_subsequence = partial(_find_probe_covers_in_subsequence,
+                               sequence=sequence,
+                               merge_overlapping=merge_overlapping)
+
+    # Create bounds for each process
+    # The first num_processes-1 processes should be given bounds
+    # with size bound_size, and the final process may have a smaller
+    # range to scan
+    # (Rather than having processes that are never sent any work -- which
+    # seems to sometimes cause trouble for a multiprocessing Pool -- send
+    # 'None' as the bounds for this process; the helper function
+    # _find_probe_covers_in_subsequence treats bounds='None' as a NO-OP)
+    num_processes = _pfp_pool._processes
+    bounds_size = int((len(sequence) - k + 1) / num_processes + 1)
+    bounds_by_process = []
+    for start in xrange(0, len(sequence) - k + 1, bounds_size):
+        end = min(len(sequence) - k + 1, start + bounds_size)
+        bounds_by_process += [(start, end)]
+    while len(bounds_by_process) < num_processes:
+        bounds_by_process += [None]
+
+    # Run the processes
+    try:
+        _pfp_work_was_submitted = True
+        all_subseq_probe_cover_ranges = _pfp_pool.map(scan_subsequence,
+                                                      bounds_by_process)
+    except KeyboardInterrupt:
+        _pfp_pool.terminate()
+        _pfp_pool.join()
+
+    # Merge the outputs from the different processes. Namely:
+    # all_subseq_probe_cover_ranges is a list of dicts, where each
+    # dict is keyed on probe sequences and has values that are lists.
+    # Merge these to create one dict, keyed on probes, by concatenating
+    # all the lists (across the dicts) for each probe.
     probe_cover_ranges = defaultdict(list)
-    for i in xrange(len(sequence) - k + 1):
-        kmer = sequence[i:(i + k)]
-        # Find the probes with this kmer (with the potential to miss
-        # some probes due to false negatives)
-        if kmer not in kmer_probe_map:
-            # In an earlier version, kmer_probe_map was a defaultdict
-            # and this 'if' condition was left out -- if the kmer was not
-            # in kmer_probe_map, then probes_to_align (below) would simply
-            # be empty. However, this leads to a *huge* memory leak. Each
-            # time kmer is looked up in kmer_probe_map, a new set is
-            # created by the defaultdict when kmer does not exist as a key.
-            # This new set is entered into kmer_probe_map, with kmer as
-            # the key, and is never removed. Because of the many possible
-            # kmers and the large overhead of a Python set, the size of
-            # kmer_probe_map grows enormously (into hundreds of GB very
-            # quickly) when many kmers are looked up that do not exist.
-            # Thus, a better solution is for kmer_probe_map to be a
-            # regular dict, and to have this check instead.
-            continue
-        probes_to_align = kmer_probe_map[kmer]
-        for probe, pos in probes_to_align:
-            # kmer appears in probe at position pos. So align probe
-            # to sequence at i-pos and see how much of the subsequence
-            # starting here the probe covers.
-            subseq_left = max(0, i - pos)
-            subseq_right = min(len(sequence), i - pos + len(probe.seq))
-            subsequence = sequence[subseq_left:subseq_right]
-            if i - pos < 0:
-                # An edge case where probe is cutoff on left end because it
-                # extends further left than where sequence begins
-                probe_seq = probe.seq[-(i - pos):]
-                # Shift kmer_start left from pos to determine its new
-                # position in probe_seq (equivalently its position in
-                # subsequence, which is i)
-                kmer_start = pos + (i - pos)
-            elif i - pos + len(probe.seq) > len(sequence):
-                # An edge case where probe is cutoff on right end because it
-                # extends further right than where sequence ends
-                probe_seq = probe.seq[:-(i - pos + len(probe.seq) -
-                                         len(sequence))]
-                kmer_start = pos
-            else:
-                probe_seq = probe.seq
-                kmer_start = pos
-            cover_range = \
-                cover_range_for_probe_in_subsequence_fn(
-                    probe_seq, subsequence, kmer_start, kmer_start + k)
-            if cover_range is None:
-                # probe does not meet the threshold for covering this
-                # subsequence
-                continue
-            cover_start, cover_end = cover_range
-            # cover_start and cover_end are relative to subsequence, so
-            # adjust these to be relative to sequence
-            cover_start += subseq_left
-            cover_end += subseq_left
-            probe_cover_ranges[probe].append((cover_start, cover_end))
+    for subseq_probe_cover_ranges in all_subseq_probe_cover_ranges:
+        for probe_seq, cover_ranges in subseq_probe_cover_ranges.iteritems():
+            probe = _pfp_kmer_probe_map_probe_seqs_to_probe[probe_seq]
+            probe_cover_ranges[probe].extend(cover_ranges)
 
     # It's possible that the list of cover ranges for a probe has
     # overlapping ranges. Clean the list of cover ranges by "merging"
@@ -685,8 +1162,7 @@ def find_probe_covers_in_sequence(
             probe_cover_ranges_cleaned[probe] = interval.\
                 merge_overlapping(cover_ranges)
         else:
-            # The method above will generally give many of the same cover
-            # ranges for a probe, so remove duplicates
+            # Remove duplicate cover ranges
             probe_cover_ranges_cleaned[probe] = sorted(list(set(cover_ranges)))
     return probe_cover_ranges_cleaned
 

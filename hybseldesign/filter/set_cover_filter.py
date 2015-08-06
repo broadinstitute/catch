@@ -193,12 +193,16 @@ class SetCoverFilter(BaseFilter):
             coverted to an interval.IntervalSet when needed.)
         """
         logger.info("Building map from k-mers to probes")
-        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
-            candidate_probes,
-            self.mismatches,
-            self.lcf_thres,
-            min_k=self.kmer_probe_map_k,
-            k=self.kmer_probe_map_k)
+        kmer_probe_map = probe.SharedKmerProbeMap.construct(
+            probe.construct_kmer_probe_map_to_find_probe_covers(
+                candidate_probes,
+                self.mismatches,
+                self.lcf_thres,
+                min_k=self.kmer_probe_map_k,
+                k=self.kmer_probe_map_k)
+        )
+        probe.open_probe_finding_pool(kmer_probe_map,
+                                      self.cover_range_fn)
 
         probe_id = {}
         sets = {}
@@ -216,8 +220,7 @@ class SetCoverFilter(BaseFilter):
                 length_so_far = 0
                 for sequence in gnm.seqs:
                     probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                        sequence, kmer_probe_map,
-                        cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
+                        sequence)
                     # Add the bases of sequence that are covered by all the
                     # probes into sets with universe_id equal to (i,j)
                     for p, cover_ranges in probe_cover_ranges.iteritems():
@@ -251,6 +254,8 @@ class SetCoverFilter(BaseFilter):
                                 sets[set_id][universe_id].append(adjusted_cover)
                     length_so_far += len(sequence)
 
+        probe.close_probe_finding_pool()
+
         # Make an IntervalSet out of the intervals of each set. But if
         # there is just one interval in a set, then save space by leaving
         # that entry as a tuple.
@@ -264,23 +269,32 @@ class SetCoverFilter(BaseFilter):
 
         return sets
 
-    def _compute_tolerant_bp_covered_within_sequence(self, kmer_probe_map,
+    def _compute_tolerant_bp_covered_within_sequence(self,
                                                      sequence,
                                                      rc_too=True):
         """Compute number of bp captured in sequence by each input probe.
 
-        The input probes are values in the dict kmer_probe_map.
+        A probe finding pool must be open prior to calling this function,
+        and that pool should have been created using
+        self.cover_range_tolerant_fn. That is, probe.open_probe_finding_pool()
+        should have been called with the cover_range_for_probe_in_subsequence_fn
+        argument equal to self.cover_range_tolerant_fn. The input probes
+        are values in the kmer_probe_map argument that was passed to
+        probe.open_probe_finding_pool().
 
         Uses self.coverage_range_tolerant_fn for determining coverage (i.e.,
         the coverage is determined in a relatively tolerant way so that
         more potential hybridizations are included).
 
         Args:
-            kmer_probe_map: dict mapping kmers to probes
             sequence: sequence as a string in which to determine the
                 coverage of the probes
             rc_too: when True, the returned values also include bp that
                 are captured in the reverse complement of sequence
+
+        Raises:
+            RuntimeError if the probe finding pool was not created with
+            self.cover_range_tolerant_fn
 
         Returns:
             dict mapping each candidate probe to the number of bp it
@@ -288,6 +302,13 @@ class SetCoverFilter(BaseFilter):
             one bp; candidate probes that do not cover any bp are not
             included as keys in the returned dict
         """
+        if probe._pfp_cover_range_for_probe_in_subsequence_fn != \
+                self.cover_range_tolerant_fn:
+            raise RuntimeError(("_compute_tolerant_bp_covered_within_"
+                                "subsequence() was called but the probe "
+                                "finding pool was not created using "
+                                "self.cover_range_tolerant_fn"))
+
         reverse_complement = [False]
         if rc_too:
             reverse_complement += [True]
@@ -298,9 +319,7 @@ class SetCoverFilter(BaseFilter):
         for rc in reverse_complement:
             if rc:
                 sequence = ''.join([rc_map.get(b, b) for b in sequence[::-1]])
-            probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                sequence, kmer_probe_map,
-                cover_range_for_probe_in_subsequence_fn=self.cover_range_tolerant_fn)
+            probe_cover_ranges = probe.find_probe_covers_in_sequence(sequence)
 
             all_cover_ranges = []
             for p, cover_ranges in probe_cover_ranges.iteritems():
@@ -309,7 +328,7 @@ class SetCoverFilter(BaseFilter):
 
         return dict(num_bp_covered)
 
-    def _count_num_groupings_hit(self, candidate_probes, kmer_probe_map):
+    def _count_num_groupings_hit(self, candidate_probes):
         """Compute number of genome groupings hit by each candidate probe.
 
         A probe is said to "hit" a grouping of target genomes if it covers
@@ -320,7 +339,6 @@ class SetCoverFilter(BaseFilter):
 
         Args:
             candidate_probes: list of candidate probes
-            kmer_probe_map: dict mapping kmers to probes
 
         Returns:
             dict mapping each candidate probe to the number of target
@@ -336,7 +354,7 @@ class SetCoverFilter(BaseFilter):
                 for sequence in gnm.seqs:
                     # Count hits in both sequence and its reverse complement
                     num_bp = self._compute_tolerant_bp_covered_within_sequence(
-                        kmer_probe_map, sequence, rc_too=True)
+                        sequence, rc_too=True)
                     for p in num_bp.keys():
                         num_bp_covered_in_grouping[p] += num_bp[p]
             # If a probe covers at least one bp in this grouping (i),
@@ -357,7 +375,7 @@ class SetCoverFilter(BaseFilter):
 
         return num_groupings_hit
 
-    def _count_blacklisted_bp_covered(self, candidate_probes, kmer_probe_map):
+    def _count_blacklisted_bp_covered(self, candidate_probes):
         """Compute number of blacklisted genome bp covered by each probe.
 
         This decides whether a candidate probe captures a portion of a
@@ -370,7 +388,6 @@ class SetCoverFilter(BaseFilter):
 
         Args:
             candidate_probes: list of candidate probes
-            kmer_probe_map: dict mapping kmers to probes
 
         Returns:
             dict mapping each candidate probe to the total number of bp
@@ -387,7 +404,7 @@ class SetCoverFilter(BaseFilter):
                              "sequence"))
                 # Blacklist both sequence and its reverse complement
                 num_bp = self._compute_tolerant_bp_covered_within_sequence(
-                    kmer_probe_map, sequence, rc_too=True)
+                    sequence, rc_too=True)
                 for p in num_bp.keys():
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
@@ -446,13 +463,21 @@ class SetCoverFilter(BaseFilter):
             corresponding to a candidate probe) to a rank (integer) for
             that candidate probe
         """
-        logger.info("Building map from k-mers to probes")
-        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
-            candidate_probes,
-            self.mismatches_tolerant,
-            self.lcf_thres_tolerant,
-            min_k=self.kmer_probe_map_k,
-            k=self.kmer_probe_map_k)
+        # Only open a probe finding pool if it will be needed
+        need_probe_finding_pool = (self.identify or
+                                   len(self.blacklisted_genomes) > 0)
+        if need_probe_finding_pool:
+            logger.info("Building map from k-mers to probes")
+            kmer_probe_map = probe.SharedKmerProbeMap.construct(
+                probe.construct_kmer_probe_map_to_find_probe_covers(
+                    candidate_probes,
+                    self.mismatches_tolerant,
+                    self.lcf_thres_tolerant,
+                    min_k=self.kmer_probe_map_k,
+                    k=self.kmer_probe_map_k)
+            )
+            probe.open_probe_finding_pool(kmer_probe_map,
+                                          self.cover_range_tolerant_fn)
 
         if self.identify:
             # Find the number of target genome groupings (e.g., species)
@@ -463,8 +488,7 @@ class SetCoverFilter(BaseFilter):
             # rank of 1); probes that hit more than one grouping are poor
             # for identification and their ranks are equal to the number
             # of groupings they hit.
-            num_groupings_hit = self._count_num_groupings_hit(candidate_probes,
-                                                              kmer_probe_map)
+            num_groupings_hit = self._count_num_groupings_hit(candidate_probes)
             rank_val = {
                 p: (0, hit)
                 for p, hit in num_groupings_hit.iteritems()
@@ -480,10 +504,13 @@ class SetCoverFilter(BaseFilter):
         # element of the tuple above) and the rank among these is based
         # on the number of bp they cover.
         blacklisted_bp_covered = self._count_blacklisted_bp_covered(
-            candidate_probes, kmer_probe_map)
+            candidate_probes)
         for p, bp in blacklisted_bp_covered.iteritems():
             if bp > 0:
                 rank_val[p] = (1, bp)
+
+        if need_probe_finding_pool:
+            probe.close_probe_finding_pool()
 
         # Convert the ranks, specified as tuples, into ranks from 0
         # upward. The probe(s) with the smallest tuple rank get(s)

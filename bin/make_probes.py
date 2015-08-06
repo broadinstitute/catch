@@ -6,6 +6,7 @@ import importlib
 import logging
 
 from hybseldesign import coverage_analysis
+from hybseldesign import probe
 from hybseldesign.datasets import hg19
 from hybseldesign.filter import adapter_filter
 from hybseldesign.filter import duplicate_filter
@@ -52,6 +53,11 @@ def main(args):
                     blacklisted_genomes_fasta += [fp]
             else:
                 blacklisted_genomes_fasta += [dataset.fasta_path]
+
+    # Set the maximum number of processes in multiprocessing pools
+    if args.max_num_processes:
+        probe.set_max_num_processes_for_probe_finding_pools(
+            args.max_num_processes)
 
     # Setup the filters
     # The filters we use are, in order:
@@ -294,6 +300,21 @@ if __name__ == "__main__":
         help=("The file to which to write the average coverage achieved "
               "by the probe set within sliding windows of each target "
               "genome"))
+
+    def check_max_num_processes(val):
+        ival = int(val)
+        if ival >= 1:
+            return ival
+        else:
+            raise argparse.ArgumentTypeError(("max_num_processes must be "
+                                              "an int >= 1"))
+
+    parser.add_argument(
+        "--max_num_processes",
+        type=check_max_num_processes,
+        help=("(Optional) An int >= 1 that gives the maximum number of "
+              "processes to use in multiprocessing pools; uses min(number "
+              "of CPUs in the system, max_num_processes) processes"))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",

@@ -171,9 +171,13 @@ class Analyzer:
         # be constructed using the random approach (yielding many k-mers
         # and thus a slower runtime in finding probe covers) rather than
         # the pigeonhole approach.
-        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
-            self.probes, self.mismatches, self.lcf_thres,
-            min_k=self.kmer_probe_map_k, k=self.kmer_probe_map_k)
+        kmer_probe_map = probe.SharedKmerProbeMap.construct(
+            probe.construct_kmer_probe_map_to_find_probe_covers(
+                self.probes, self.mismatches, self.lcf_thres,
+                min_k=self.kmer_probe_map_k, k=self.kmer_probe_map_k)
+        )
+        probe.open_probe_finding_pool(kmer_probe_map,
+                                      self.cover_range_fn)
 
         self.target_covers = {}
         for i, j, gnm, rc in self._iter_target_genomes(True):
@@ -200,8 +204,7 @@ class Analyzer:
                 # to overlap (e.g., if one probe covers two regions that
                 # overlap)
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                    sequence, kmer_probe_map,
-                    cover_range_for_probe_in_subsequence_fn=self.cover_range_fn,
+                    sequence,
                     merge_overlapping=False)
                 for p, cover_ranges in probe_cover_ranges.iteritems():
                     for cover_range in cover_ranges:
@@ -220,6 +223,8 @@ class Analyzer:
                         gnm_covers += [adjusted_cover]
                 length_so_far += len(sequence)
             self.target_covers[i][j][rc] = gnm_covers
+
+        probe.close_probe_finding_pool()
 
     def _compute_bp_covered_in_target_genomes(self):
         """Count number of bp covered by probes in each target genome.
