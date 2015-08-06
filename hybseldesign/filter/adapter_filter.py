@@ -154,7 +154,7 @@ class AdapterFilter(BaseFilter):
                 mismatches=mismatches, lcf_thres=lcf_thres)
         self.kmer_probe_map_k = kmer_probe_map_k
 
-    def _votes_in_sequence(self, probes, sequence, kmer_probe_map):
+    def _votes_in_sequence(self, probes, sequence):
         """Compute votes for probes based on their overlap.
 
         Votes are determined by first determining the probes' hybridization
@@ -170,16 +170,13 @@ class AdapterFilter(BaseFilter):
             probes: a list of candidate probes for which to determine votes
             sequence: a string of a sequence (e.g., from a target genome)
                 to use when determining overlap among probes
-            kmer_probe_map: dict mapping kmers to probes
 
         Returns:
             A list L, in which L[i] corresponds to the probe probes[i].
             L[i] is either (1,0) [vote for 'A'], (0,1) [vote for 'B'], or
             (0,0) [the probe does not hybridize in 'sequence'].
         """
-        probe_cover_ranges = probe.find_probe_covers_in_sequence(
-            sequence, kmer_probe_map,
-            cover_range_for_probe_in_subsequence_fn=self.cover_range_fn)
+        probe_cover_ranges = probe.find_probe_covers_in_sequence(sequence)
         aligned_probes = set(probe_cover_ranges.keys())
         # Make a list of all the intervals covered by all the probes,
         # along with a reference to the probe with the interval
@@ -278,12 +275,16 @@ class AdapterFilter(BaseFilter):
             the number of 'B' adapter votes.
         """
         logger.info("Building map from k-mers to probes")
-        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
-            probes,
-            self.mismatches,
-            self.lcf_thres,
-            min_k=self.kmer_probe_map_k,
-            k=self.kmer_probe_map_k)
+        kmer_probe_map = probe.SharedKmerProbeMap.construct(
+            probe.construct_kmer_probe_map_to_find_probe_covers(
+                probes,
+                self.mismatches,
+                self.lcf_thres,
+                min_k=self.kmer_probe_map_k,
+                k=self.kmer_probe_map_k)
+        )
+        probe.open_probe_finding_pool(kmer_probe_map,
+                                      self.cover_range_fn)
 
         def iter_all_seqs():
             for genomes_from_group in self.target_genomes:
@@ -302,7 +303,7 @@ class AdapterFilter(BaseFilter):
             # Determine whether or not the exchange matches better with
             # cumulative_votes so far, and update cumulative_votes
             # accordingly.
-            votes = self._votes_in_sequence(probes, sequence, kmer_probe_map)
+            votes = self._votes_in_sequence(probes, sequence)
             votes_flipped = self._flip_AB_votes(votes)
             cumulative_votes_with_nonflipped = self._sum_votes_per_probe(
                 cumulative_votes, votes)
@@ -321,6 +322,9 @@ class AdapterFilter(BaseFilter):
                 cumulative_votes = cumulative_votes_with_flipped
             else:
                 cumulative_votes = cumulative_votes_with_nonflipped
+
+        probe.close_probe_finding_pool()
+
         return cumulative_votes
 
     def _filter(self, input):

@@ -2,6 +2,9 @@
 """
 
 from collections import defaultdict
+import logging
+import multiprocessing
+import time
 import unittest
 
 import numpy as np
@@ -16,6 +19,9 @@ class TestProbe(unittest.TestCase):
     """
 
     def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
+
         self.a = probe.Probe.from_str('ATCGTCGCGGATCG')
         self.b = probe.Probe.from_str('ATCCTCGCGTATNG')
         self.c = probe.Probe.from_str('ATCGTCGCGGATC')
@@ -151,10 +157,18 @@ class TestProbe(unittest.TestCase):
         self.assertEqual(a.construct_kmers(4),
                          ['ABCD', 'BCDE', 'CDEF', 'DEFG', 'EFGH', 'FGHI'])
 
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
 
 class TestConstructRandKmerProbeMap(unittest.TestCase):
     """Tests _construct_rand_kmer_probe_map function.
     """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
 
     def make_random_probe(self, length):
         bases = ['A', 'T', 'C', 'G']
@@ -221,10 +235,18 @@ class TestConstructRandKmerProbeMap(unittest.TestCase):
         self.assertItemsEqual(kmer_map['EFG'], [(a, 4)])
         self.assertItemsEqual(kmer_map['EFH'], [(b, 4)])
 
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
 
 class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
     """Tests _construct_pigeonholed_kmer_probe_map function.
     """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
 
     def test_no_mismatches(self):
         a = probe.Probe.from_str('ABCDEFGHIJ')
@@ -293,12 +315,87 @@ class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
         self.assertItemsEqual(kmer_map['XW'], [(b, 2)])
         self.assertItemsEqual(kmer_map['VU'], [(b, 4)])
 
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
+
+class TestSharedKmerProbeMap(unittest.TestCase):
+    """Tests SharedKmerProbeMap class.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
+
+    def test_rand_kmer_map(self):
+        np.random.seed(1)
+        a = probe.Probe.from_str('ABCDEFGABC')
+        b = probe.Probe.from_str('XYZDEFHGHI')
+        probes = [a, b]
+        # Use a high num_kmers_per_probe to ensure all possible
+        # kmers are selected to be put into the map
+        kmer_map = probe._construct_rand_kmer_probe_map(probes,
+                                                        k=3,
+                                                        num_kmers_per_probe=50,
+                                                        include_positions=True)
+        shared_kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        a_str = a.seq_str
+        b_str = b.seq_str
+        self.assertItemsEqual(shared_kmer_map.get('DEF'),
+                              [(a_str, 3), (b_str, 3)])
+        self.assertItemsEqual(shared_kmer_map.get('ABC'),
+                              [(a_str, 0), (a_str, 7)])
+        self.assertItemsEqual(shared_kmer_map.get('XYZ'),
+                              [(b_str, 0)])
+        self.assertItemsEqual(shared_kmer_map.get('EFG'),
+                              [(a_str, 4)])
+        self.assertItemsEqual(shared_kmer_map.get('EFH'),
+                              [(b_str, 4)])
+        self.assertIsNone(shared_kmer_map.get('MNO'))
+        self.assertEqual(shared_kmer_map.k, 3)
+
+    def test_pigeonholed_kmer_map(self):
+        a = probe.Probe.from_str('ABCDEFGH')
+        b = probe.Probe.from_str('ZYXWVUAB')
+        probes = [a, b]
+        kmer_map = probe._construct_pigeonholed_kmer_probe_map(
+            probes, 3, min_k=2, include_positions=True)
+        shared_kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        # Should pick k=2
+        a_str = a.seq_str
+        b_str = b.seq_str
+        self.assertEquals(len(kmer_map), 7)
+        self.assertItemsEqual(shared_kmer_map.get('AB'),
+                              [(a_str, 0), (b_str, 6)])
+        self.assertItemsEqual(shared_kmer_map.get('CD'),
+                              [(a_str, 2)])
+        self.assertItemsEqual(shared_kmer_map.get('EF'),
+                              [(a_str, 4)])
+        self.assertItemsEqual(shared_kmer_map.get('GH'),
+                              [(a_str, 6)])
+        self.assertItemsEqual(shared_kmer_map.get('ZY'),
+                              [(b_str, 0)])
+        self.assertItemsEqual(shared_kmer_map.get('XW'),
+                              [(b_str, 2)])
+        self.assertItemsEqual(shared_kmer_map.get('VU'),
+                              [(b_str, 4)])
+        self.assertIsNone(shared_kmer_map.get('MN'))
+        self.assertEqual(shared_kmer_map.k, 2)
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
 
 class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
     """Tests probe_covers_sequence_by_longest_common_substring function.
     """
 
     def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
+
         self.seq = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     def test_match_no_mismatches(self):
@@ -347,10 +444,18 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
         match = f('ZZZZZAGHIJYZ', self.seq, 6, 9)
         self.assertTrue(match is None)
 
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
 
 class TestFindProbeCoversInSequence(unittest.TestCase):
     """Tests find_probe_covers_in_sequence function.
     """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
 
     def test_one_or_no_occurrence(self):
         """Tests with short sequence and short probes
@@ -364,11 +469,15 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes = [a, b, c]
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 0, 6, min_k=6)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
-        self.assertItemsEqual(found[a], [(6, 12)])
-        self.assertItemsEqual(found[b], [(18, 24)])
-        self.assertFalse(c in found)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertItemsEqual(found[a], [(6, 12)])
+            self.assertItemsEqual(found[b], [(18, 24)])
+            self.assertFalse(c in found)
+            probe.close_probe_finding_pool()
 
     def test_two_occurrences(self):
         """Tests with short sequence and short probes
@@ -382,11 +491,15 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         probes = [a, b, c]
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 0, 6, min_k=6)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
-        self.assertItemsEqual(found[a], [(2, 8), (16, 22)])
-        self.assertItemsEqual(found[b], [(6, 12)])
-        self.assertFalse(c in found)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertItemsEqual(found[a], [(2, 8), (16, 22)])
+            self.assertItemsEqual(found[b], [(6, 12)])
+            self.assertFalse(c in found)
+            probe.close_probe_finding_pool()
 
     def test_more_than_cover(self):
         """Tests with short sequence and short probes
@@ -402,11 +515,15 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         # min_k)
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 0, 6, k=6)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
-        self.assertItemsEqual(found[a], [(2, 11), (118, 124)])
-        self.assertItemsEqual(found[b], [(6, 14)])
-        self.assertItemsEqual(found[c], [(5, 12)])
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertItemsEqual(found[a], [(2, 11), (118, 124)])
+            self.assertItemsEqual(found[b], [(6, 14)])
+            self.assertItemsEqual(found[c], [(5, 12)])
+            probe.close_probe_finding_pool()
 
     def test_repetitive(self):
         """Tests with short sequence and short probes
@@ -421,9 +538,13 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         # min_k)
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 0, 6, k=6)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
-        self.assertItemsEqual(found[a], [(3, 13), (25, 38)])
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertItemsEqual(found[a], [(3, 13), (25, 38)])
+            probe.close_probe_finding_pool()
 
     def test_pigeonhole_with_mismatch(self):
         """Tests with short sequence and short probes
@@ -439,27 +560,76 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
 
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 1, 6, min_k=3, k=4)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         # This should try the pigeonhole approach, which should choose k=3
-        for kmer in kmer_map.keys():
-            self.assertEquals(len(kmer), 3)
+        self.assertEquals(kmer_map.k, 3)
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
-        self.assertItemsEqual(found[a], [(6, 12)])
-        self.assertItemsEqual(found[b], [(18, 24)])
-        self.assertFalse(c in found)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertItemsEqual(found[a], [(6, 12)])
+            self.assertItemsEqual(found[b], [(18, 24)])
+            self.assertFalse(c in found)
+            probe.close_probe_finding_pool()
 
         kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
             probes, 1, 6, min_k=4, k=4)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         # This should try the pigeonhole approach and fail because it
         # chooses k=3, but min_k=4. So it should then try the random
         # approach with k=4.
-        for kmer in kmer_map.keys():
-            self.assertEquals(len(kmer), 4)
+        self.assertEquals(kmer_map.k, 4)
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-        found = probe.find_probe_covers_in_sequence(sequence, kmer_map, f)
-        self.assertItemsEqual(found[a], [(6, 12)])
-        self.assertItemsEqual(found[b], [(18, 24)])
-        self.assertFalse(c in found)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertItemsEqual(found[a], [(6, 12)])
+            self.assertItemsEqual(found[b], [(18, 24)])
+            self.assertFalse(c in found)
+            probe.close_probe_finding_pool()
+
+    def test_multiple_searches_with_same_pool(self):
+        """Tests more than one call to find_probe_covers_in_sequence()
+        with the same pool.
+        """
+        np.random.seed(1)
+        sequence_a = 'ABCAXYZXYZDEFXYZAAYZ'
+        sequence_b = 'GHIDAXYZXYZAAABCABCD'
+        a = probe.Probe.from_str('AXYZXYZ')
+        b = probe.Probe.from_str('AABCABC')
+        probes = [a, b]
+        # This should default to the random approach, so set k (rather than
+        # min_k)
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, k=3)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found_a = probe.find_probe_covers_in_sequence(sequence_a)
+            self.assertEquals(found_a, {a: [(3, 10)]})
+            found_b = probe.find_probe_covers_in_sequence(sequence_b)
+            self.assertEquals(found_b, {a: [(4, 11)], b: [(12, 19)]})
+            probe.close_probe_finding_pool()
+
+    def test_open_close_pool_without_work(self):
+        """Tests opening a probe finding pool and closing it without doing
+        any work in between.
+
+        There was a bug, caused by a bug in early versions of Python, that
+        could cause closing the pool to hang indefinitely when no work
+        is submitted.
+        """
+        probes = [probe.Probe.from_str('ABCDEF')]
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, k=3)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+        for n_workers in [1, 2, 4, 7, 8, None]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            time.sleep(1)
+            probe.close_probe_finding_pool()
+            time.sleep(1)
 
     def test_random_small_genome(self):
         self.run_random(100, 15000, 25000, 300)
@@ -529,11 +699,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 probes += [p]
             kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
                 probes, 3, lcf_thres)
+            kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
             f = probe.probe_covers_sequence_by_longest_common_substring(
                 3, lcf_thres)
-            found = probe.find_probe_covers_in_sequence(
-                sequence, kmer_map,
-                cover_range_for_probe_in_subsequence_fn=f)
+            probe.open_probe_finding_pool(kmer_map, f)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            probe.close_probe_finding_pool()
             # Check that this didn't find any extraneous probes and that
             # it found at least 95% of the original (it may miss some
             # due to false negatives in the approach)
@@ -566,3 +737,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                                 found_desired_cv = True
                                 break
                     self.assertTrue(found_desired_cv)
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)

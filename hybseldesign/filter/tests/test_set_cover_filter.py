@@ -51,16 +51,18 @@ class TestSetCoverFilter(unittest.TestCase):
     def verify_target_genome_coverage(self, selected_probes, target_genomes,
                                       filter, desired_coverage,
                                       cover_extension=0):
-        kmer_probe_map = probe.construct_kmer_probe_map_to_find_probe_covers(
-            selected_probes, filter.mismatches, filter.lcf_thres,
-            min_k=3, k=3)
+        kmer_probe_map = probe.SharedKmerProbeMap.construct(
+            probe.construct_kmer_probe_map_to_find_probe_covers(
+                selected_probes, filter.mismatches, filter.lcf_thres,
+                min_k=3, k=3)
+        )
+        probe.open_probe_finding_pool(kmer_probe_map,
+                                      filter.cover_range_fn)
         for tg in [g for genomes_from_group in target_genomes
                    for g in genomes_from_group]:
             num_bp_covered = 0
             for seq in tg.seqs:
-                probe_cover_ranges = probe.find_probe_covers_in_sequence(
-                    seq, kmer_probe_map,
-                    cover_range_for_probe_in_subsequence_fn=filter.cover_range_fn)
+                probe_cover_ranges = probe.find_probe_covers_in_sequence(seq)
                 all_cover_ranges = []
                 for cover_ranges in probe_cover_ranges.values():
                     for cv in cover_ranges:
@@ -79,6 +81,7 @@ class TestSetCoverFilter(unittest.TestCase):
                 desired_coverage_adjusted = min(desired_coverage, tg.size())
                 self.assertGreaterEqual(num_bp_covered,
                                         desired_coverage_adjusted)
+        probe.close_probe_finding_pool()
 
     def run_full_coverage_check_for_target_genomes(
             self, target_genomes, cover_groupings_separately=False):
