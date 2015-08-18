@@ -65,7 +65,8 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
             a native Python string ('str') or as a numpy array
             ('np')
         replace_degenerate: when True, replace the degenerate
-            bases ('Y','R','W','S','M','K') with 'N'
+            bases ('Y','R','W','S','M','K','B','D','H','V')
+            with 'N'
         skip_gaps: when True, do not read dashes ('-'), which
             represent gaps
         make_uppercase: when True, change all bases to be
@@ -80,7 +81,7 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
     """
     logger.info("Reading fasta file %s", fn)
 
-    degenerate_pattern = re.compile('[YRWSMK]')
+    degenerate_pattern = re.compile('[YRWSMKBDHV]')
 
     m = OrderedDict()
     with open(fn) as f:
@@ -131,12 +132,13 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
             a native Python string ('str') or as a numpy array
             ('np')
         replace_degenerate: when True, replace the degenerate
-            bases ('Y','R','W','S','M','K') with 'N'
+            bases ('Y','R','W','S','M','K','B','D','H','V')
+            with 'N'
 
     Yields:
         each sequence in the FASTA file
     """
-    degenerate_pattern = re.compile('[YRWSMK]')
+    degenerate_pattern = re.compile('[YRWSMKBDHV]')
 
     def format_seq(seq):
         if data_type == 'str':
