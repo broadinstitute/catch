@@ -511,7 +511,7 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
             coverage in each universe
         """
         universes = defaultdict(set)
-        for sets_by_universe in sets.values():
+        for sets_by_universe in sets.itervalues():
             for universe_id, s in sets_by_universe.iteritems():
                 universes[universe_id].update(s)
         for universe_id, universe in universes.iteritems():
@@ -633,9 +633,9 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
             # Compute the set cover
             if use_intervalsets:
                 sets_as_intervalsets = {}
-                for set_id in sets.keys():
+                for set_id in sets.iterkeys():
                     sets_as_intervalsets[set_id] = {}
-                    for universe_id in sets[set_id].keys():
+                    for universe_id in sets[set_id].iterkeys():
                         els_as_intervals = []
                         for el in sets[set_id][universe_id]:
                             els_as_intervals += [(el, el + 1)]
@@ -657,9 +657,9 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
                                                  use_intervalsets=True)
             elif use_arrays:
                 sets_as_arrays = {}
-                for set_id in sets.keys():
+                for set_id in sets.iterkeys():
                     sets_as_arrays[set_id] = {}
-                    for universe_id in sets[set_id].keys():
+                    for universe_id in sets[set_id].iterkeys():
                         sets_as_arrays[set_id][universe_id] = array('I')
                         for el in sets[set_id][universe_id]:
                             sets_as_arrays[set_id][universe_id].append(el)

@@ -64,7 +64,7 @@ class TestSetCoverFilter(unittest.TestCase):
             for seq in tg.seqs:
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(seq)
                 all_cover_ranges = []
-                for cover_ranges in probe_cover_ranges.values():
+                for cover_ranges in probe_cover_ranges.itervalues():
                     for cv in cover_ranges:
                         start = max(0, cv[0] - cover_extension)
                         end = min(len(seq), cv[1] + cover_extension)

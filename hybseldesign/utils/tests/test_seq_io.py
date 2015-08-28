@@ -75,7 +75,7 @@ class TestDatasetGenomeRead(unittest.TestCase):
         genomes = seq_io.read_dataset_genomes(ebola2014)
         desired_genomes = [
             genome.Genome.from_one_seq(s)
-            for s in seq_io.read_fasta(ebola2014.fasta_path).values()
+            for s in seq_io.read_fasta(ebola2014.fasta_path).itervalues()
         ]
         self.assertEqual(genomes, desired_genomes)
 
