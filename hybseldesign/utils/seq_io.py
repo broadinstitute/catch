@@ -37,7 +37,7 @@ def read_dataset_genomes(dataset):
         for fn in dataset.fasta_paths:
             seq_map = read_fasta(fn)
             seq_map_by_chr = {dataset.seq_header_to_chr(header): seq_map[header]
-                              for header in seq_map.keys()}
+                              for header in seq_map.iterkeys()}
             seqs = OrderedDict(seq_map_by_chr)
             genomes += [genome.Genome.from_chrs(seqs)]
     else:

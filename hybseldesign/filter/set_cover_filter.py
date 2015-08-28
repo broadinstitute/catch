@@ -259,8 +259,8 @@ class SetCoverFilter(BaseFilter):
         # Make an IntervalSet out of the intervals of each set. But if
         # there is just one interval in a set, then save space by leaving
         # that entry as a tuple.
-        for set_id in sets.keys():
-            for universe_id in sets[set_id].keys():
+        for set_id in sets.iterkeys():
+            for universe_id in sets[set_id].iterkeys():
                 intervals = sets[set_id][universe_id]
                 if not isinstance(intervals, tuple):
                     sets[set_id][universe_id] = interval.IntervalSet(intervals)
@@ -355,11 +355,11 @@ class SetCoverFilter(BaseFilter):
                     # Count hits in both sequence and its reverse complement
                     num_bp = self._compute_tolerant_bp_covered_within_sequence(
                         sequence, rc_too=True)
-                    for p in num_bp.keys():
+                    for p in num_bp.iterkeys():
                         num_bp_covered_in_grouping[p] += num_bp[p]
             # If a probe covers at least one bp in this grouping (i),
             # then it hits this grouping
-            for p in num_bp_covered_in_grouping.keys():
+            for p in num_bp_covered_in_grouping.iterkeys():
                 if num_bp_covered_in_grouping[p] >= 1:
                     num_groupings_hit[p] += 1
 
@@ -405,7 +405,7 @@ class SetCoverFilter(BaseFilter):
                 # Blacklist both sequence and its reverse complement
                 num_bp = self._compute_tolerant_bp_covered_within_sequence(
                     sequence, rc_too=True)
-                for p in num_bp.keys():
+                for p in num_bp.iterkeys():
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
 
@@ -516,7 +516,7 @@ class SetCoverFilter(BaseFilter):
         # upward. The probe(s) with the smallest tuple rank get(s)
         # rank 0, the probe(s) with the next smallest tuple rank get(s)
         # rank 1, and so on..
-        all_rank_tuples = sorted(set(rank_val.values()))
+        all_rank_tuples = sorted(rank_val.values())
         tuple_rank_idx = {}
         for i in xrange(len(all_rank_tuples)):
             tuple_rank_idx[all_rank_tuples[i]] = i
@@ -629,13 +629,13 @@ class SetCoverFilter(BaseFilter):
                 # only giving coverage for universes corresponding to target
                 # genomes that come from this grouping.
                 sets_for_instance = {}
-                for set_id in sets.keys():
+                for set_id in sets.iterkeys():
                     # For a universe_id, universe_id[0] gives the grouping
                     # of that universe and should equal i to be included in
                     # this instance
                     coverage_for_set_id = {
                         universe_id: sets[set_id][universe_id]
-                        for universe_id in sets[set_id].keys()
+                        for universe_id in sets[set_id].iterkeys()
                         if universe_id[0] == i
                     }
                     if len(coverage_for_set_id) > 0:

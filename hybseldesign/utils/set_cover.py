@@ -88,15 +88,15 @@ def approx(sets, costs=None, p=1.0):
         raise ValueError("p must be in [0,1]")
     if costs is None:
         # Give each set a default cost of 1
-        costs = {set_id: 1 for set_id in sets.keys()}
+        costs = {set_id: 1 for set_id in sets.iterkeys()}
     else:
-        for c in costs.values():
+        for c in costs.itervalues():
             if c < 0:
                 raise ValueError("All costs must be nonnegative")
 
     # Create the universe as the union of all input sets
     universe = set()
-    for s in sets.values():
+    for s in sets.itervalues():
         universe.update(s)
 
     num_that_can_be_uncovered = int(len(universe) - p * len(universe))
@@ -106,7 +106,7 @@ def approx(sets, costs=None, p=1.0):
     # some machines.
     num_left_to_cover = len(universe) - num_that_can_be_uncovered
 
-    set_ids_not_in_cover = sets.keys()
+    set_ids_not_in_cover = set(sets.iterkeys())
     set_ids_in_cover = set()
     # Keep iterating until desired partial cover is obtained
     while num_left_to_cover > 0:
@@ -286,12 +286,12 @@ def approx_multiuniverse(sets,
 
     if costs is None:
         # Give each set a default cost of 1
-        costs = {set_id: 1 for set_id in sets.keys()}
+        costs = {set_id: 1 for set_id in sets.iterkeys()}
     else:
-        for c in costs.values():
+        for c in costs.itervalues():
             if c < 0:
                 raise ValueError("All costs must be nonnegative")
-        for set_id in sets.keys():
+        for set_id in sets.iterkeys():
             if set_id not in costs:
                 raise ValueError("costs is missing a value for set %d" %
                                  set_id)
@@ -303,7 +303,7 @@ def approx_multiuniverse(sets,
     else:
         # Store the elements of each universe in a set
         universes = defaultdict(set)
-    for sets_by_universe in sets.values():
+    for sets_by_universe in sets.itervalues():
         for universe_id, s in sets_by_universe.iteritems():
             if use_intervalsets:
                 if isinstance(s, tuple):
@@ -320,13 +320,13 @@ def approx_multiuniverse(sets,
     if universe_p is None:
         # Give each universe a coverage fraction of 1.0 (i.e., cover
         # all of it)
-        universe_p = {universe_id: 1 for universe_id in universes.keys()}
+        universe_p = {universe_id: 1 for universe_id in universes.iterkeys()}
     else:
-        for p in universe_p.values():
+        for p in universe_p.itervalues():
             if p < 0 or p > 1:
                 raise ValueError(("The coverage fraction (p) of each "
                                   "universe must be in [0,1]"))
-        for universe_id in universes.keys():
+        for universe_id in universes.iterkeys():
             if universe_id not in universe_p:
                 raise ValueError(("universe_p is missing a value for "
                                   "universe %d" % universe_id))
@@ -335,15 +335,15 @@ def approx_multiuniverse(sets,
         # Give each set a default rank of 1; since all sets have the
         # same rank, this is effectively the same as not using ranks
         # at all
-        ranks = {set_id: 1 for set_id in sets.keys()}
+        ranks = {set_id: 1 for set_id in sets.iterkeys()}
     else:
-        for set_id in sets.keys():
+        for set_id in sets.iterkeys():
             if set_id not in ranks:
                 raise ValueError("ranks is missing a value for set %d" %
                                  set_id)
     # Track the current index (curr_rank_index) as we step through all
     # of the ranks (rank_vals)
-    rank_vals = sorted(set(ranks.values()))
+    rank_vals = sorted(ranks.values())
     curr_rank_index = 0
 
     num_that_can_be_uncovered = {}
@@ -374,7 +374,7 @@ def approx_multiuniverse(sets,
     # are discarded are ones that might change due to the update.
     memoized_intersect_counts = {
         universe_id: {}
-        for universe_id in universes.keys()
+        for universe_id in universes.iterkeys()
     }
 
     def compute_ratio_for_set(set_id):
@@ -382,7 +382,7 @@ def approx_multiuniverse(sets,
         # for set_id that will be used to determine whether it should be placed
         # in the set cover
         num_needed_covered_across_universes = 0
-        for universe_id in sets[set_id].keys():
+        for universe_id in sets[set_id].iterkeys():
             if set_id in memoized_intersect_counts[universe_id]:
                 # We have num_covered memoized
                 num_covered = memoized_intersect_counts[universe_id][set_id]
@@ -428,16 +428,16 @@ def approx_multiuniverse(sets,
     # cover when last_min_ratio was first computed.
     set_ids_with_same_ratio_as_last_min = []
 
-    set_ids_not_in_cover = set(sets.keys())
+    set_ids_not_in_cover = set(sets.iterkeys())
     set_ids_in_cover = set()
     # Keep iterating until desired partial cover of each universe
     # is obtained (note that [] evaluates to False)
-    while [True for universe_id in universes.keys()
+    while [True for universe_id in universes.iterkeys()
            if num_left_to_cover[universe_id] > 0]:
         if len(set_ids_in_cover) % 10 == 0:
             logger.info(("Selected %d sets with a total of %d elements "
                          "remaining to be covered"), len(set_ids_in_cover),
-                        sum(num_left_to_cover.values()))
+                        sum(num_left_to_cover.itervalues()))
 
         # Find the set that minimizes the ratio of its cost to the
         # number of uncovered elements (that need to be covered) that

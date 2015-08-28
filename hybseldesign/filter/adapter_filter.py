@@ -177,7 +177,7 @@ class AdapterFilter(BaseFilter):
             (0,0) [the probe does not hybridize in 'sequence'].
         """
         probe_cover_ranges = probe.find_probe_covers_in_sequence(sequence)
-        aligned_probes = set(probe_cover_ranges.keys())
+        aligned_probes = set(probe_cover_ranges.iterkeys())
         # Make a list of all the intervals covered by all the probes,
         # along with a reference to the probe with the interval
         intervals = []

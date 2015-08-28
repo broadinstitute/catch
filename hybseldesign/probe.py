@@ -659,7 +659,7 @@ class SharedKmerProbeMap:
         # of length k, and check that the k-mers in the map come with
         # positions
         k = None
-        for kmer in kmer_probe_map.keys():
+        for kmer in kmer_probe_map.iterkeys():
             if k is None:
                 k = len(kmer)
             if len(kmer) != k:
