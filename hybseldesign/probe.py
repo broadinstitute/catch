@@ -770,7 +770,6 @@ def open_probe_finding_pool(kmer_probe_map,
     global _pfp_kmer_probe_map_probe_seqs
     global _pfp_kmer_probe_map_probe_seqs_to_probe
     global _pfp_kmer_probe_map_k
-    global _pfp_num_processes
 
     try:
         if _pfp_is_open:
@@ -883,8 +882,11 @@ def close_probe_finding_pool():
     # but find_probe_covers_in_sequence() is never called; the variable
     # _pfp_work_was_submitted ensures that join() is only called on
     # the pool if work was indeed submitted.
-    _pfp_pool.close()
+    # Similarly, when no work is submitted, a call to p.close() may yield
+    # a RuntimeError that is printed but ignored; so only call close()
+    # when work was indeed submitted.
     if _pfp_work_was_submitted:
+        _pfp_pool.close()
         # Due to issues that likely stem from bugs in the multiprocessing
         # module, calls to _pfp_pool.terminate() and _pfp_pool.join()
         # sometimes hang indefinitely (even when work was indeed submitted
@@ -1094,7 +1096,6 @@ def find_probe_covers_in_sequence(sequence,
     global _pfp_work_was_submitted
     global _pfp_kmer_probe_map_probe_seqs_to_probe
     global _pfp_kmer_probe_map_k
-    global _pfp_num_processes
 
     pfp_is_open = False
     try:
