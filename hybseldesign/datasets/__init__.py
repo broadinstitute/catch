@@ -14,14 +14,17 @@ class GenomesDataset:
     """Individual (sampled) genomes, usually from the same species.
     """
 
-    def __init__(self, __name__, __file__):
+    def __init__(self, __name__, __file__, __spec__):
         """
         Args:
             __name__: name of this dataset (module)
             __file__: path to the module corresponding to this dataset
+            __spec__: import-related information about the module
+                corresponding to this dataset
         """
         self.__name__ = __name__
         self.__file__ = __file__
+        self.__spec__ = __spec__
 
     def is_multi_chr(self):
         """Return whether genomes in this dataset have multiple chromosomes.
@@ -43,13 +46,15 @@ class GenomesDatasetSingleChrom(GenomesDataset):
     set by set_fasta_path().
     """
 
-    def __init__(self, __name__, __file__):
+    def __init__(self, __name__, __file__, __spec__):
         """
         Args:
             __name__: name of this dataset (module)
             __file__: path to the module corresponding to this dataset
+            __spec__: import-related information about the module
+                corresponding to this dataset
         """
-        GenomesDataset.__init__(self, __name__, __file__)
+        GenomesDataset.__init__(self, __name__, __file__, __spec__)
         self.fasta_path = None
 
     def set_fasta_path(self, path, relative=False):
@@ -75,11 +80,14 @@ class GenomesDatasetMultiChrom(GenomesDataset):
     each be added with add_fasta_path().
     """
 
-    def __init__(self, __name__, __file__, chrs, seq_header_to_chr):
+    def __init__(self, __name__, __file__, __spec__,
+                 chrs, seq_header_to_chr):
         """
         Args:
             __name__: name of this dataset (module)
             __file__: path to the module corresponding to this dataset
+            __spec__: import-related information about the module
+                corresponding to this dataset
             chrs: list of chromosomes for the genome held by this dataset;
                 these should be the header of each sequence in the FASTA
                 files
@@ -95,7 +103,7 @@ class GenomesDatasetMultiChrom(GenomesDataset):
                              "assume that each sequence (chromosome) is in "
                              "a separate FASTA file."))
 
-        GenomesDataset.__init__(self, __name__, __file__)
+        GenomesDataset.__init__(self, __name__, __file__, __spec__)
         self.chrs = chrs
         self.seq_header_to_chr = seq_header_to_chr
         self.fasta_paths = []

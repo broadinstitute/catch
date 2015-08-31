@@ -29,7 +29,8 @@ def seq_header_to_chr(header):
     return "segment_" + seg_num
 
 
-ds = GenomesDatasetMultiChrom(__name__, __file__, chrs, seq_header_to_chr)
+ds = GenomesDatasetMultiChrom(__name__, __file__, __spec__,
+                              chrs, seq_header_to_chr)
 
 for f in listdir(join(dirname(__file__), "data/influenza/")):
     ds.add_fasta_path("data/influenza/" + f, relative=True)
