@@ -12,5 +12,6 @@ def seq_header_to_chr(header):
     return header
 
 chrs = [str(x) for x in range(1, 23)] + ["X", "Y", "MT"]
-ds = GenomesDatasetMultiChrom(__name__, __file__, chrs, seq_header_to_chr)
+ds = GenomesDatasetMultiChrom(__name__, __file__, __spec__,
+                              chrs, seq_header_to_chr)
 sys.modules[__name__] = ds
