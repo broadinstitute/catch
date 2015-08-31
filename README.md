@@ -8,7 +8,7 @@ hybsel_design is a Python package for designing probes to be used in hybrid sele
 
 ## Dependencies
 
-hybsel_design is tested under Python 2.7, but should also work under Python 2.6 and newer versions. It requires NumPy; it is tested with NumPy 1.9.0, but should work with other versions as well.
+hybsel_design is tested under Python 3.5, but should also work under earlier versions of Python 3. It requires NumPy; it is tested with NumPy 1.9.0.
 
 
 ## Install and Develop
@@ -24,13 +24,13 @@ $ python setup.py install --user
 To setup the package in your local user directory in development mode, in which changes are reflected immediately, run:
 
 ```
-$ python setup.py develop --install-dir=~/.local/lib/python2.7/site-packages/
+$ python setup.py develop --install-dir=~/.local/lib/python3.5/site-packages/
 ```
 
 on a Broad machine. Or run:
 
 ```
-$ python setup.py develop --install-dir=~/Library/Python/2.7/lib/python/site-packages/
+$ python setup.py develop --install-dir=~/Library/Python/3.5/lib/python/site-packages/
 ```
 
 on OS X.
