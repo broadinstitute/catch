@@ -80,10 +80,10 @@ class Genome:
         Returns:
             instance of Genome from the input chromosome sequences
         """
-        for seq in seqs_by_chr.itervalues():
+        for seq in seqs_by_chr.values():
             if not isinstance(seq, str):
                 raise TypeError("Sequences must be strings")
-        return Genome(seqs_by_chr.values(), seqs_by_chr)
+        return Genome(list(seqs_by_chr.values()), seqs_by_chr)
 
     @staticmethod
     def from_one_seq(seq):

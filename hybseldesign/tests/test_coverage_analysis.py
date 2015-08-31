@@ -46,15 +46,15 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         self.assertEqual(len(self.analyzer.target_covers[1][0]), 2)  # False/True
 
         # genome_a
-        self.assertItemsEqual(self.analyzer.target_covers[0][0][False],
+        self.assertCountEqual(self.analyzer.target_covers[0][0][False],
                               [(0, 6), (4, 10), (14, 20), (17, 23)])
-        self.assertItemsEqual(self.analyzer.target_covers[0][0][True],
+        self.assertCountEqual(self.analyzer.target_covers[0][0][True],
                               [(6, 12), (13, 19), (17, 23)])
 
         # genome_b
-        self.assertItemsEqual(self.analyzer.target_covers[1][0][False],
+        self.assertCountEqual(self.analyzer.target_covers[1][0][False],
                               [(8, 14)])    # coverage in chr2
-        self.assertItemsEqual(self.analyzer.target_covers[1][0][True],
+        self.assertCountEqual(self.analyzer.target_covers[1][0][True],
                               [])   # no coverage in reverse complement
 
     def test_bp_covered(self):
@@ -252,13 +252,13 @@ class TestAnalyzerCoversWithCoverExtension(unittest.TestCase):
         Check in given sequence and in its reverse complement.
         """
         # genome_a
-        self.assertItemsEqual(self.analyzer.target_covers[0][0][False],
+        self.assertCountEqual(self.analyzer.target_covers[0][0][False],
                               [(0, 8), (2, 12), (12, 22), (15, 23)])
-        self.assertItemsEqual(self.analyzer.target_covers[0][0][True],
+        self.assertCountEqual(self.analyzer.target_covers[0][0][True],
                               [(4, 14), (11, 21), (15, 23)])
 
         # genome_b
-        self.assertItemsEqual(self.analyzer.target_covers[1][0][False],
+        self.assertCountEqual(self.analyzer.target_covers[1][0][False],
                               [(0, 7), (8, 16)])    # coverage in chr1 and chr2
-        self.assertItemsEqual(self.analyzer.target_covers[1][0][True],
+        self.assertCountEqual(self.analyzer.target_covers[1][0][True],
                               [])   # no coverage in reverse complement

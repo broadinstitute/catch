@@ -24,14 +24,14 @@ class TestLCSWithKMismatches(unittest.TestCase):
     def test_equal(self):
         a = 'ABCDEFGHIJ'
         b = 'ABCDEFGHIJ'
-        for k in xrange(0, 15):
+        for k in range(0, 15):
             self.assertEqual(lcf.k_lcf(a, b, k), (10, 0, 0))
 
     def test_almost_equal1(self):
         a = 'ABCDEFGHIJ'
         b = 'ABCDEFGKIJ'
         self.assertEqual(lcf.k_lcf(a, b, 0), (7, 0, 0))
-        for k in xrange(1, 15):
+        for k in range(1, 15):
             self.assertEqual(lcf.k_lcf(a, b, k), (10, 0, 0))
 
     def test_almost_equal2(self):

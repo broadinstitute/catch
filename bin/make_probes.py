@@ -132,7 +132,7 @@ def main(args):
             analyzer.print_analysis()
     else:
         # Just print the number of probes
-        print len(pb.final_probes)
+        print(len(pb.final_probes))
 
 
 if __name__ == "__main__":

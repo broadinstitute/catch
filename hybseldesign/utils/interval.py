@@ -103,11 +103,13 @@ class IntervalSet(object):
             # interval. Then determine whether curr_endpoint is contained
             # within each of the "current" intervals.
             if self_endpoint_index < 2 * len(self.intervals):
-                curr_self_interval = self.intervals[self_endpoint_index / 2]
+                curr_self_interval = self.intervals[
+                    int(self_endpoint_index / 2)]
             else:
                 curr_self_interval = None
             if other_endpoint_index < 2 * len(other.intervals):
-                curr_other_interval = other.intervals[other_endpoint_index / 2]
+                curr_other_interval = other.intervals[
+                    int(other_endpoint_index / 2)]
             else:
                 curr_other_interval = None
 

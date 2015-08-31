@@ -100,8 +100,8 @@ class TestProbe(unittest.TestCase):
         should be.
         """
         np.random.seed(1)
-        probes = [self.make_random_probe(100) for _ in xrange(100)]
-        identifiers = set([p.identifier() for p in probes])
+        probes = [self.make_random_probe(100) for _ in range(100)]
+        identifiers = {p.identifier() for p in probes}
         self.assertEqual(len(identifiers), 100)
 
     def test_share_some_kmers_nonmemoized(self):
@@ -113,7 +113,7 @@ class TestProbe(unittest.TestCase):
         b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
         c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')
         ab, ba, ac, ca = 0, 0, 0, 0
-        for i in xrange(100):
+        for i in range(100):
             if a.shares_some_kmers(b, **args):
                 ab += 1
             if b.shares_some_kmers(a, **args):
@@ -136,7 +136,7 @@ class TestProbe(unittest.TestCase):
         b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
         c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')
         ab, ba, ac, ca = 0, 0, 0, 0
-        for i in xrange(100):
+        for i in range(100):
             if a.shares_some_kmers(b, **args):
                 ab += 1
             if b.shares_some_kmers(a, **args):
@@ -185,7 +185,7 @@ class TestConstructRandKmerProbeMap(unittest.TestCase):
         np.random.seed(1)
         k = 15
         num_kmers_per_probe = 10
-        probes = [self.make_random_probe(100) for _ in xrange(50)]
+        probes = [self.make_random_probe(100) for _ in range(50)]
         kmer_map = probe._construct_rand_kmer_probe_map(
             probes,
             k=k,
@@ -229,11 +229,11 @@ class TestConstructRandKmerProbeMap(unittest.TestCase):
                                                         k=3,
                                                         num_kmers_per_probe=50,
                                                         include_positions=True)
-        self.assertItemsEqual(kmer_map['DEF'], [(a, 3), (b, 3)])
-        self.assertItemsEqual(kmer_map['ABC'], [(a, 0), (a, 7)])
-        self.assertItemsEqual(kmer_map['XYZ'], [(b, 0)])
-        self.assertItemsEqual(kmer_map['EFG'], [(a, 4)])
-        self.assertItemsEqual(kmer_map['EFH'], [(b, 4)])
+        self.assertCountEqual(kmer_map['DEF'], [(a, 3), (b, 3)])
+        self.assertCountEqual(kmer_map['ABC'], [(a, 0), (a, 7)])
+        self.assertCountEqual(kmer_map['XYZ'], [(b, 0)])
+        self.assertCountEqual(kmer_map['EFG'], [(a, 4)])
+        self.assertCountEqual(kmer_map['EFH'], [(b, 4)])
 
     def tearDown(self):
         # Re-enable logging
@@ -281,11 +281,11 @@ class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
         kmer_map = probe._construct_pigeonholed_kmer_probe_map(
             probes, 1, min_k=2)
         # Should pick k=5
-        self.assertEquals(len(kmer_map), 4)
-        self.assertItemsEqual(kmer_map['ABCDE'], [a])
-        self.assertItemsEqual(kmer_map['FGHIJ'], [a])
-        self.assertItemsEqual(kmer_map['ZYXWV'], [b])
-        self.assertItemsEqual(kmer_map['UTSRQ'], [b])
+        self.assertEqual(len(kmer_map), 4)
+        self.assertCountEqual(kmer_map['ABCDE'], [a])
+        self.assertCountEqual(kmer_map['FGHIJ'], [a])
+        self.assertCountEqual(kmer_map['ZYXWV'], [b])
+        self.assertCountEqual(kmer_map['UTSRQ'], [b])
 
     def test_shared_kmer(self):
         a = probe.Probe.from_str('ABCDEFGHIJ')
@@ -294,10 +294,10 @@ class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
         kmer_map = probe._construct_pigeonholed_kmer_probe_map(
             probes, 1, min_k=2)
         # Should pick k=5
-        self.assertEquals(len(kmer_map), 3)
-        self.assertItemsEqual(kmer_map['ABCDE'], [a, b])
-        self.assertItemsEqual(kmer_map['FGHIJ'], [a])
-        self.assertItemsEqual(kmer_map['ZYXWV'], [b])
+        self.assertEqual(len(kmer_map), 3)
+        self.assertCountEqual(kmer_map['ABCDE'], [a, b])
+        self.assertCountEqual(kmer_map['FGHIJ'], [a])
+        self.assertCountEqual(kmer_map['ZYXWV'], [b])
 
     def test_positions(self):
         a = probe.Probe.from_str('ABCDEFGH')
@@ -306,14 +306,14 @@ class TestConstructPigeonholedKmerProbeMap(unittest.TestCase):
         kmer_map = probe._construct_pigeonholed_kmer_probe_map(
             probes, 3, min_k=2, include_positions=True)
         # Should pick k=2
-        self.assertEquals(len(kmer_map), 7)
-        self.assertItemsEqual(kmer_map['AB'], [(a, 0), (b, 6)])
-        self.assertItemsEqual(kmer_map['CD'], [(a, 2)])
-        self.assertItemsEqual(kmer_map['EF'], [(a, 4)])
-        self.assertItemsEqual(kmer_map['GH'], [(a, 6)])
-        self.assertItemsEqual(kmer_map['ZY'], [(b, 0)])
-        self.assertItemsEqual(kmer_map['XW'], [(b, 2)])
-        self.assertItemsEqual(kmer_map['VU'], [(b, 4)])
+        self.assertEqual(len(kmer_map), 7)
+        self.assertCountEqual(kmer_map['AB'], [(a, 0), (b, 6)])
+        self.assertCountEqual(kmer_map['CD'], [(a, 2)])
+        self.assertCountEqual(kmer_map['EF'], [(a, 4)])
+        self.assertCountEqual(kmer_map['GH'], [(a, 6)])
+        self.assertCountEqual(kmer_map['ZY'], [(b, 0)])
+        self.assertCountEqual(kmer_map['XW'], [(b, 2)])
+        self.assertCountEqual(kmer_map['VU'], [(b, 4)])
 
     def tearDown(self):
         # Re-enable logging
@@ -342,15 +342,15 @@ class TestSharedKmerProbeMap(unittest.TestCase):
         shared_kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         a_str = a.seq_str
         b_str = b.seq_str
-        self.assertItemsEqual(shared_kmer_map.get('DEF'),
+        self.assertCountEqual(shared_kmer_map.get('DEF'),
                               [(a_str, 3), (b_str, 3)])
-        self.assertItemsEqual(shared_kmer_map.get('ABC'),
+        self.assertCountEqual(shared_kmer_map.get('ABC'),
                               [(a_str, 0), (a_str, 7)])
-        self.assertItemsEqual(shared_kmer_map.get('XYZ'),
+        self.assertCountEqual(shared_kmer_map.get('XYZ'),
                               [(b_str, 0)])
-        self.assertItemsEqual(shared_kmer_map.get('EFG'),
+        self.assertCountEqual(shared_kmer_map.get('EFG'),
                               [(a_str, 4)])
-        self.assertItemsEqual(shared_kmer_map.get('EFH'),
+        self.assertCountEqual(shared_kmer_map.get('EFH'),
                               [(b_str, 4)])
         self.assertIsNone(shared_kmer_map.get('MNO'))
         self.assertEqual(shared_kmer_map.k, 3)
@@ -365,20 +365,20 @@ class TestSharedKmerProbeMap(unittest.TestCase):
         # Should pick k=2
         a_str = a.seq_str
         b_str = b.seq_str
-        self.assertEquals(len(kmer_map), 7)
-        self.assertItemsEqual(shared_kmer_map.get('AB'),
+        self.assertEqual(len(kmer_map), 7)
+        self.assertCountEqual(shared_kmer_map.get('AB'),
                               [(a_str, 0), (b_str, 6)])
-        self.assertItemsEqual(shared_kmer_map.get('CD'),
+        self.assertCountEqual(shared_kmer_map.get('CD'),
                               [(a_str, 2)])
-        self.assertItemsEqual(shared_kmer_map.get('EF'),
+        self.assertCountEqual(shared_kmer_map.get('EF'),
                               [(a_str, 4)])
-        self.assertItemsEqual(shared_kmer_map.get('GH'),
+        self.assertCountEqual(shared_kmer_map.get('GH'),
                               [(a_str, 6)])
-        self.assertItemsEqual(shared_kmer_map.get('ZY'),
+        self.assertCountEqual(shared_kmer_map.get('ZY'),
                               [(b_str, 0)])
-        self.assertItemsEqual(shared_kmer_map.get('XW'),
+        self.assertCountEqual(shared_kmer_map.get('XW'),
                               [(b_str, 2)])
-        self.assertItemsEqual(shared_kmer_map.get('VU'),
+        self.assertCountEqual(shared_kmer_map.get('VU'),
                               [(b_str, 4)])
         self.assertIsNone(shared_kmer_map.get('MN'))
         self.assertEqual(shared_kmer_map.k, 2)
@@ -474,8 +474,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
-            self.assertItemsEqual(found[a], [(6, 12)])
-            self.assertItemsEqual(found[b], [(18, 24)])
+            self.assertCountEqual(found[a], [(6, 12)])
+            self.assertCountEqual(found[b], [(18, 24)])
             self.assertFalse(c in found)
             probe.close_probe_finding_pool()
 
@@ -496,8 +496,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
-            self.assertItemsEqual(found[a], [(2, 8), (16, 22)])
-            self.assertItemsEqual(found[b], [(6, 12)])
+            self.assertCountEqual(found[a], [(2, 8), (16, 22)])
+            self.assertCountEqual(found[b], [(6, 12)])
             self.assertFalse(c in found)
             probe.close_probe_finding_pool()
 
@@ -520,9 +520,9 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
-            self.assertItemsEqual(found[a], [(2, 11), (118, 124)])
-            self.assertItemsEqual(found[b], [(6, 14)])
-            self.assertItemsEqual(found[c], [(5, 12)])
+            self.assertCountEqual(found[a], [(2, 11), (118, 124)])
+            self.assertCountEqual(found[b], [(6, 14)])
+            self.assertCountEqual(found[c], [(5, 12)])
             probe.close_probe_finding_pool()
 
     def test_repetitive(self):
@@ -543,7 +543,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
-            self.assertItemsEqual(found[a], [(3, 13), (25, 38)])
+            self.assertCountEqual(found[a], [(3, 13), (25, 38)])
             probe.close_probe_finding_pool()
 
     def test_pigeonhole_with_mismatch(self):
@@ -562,13 +562,13 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             probes, 1, 6, min_k=3, k=4)
         kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
         # This should try the pigeonhole approach, which should choose k=3
-        self.assertEquals(kmer_map.k, 3)
+        self.assertEqual(kmer_map.k, 3)
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
-            self.assertItemsEqual(found[a], [(6, 12)])
-            self.assertItemsEqual(found[b], [(18, 24)])
+            self.assertCountEqual(found[a], [(6, 12)])
+            self.assertCountEqual(found[b], [(18, 24)])
             self.assertFalse(c in found)
             probe.close_probe_finding_pool()
 
@@ -578,13 +578,13 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         # This should try the pigeonhole approach and fail because it
         # chooses k=3, but min_k=4. So it should then try the random
         # approach with k=4.
-        self.assertEquals(kmer_map.k, 4)
+        self.assertEqual(kmer_map.k, 4)
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
-            self.assertItemsEqual(found[a], [(6, 12)])
-            self.assertItemsEqual(found[b], [(18, 24)])
+            self.assertCountEqual(found[a], [(6, 12)])
+            self.assertCountEqual(found[b], [(18, 24)])
             self.assertFalse(c in found)
             probe.close_probe_finding_pool()
 
@@ -607,9 +607,9 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         for n_workers in [1, 2, 4, 7, 8]:
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found_a = probe.find_probe_covers_in_sequence(sequence_a)
-            self.assertEquals(found_a, {a: [(3, 10)]})
+            self.assertEqual(found_a, {a: [(3, 10)]})
             found_b = probe.find_probe_covers_in_sequence(sequence_b)
-            self.assertEquals(found_b, {a: [(4, 11)], b: [(12, 19)]})
+            self.assertEqual(found_b, {a: [(4, 11)], b: [(12, 19)]})
             probe.close_probe_finding_pool()
 
     def test_open_close_pool_without_work(self):
@@ -655,7 +655,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 sequence
         """
         np.random.seed(1)
-        for n in xrange(n):
+        for n in range(n):
             # Choose either lcf_thres=80 or lcf_thres=100
             lcf_thres = np.random.choice([80, 100])
             # Make a random sequence
@@ -666,7 +666,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             desired_probe_cover_ranges = defaultdict(list)
             # Make num_probes random probes
             probes = []
-            for m in xrange(num_probes):
+            for m in range(num_probes):
                 probe_length = 100
                 subseq_start = np.random.randint(0, seq_length - probe_length)
                 subseq_end = subseq_start + probe_length
@@ -687,7 +687,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                                      replace=True))
                 probe_str = probe_str_start + probe_str_cover + probe_str_end
                 # Add 0, 1, 2, or 3 random mismatches
-                for k in xrange(np.random.randint(0, 4)):
+                for k in range(np.random.randint(0, 4)):
                     pos = np.random.randint(0, probe_length)
                     base_choices = [b for b in ['A', 'T', 'C', 'G']
                                     if b != probe_str[pos]]
@@ -711,7 +711,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             self.assertLessEqual(len(found), len(probes))
             self.assertGreaterEqual(len(found), 0.95 * len(probes))
             # Check that each desired probe was found correctly
-            for p, cover_ranges in desired_probe_cover_ranges.iteritems():
+            for p, cover_ranges in desired_probe_cover_ranges.items():
                 if p not in found:
                     continue
                 found_cover_ranges = found[p]

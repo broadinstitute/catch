@@ -55,7 +55,7 @@ class NaiveRedundantFilter(BaseFilter):
         # intended to be deleted (i.e., the latter one in the list of input),
         # they will both be deleted accidentally.
         probe_indices_to_delete = set()
-        for i in xrange(len(input)):
+        for i in range(len(input)):
             if i % 100 == 0:
                 logger.info("Processing candidate probe %d of %d", i + 1,
                             len(input))
@@ -63,7 +63,7 @@ class NaiveRedundantFilter(BaseFilter):
             if i in probe_indices_to_delete:
                 continue
             probe_a = input[i]
-            for j in xrange(i + 1, len(input)):
+            for j in range(i + 1, len(input)):
                 if j in probe_indices_to_delete:
                     continue
                 probe_b = input[j]
@@ -111,7 +111,7 @@ def redundant_shift_and_mismatch_count(shift=0,
         def are_redundant(probe_a, probe_b):
             probe_a_len = len(probe_a.seq)
             probe_b_len = len(probe_b.seq)
-            for s in xrange(-shift, shift + 1):
+            for s in range(-shift, shift + 1):
                 mismatches = 0
                 if s < 0:
                     probe_a_idx = 0

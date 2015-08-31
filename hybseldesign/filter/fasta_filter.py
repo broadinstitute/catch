@@ -40,7 +40,7 @@ class FastaFilter(BaseFilter):
 
         # Construct a set of the sequences from the file
         seqs_to_keep = {}
-        for i, (header, seq) in enumerate(fasta.iteritems()):
+        for i, (header, seq) in enumerate(fasta.items()):
             if self.skip_reverse_complements:
                 if "reverse complement" not in header:
                     seqs_to_keep[seq] = i

@@ -27,8 +27,8 @@ class TestDominatingSetFilter(unittest.TestCase):
         f = dsf.DominatingSetFilter(
             nrf.redundant_shift_and_mismatch_count(shift, mismatches))
         f.filter(input_probes)
-        self.assertItemsEqual(f.input_probes, input_probes)
-        self.assertItemsEqual(f.output_probes, desired_output_probes)
+        self.assertCountEqual(f.input_probes, input_probes)
+        self.assertCountEqual(f.output_probes, desired_output_probes)
 
     def test_one_shift_one_mismatch(self):
         input = ['ATCGTCGCGG', 'TCGTAGCGGA', 'CGTAGCGGAT']

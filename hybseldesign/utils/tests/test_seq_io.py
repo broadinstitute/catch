@@ -20,7 +20,7 @@ class TestEbola2014FASTARead(unittest.TestCase):
         logging.disable(logging.INFO)
 
         self.seqs_map = seq_io.read_fasta(ebola2014.fasta_path)
-        self.seqs = self.seqs_map.values()
+        self.seqs = list(self.seqs_map.values())
 
     def test_num_seqs(self):
         """Test that there are 99 sequences.
@@ -75,7 +75,7 @@ class TestDatasetGenomeRead(unittest.TestCase):
         genomes = seq_io.read_dataset_genomes(ebola2014)
         desired_genomes = [
             genome.Genome.from_one_seq(s)
-            for s in seq_io.read_fasta(ebola2014.fasta_path).itervalues()
+            for s in seq_io.read_fasta(ebola2014.fasta_path).values()
         ]
         self.assertEqual(genomes, desired_genomes)
 

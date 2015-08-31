@@ -33,7 +33,7 @@ def table(data, col_justify, header_underline=True):
         raise ValueError("col_justify has incorrect number of entries")
 
     # Determine each column's width (maximum length of an entry)
-    col_widths = [0 for j in xrange(num_cols)]
+    col_widths = [0 for j in range(num_cols)]
     for row in data:
         for j, col in enumerate(row):
             entry = str(col).rstrip()
@@ -43,7 +43,7 @@ def table(data, col_justify, header_underline=True):
             col_widths[j] = max(col_widths[j], entry_len)
 
     # Determine each row's height (maximum lines of an entry)
-    row_heights = [0 for i in xrange(num_rows)]
+    row_heights = [0 for i in range(num_rows)]
     for i, row in enumerate(data):
         for j, col in enumerate(row):
             entry = str(col).rstrip()
@@ -53,7 +53,7 @@ def table(data, col_justify, header_underline=True):
     table = ''
     for i, row in enumerate(data):
         row_height = row_heights[i]
-        for h in xrange(row_height):
+        for h in range(row_height):
             row_str = ''
             for j, col in enumerate(row):
                 if j > 0:
