@@ -46,7 +46,7 @@ def make_candidate_probes_from_sequence(seq,
         raise ValueError("Invalid probe_length " + str(probe_length))
 
     if isinstance(seq, np.ndarray):
-        seq = seq.tostring()
+        seq = ''.join(seq)
     n_string_query = re.compile('(N{' + str(min_n_string_length) + ',})')
 
     # Make a probe based on the subsequence seq[start:end].

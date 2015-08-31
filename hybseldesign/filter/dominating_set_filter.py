@@ -67,7 +67,7 @@ class DominatingSetFilter(BaseFilter):
         # in which S consists of P as well as all other probes redundant
         # to P. Construct these sets.
         sets = defaultdict(set)
-        for i in xrange(len(input)):
+        for i in range(len(input)):
             if i % 100 == 0:
                 logger.info("Making set for candidate probe %d of %d", i + 1,
                             len(input))
@@ -75,7 +75,7 @@ class DominatingSetFilter(BaseFilter):
             # Put probe_a into its set
             sets[i].add(probe_a)
             # Find all other probes redundant to probe_a
-            for j in xrange(i + 1, len(input)):
+            for j in range(i + 1, len(input)):
                 probe_b = input[j]
                 if self.are_redundant_fn(probe_a, probe_b):
                     # Put probe_b into probe_a's set (set[i]), and also put

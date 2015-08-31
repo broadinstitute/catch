@@ -177,11 +177,11 @@ class AdapterFilter(BaseFilter):
             (0,0) [the probe does not hybridize in 'sequence'].
         """
         probe_cover_ranges = probe.find_probe_covers_in_sequence(sequence)
-        aligned_probes = set(probe_cover_ranges.iterkeys())
+        aligned_probes = set(probe_cover_ranges.keys())
         # Make a list of all the intervals covered by all the probes,
         # along with a reference to the probe with the interval
         intervals = []
-        for p, cover_ranges in probe_cover_ranges.iteritems():
+        for p, cover_ranges in probe_cover_ranges.items():
             for cover_range in cover_ranges:
                 intervals += [(cover_range, p)]
 
@@ -252,7 +252,7 @@ class AdapterFilter(BaseFilter):
         """
         assert len(votes_x) == len(votes_y)
         votes_sum = []
-        for i in xrange(len(votes_x)):
+        for i in range(len(votes_x)):
             vote_x, vote_y = votes_x[i], votes_y[i]
             # They must represent the same number of adapters (e.g., for
             # 'A' and 'B' adapters), this length should be 2
@@ -296,7 +296,7 @@ class AdapterFilter(BaseFilter):
         # at index i is a tuple (A,B) that corresponds to the probe
         # probes[i] where A gives the 'A' votes for the probe and B gives
         # the 'B' votes
-        cumulative_votes = [(0, 0) for _ in xrange(len(probes))]
+        cumulative_votes = [(0, 0) for _ in range(len(probes))]
         for sequence in iter_all_seqs():
             # Compute votes for the adapters for each probe in 'sequence',
             # and also exchange all 'A' votes with 'B' votes and vice-versa.
@@ -341,7 +341,7 @@ class AdapterFilter(BaseFilter):
         # this adapter on both ends
         logger.info("Adding adapters to probes based on votes")
         input_with_adapters = []
-        for i in xrange(len(input)):
+        for i in range(len(input)):
             p = input[i]
             vote = votes[i]
             # Only work with 'A' and 'B' adapters

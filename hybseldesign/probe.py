@@ -32,7 +32,7 @@ class Probe:
             seq: np.array representing the sequence of a probe
         """
         self.seq = seq
-        self.seq_str = seq.tostring()
+        self.seq_str = ''.join(seq)
         self.is_flanking_n_string = False
         self.header = None
 
@@ -88,7 +88,7 @@ class Probe:
             +max_shift relative to self
         """
         return min(self.mismatches_at_offset(other, offset)
-                   for offset in xrange(-max_shift, max_shift + 1))
+                   for offset in range(-max_shift, max_shift + 1))
 
     def longest_common_substring_length(self, other, k):
         """Compute length of longest common substring with other.
@@ -116,7 +116,7 @@ class Probe:
         # like 'N'. It returns the base itself (e.g., 'N') if it is
         # not either 'A', 'T', 'C', or 'G'.
         rc_seq = np.array([rc_map.get(b, b) for b in self.seq[::-1]],
-                          dtype='S1')
+                          dtype='U1')
         return Probe(rc_seq)
 
     def with_prepended_str(self, s):
@@ -128,7 +128,7 @@ class Probe:
         Returns:
             a Probe with 's' prepended to the sequence of this probe
         """
-        s_seq = np.fromstring(s, dtype='S1')
+        s_seq = np.fromiter(s, dtype='U1')
         new_seq = np.concatenate([s_seq, self.seq])
         return Probe(new_seq)
 
@@ -141,7 +141,7 @@ class Probe:
         Returns:
             a Probe with 's' appended to the sequence of this probe
         """
-        s_seq = np.fromstring(s, dtype='S1')
+        s_seq = np.fromiter(s, dtype='U1')
         new_seq = np.concatenate([self.seq, s_seq])
         return Probe(new_seq)
 
@@ -160,7 +160,7 @@ class Probe:
             probe
         """
         kmers = []
-        for i in xrange(len(self.seq) - k + 1):
+        for i in range(len(self.seq) - k + 1):
             kmer = self.seq_str[i:(i + k)]
             if include_positions:
                 kmers += [(kmer, i)]
@@ -254,7 +254,7 @@ class Probe:
             rand_kmer_positions = np.random.random_integers(0,
                                                             len(self.seq) - k,
                                                             num_kmers_to_test)
-            for n in xrange(num_kmers_to_test):
+            for n in range(num_kmers_to_test):
                 # Read a random k-mer from self and explicitly test for
                 # its presence in other
                 rand_kmer_pos = rand_kmer_positions[n]
@@ -284,7 +284,7 @@ class Probe:
         Returns:
             a (probably) unique identifier for this probe, as a string
         """
-        return hashlib.sha224(self.seq_str).hexdigest()[-length:]
+        return hashlib.sha224(self.seq_str.encode()).hexdigest()[-length:]
 
     def __hash__(self):
         return hash(self.seq_str)
@@ -318,7 +318,7 @@ class Probe:
         Returns:
             instance of Probe, whose sequence is seq_str
         """
-        return Probe(np.fromstring(seq_str, dtype='S1'))
+        return Probe(np.fromiter(seq_str, dtype='U1'))
 
 
 def _construct_rand_kmer_probe_map(probes,
@@ -446,7 +446,7 @@ def _construct_pigeonholed_kmer_probe_map(probes,
         # we place one mismatch in each k-mer. We want to have at least one
         # k-mer with no mismatches. So we need probe_length/k > mismatches.
         # That is, k < probe_length/mismatches.
-        k = probe_length / mismatches
+        k = int(probe_length / mismatches)
         if k == float(probe_length) / mismatches:
             # mismatches divides probe_length, so decrement k
             k -= 1
@@ -462,7 +462,7 @@ def _construct_pigeonholed_kmer_probe_map(probes,
     kmer_probe_map = defaultdict(set)
     for p in probes:
         kmers = p.construct_kmers(k, include_positions)
-        for i in xrange(0, len(p.seq), k):
+        for i in range(0, len(p.seq), k):
             if include_positions:
                 kmer, pos = kmers[i]
                 kmer_probe_map[kmer].add((p, pos))
@@ -624,16 +624,17 @@ class SharedKmerProbeMap:
         """
         # The kmers in self.keys are sorted, so do a binary search to
         # find kmer
-        i = bisect.bisect_left(self.keys, kmer)
-        if i == len(self.keys) or self.keys[i] != kmer:
+        kmer_bytes = kmer.encode()
+        i = bisect.bisect_left(self.keys, kmer_bytes)
+        if i == len(self.keys) or self.keys[i] != kmer_bytes:
             # The key kmer is not present
             return None
 
         # There may be more than one match for the key kmer, so keep
         # scanning while there is a match
         matches = []
-        while i < len(self.keys) and self.keys[i] == kmer:
-            seq = self.probe_seqs[self.probe_seqs_ind[i]]
+        while i < len(self.keys) and self.keys[i] == kmer_bytes:
+            seq = self.probe_seqs[self.probe_seqs_ind[i]].decode()
             pos = self.probe_pos[i]
             matches += [(seq, pos)]
             i += 1
@@ -659,7 +660,7 @@ class SharedKmerProbeMap:
         # of length k, and check that the k-mers in the map come with
         # positions
         k = None
-        for kmer in kmer_probe_map.iterkeys():
+        for kmer in kmer_probe_map.keys():
             if k is None:
                 k = len(kmer)
             if len(kmer) != k:
@@ -676,19 +677,19 @@ class SharedKmerProbeMap:
         # of Probe
         unique_probe_seqs = {}
         probe_seqs_to_probe = {}
-        for kmer, kmer_alignments in kmer_probe_map.iteritems():
+        for kmer, kmer_alignments in kmer_probe_map.items():
             for probe, pos in kmer_alignments:
                 unique_probe_seqs[probe.seq_str] = True
                 probe_seqs_to_probe[probe.seq_str] = probe
         probe_seqs = multiprocessing.sharedctypes.RawArray(
             ctypes.c_char_p, len(unique_probe_seqs))
-        for i, (seq, _) in enumerate(unique_probe_seqs.iteritems()):
-            probe_seqs[i] = seq
+        for i, (seq, _) in enumerate(unique_probe_seqs.items()):
+            probe_seqs[i] = seq.encode()
             unique_probe_seqs[seq] = i
 
         # Find the number of keys that are needed and allocate the keys array
         num_keys = sum(len(kmer_alignments)
-                       for kmer, kmer_alignments in kmer_probe_map.iteritems())
+                       for kmer, kmer_alignments in kmer_probe_map.items())
         keys = multiprocessing.sharedctypes.RawArray(ctypes.c_char_p, num_keys)
 
         # Allocate the probe_seqs_ind and probe_pos arrays; their indices map
@@ -703,7 +704,7 @@ class SharedKmerProbeMap:
         for kmer in sorted(kmer_probe_map.keys()):
             num_alignments = len(kmer_probe_map[kmer])
             for probe, pos in kmer_probe_map[kmer]:
-                keys[i] = kmer
+                keys[i] = kmer.encode()
                 probe_seqs_ind[i] = unique_probe_seqs[probe.seq_str]
                 probe_pos[i] = pos
                 i += 1
@@ -967,7 +968,7 @@ def _find_probe_covers_in_subsequence(bounds,
     # subseq_probe_cover_ranges
     start, end = bounds
     subseq_probe_cover_ranges = defaultdict(list)
-    for i in xrange(start, end):
+    for i in range(start, end):
         kmer = sequence[i:(i + k)]
         # Find the probes with this kmer (with the potential to miss
         # some probes due to false negatives)
@@ -979,7 +980,7 @@ def _find_probe_covers_in_subsequence(bounds,
             # kmer appears in probe at position pos. So align probe
             # to sequence at i-pos and see how much of the subsequence
             # starting here the probe covers.
-            probe_seq_full = np.fromstring(probe_seq_str, dtype='S1')
+            probe_seq_full = np.fromiter(probe_seq_str, dtype='U1')
             subseq_left = max(0, i - pos)
             subseq_right = min(len(sequence), i - pos + len(probe_seq_full))
             subsequence = sequence[subseq_left:subseq_right]
@@ -1127,7 +1128,7 @@ def find_probe_covers_in_sequence(sequence,
     num_processes = _pfp_pool._processes
     bounds_size = int((len(sequence) - k + 1) / num_processes + 1)
     bounds_by_process = []
-    for start in xrange(0, len(sequence) - k + 1, bounds_size):
+    for start in range(0, len(sequence) - k + 1, bounds_size):
         end = min(len(sequence) - k + 1, start + bounds_size)
         bounds_by_process += [(start, end)]
     while len(bounds_by_process) < num_processes:
@@ -1149,7 +1150,7 @@ def find_probe_covers_in_sequence(sequence,
     # all the lists (across the dicts) for each probe.
     probe_cover_ranges = defaultdict(list)
     for subseq_probe_cover_ranges in all_subseq_probe_cover_ranges:
-        for probe_seq, cover_ranges in subseq_probe_cover_ranges.iteritems():
+        for probe_seq, cover_ranges in subseq_probe_cover_ranges.items():
             probe = _pfp_kmer_probe_map_probe_seqs_to_probe[probe_seq]
             probe_cover_ranges[probe].extend(cover_ranges)
 
@@ -1158,7 +1159,7 @@ def find_probe_covers_in_sequence(sequence,
     # overlapping ones, if desired. Also, convert the defaultdict to
     # a regular dict.
     probe_cover_ranges_cleaned = {}
-    for probe, cover_ranges in probe_cover_ranges.iteritems():
+    for probe, cover_ranges in probe_cover_ranges.items():
         if merge_overlapping:
             probe_cover_ranges_cleaned[probe] = interval.\
                 merge_overlapping(cover_ranges)

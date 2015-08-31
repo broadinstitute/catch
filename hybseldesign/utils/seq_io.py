@@ -37,7 +37,7 @@ def read_dataset_genomes(dataset):
         for fn in dataset.fasta_paths:
             seq_map = read_fasta(fn)
             seq_map_by_chr = {dataset.seq_header_to_chr(header): seq_map[header]
-                              for header in seq_map.iterkeys()}
+                              for header in seq_map.keys()}
             seqs = OrderedDict(seq_map_by_chr)
             genomes += [genome.Genome.from_chrs(seqs)]
     else:
@@ -48,7 +48,7 @@ def read_dataset_genomes(dataset):
         # sequence are ignored.
         logger.debug("Reading dataset %s with one chromosome per genome",
                      dataset.__name__)
-        seqs = read_fasta(dataset.fasta_path).values()
+        seqs = list(read_fasta(dataset.fasta_path).values())
         for seq in seqs:
             genomes += [genome.Genome.from_one_seq(seq)]
 
@@ -84,7 +84,7 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
     degenerate_pattern = re.compile('[YRWSMKBDHV]')
 
     m = OrderedDict()
-    with open(fn) as f:
+    with open(fn, 'r') as f:
         curr_seq_name = ""
         for line in f:
             line = line.rstrip()
@@ -112,8 +112,8 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
         m_converted = m
     elif data_type == 'np':
         m_converted = OrderedDict()
-        for seq_name, seq in m.iteritems():
-            m_converted[seq_name] = np.fromstring(seq, dtype='S1')
+        for seq_name, seq in m.items():
+            m_converted[seq_name] = np.fromiter(seq, dtype='U1')
     else:
         raise ValueError("Unknown data_type " + data_type)
 
@@ -145,11 +145,11 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
             # Already stored as str
             return seq
         elif data_type == 'np':
-            return np.fromstring(seq, dtype='S1')
+            return np.fromiter(seq, dtype='U1')
         else:
             raise ValueError("Unknown data_type " + data_tyoe)
 
-    with open(fn) as f:
+    with open(fn, 'r') as f:
         curr_seq = ''
         for line in f:
             line = line.rstrip()

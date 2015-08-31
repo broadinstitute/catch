@@ -223,7 +223,7 @@ class SetCoverFilter(BaseFilter):
                         sequence)
                     # Add the bases of sequence that are covered by all the
                     # probes into sets with universe_id equal to (i,j)
-                    for p, cover_ranges in probe_cover_ranges.iteritems():
+                    for p, cover_ranges in probe_cover_ranges.items():
                         set_id = probe_id[p]
                         for cover_range in cover_ranges:
                             # Extend the range covered by probe p on both sides
@@ -259,8 +259,8 @@ class SetCoverFilter(BaseFilter):
         # Make an IntervalSet out of the intervals of each set. But if
         # there is just one interval in a set, then save space by leaving
         # that entry as a tuple.
-        for set_id in sets.iterkeys():
-            for universe_id in sets[set_id].iterkeys():
+        for set_id in sets.keys():
+            for universe_id in sets[set_id].keys():
                 intervals = sets[set_id][universe_id]
                 if not isinstance(intervals, tuple):
                     sets[set_id][universe_id] = interval.IntervalSet(intervals)
@@ -322,7 +322,7 @@ class SetCoverFilter(BaseFilter):
             probe_cover_ranges = probe.find_probe_covers_in_sequence(sequence)
 
             all_cover_ranges = []
-            for p, cover_ranges in probe_cover_ranges.iteritems():
+            for p, cover_ranges in probe_cover_ranges.items():
                 for cover_range in cover_ranges:
                     num_bp_covered[p] += cover_range[1] - cover_range[0]
 
@@ -355,16 +355,16 @@ class SetCoverFilter(BaseFilter):
                     # Count hits in both sequence and its reverse complement
                     num_bp = self._compute_tolerant_bp_covered_within_sequence(
                         sequence, rc_too=True)
-                    for p in num_bp.iterkeys():
+                    for p in num_bp.keys():
                         num_bp_covered_in_grouping[p] += num_bp[p]
             # If a probe covers at least one bp in this grouping (i),
             # then it hits this grouping
-            for p in num_bp_covered_in_grouping.iterkeys():
+            for p in num_bp_covered_in_grouping.keys():
                 if num_bp_covered_in_grouping[p] >= 1:
                     num_groupings_hit[p] += 1
 
         # Check that each candidate probe hits at least one grouping
-        for p, hit in num_groupings_hit.iteritems():
+        for p, hit in num_groupings_hit.items():
             if hit == 0:
                 # Something's strange! Every probe should hit one or more
                 # target genome groupings because each candidate probe
@@ -405,7 +405,7 @@ class SetCoverFilter(BaseFilter):
                 # Blacklist both sequence and its reverse complement
                 num_bp = self._compute_tolerant_bp_covered_within_sequence(
                     sequence, rc_too=True)
-                for p in num_bp.iterkeys():
+                for p in num_bp.keys():
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
 
@@ -491,7 +491,7 @@ class SetCoverFilter(BaseFilter):
             num_groupings_hit = self._count_num_groupings_hit(candidate_probes)
             rank_val = {
                 p: (0, hit)
-                for p, hit in num_groupings_hit.iteritems()
+                for p, hit in num_groupings_hit.items()
             }
         else:
             # Start each probe with the same rank
@@ -505,7 +505,7 @@ class SetCoverFilter(BaseFilter):
         # on the number of bp they cover.
         blacklisted_bp_covered = self._count_blacklisted_bp_covered(
             candidate_probes)
-        for p, bp in blacklisted_bp_covered.iteritems():
+        for p, bp in blacklisted_bp_covered.items():
             if bp > 0:
                 rank_val[p] = (1, bp)
 
@@ -518,7 +518,7 @@ class SetCoverFilter(BaseFilter):
         # rank 1, and so on..
         all_rank_tuples = sorted(rank_val.values())
         tuple_rank_idx = {}
-        for i in xrange(len(all_rank_tuples)):
+        for i in range(len(all_rank_tuples)):
             tuple_rank_idx[all_rank_tuples[i]] = i
         ranks = {}
         for set_id, p in enumerate(candidate_probes):
@@ -548,7 +548,7 @@ class SetCoverFilter(BaseFilter):
           corresponding to a candidate probe) to a cost (integer) for that
           candidate probe; currently the cost is always 1
         """
-        return {set_id: 1 for set_id in xrange(len(candidate_probes))}
+        return {set_id: 1 for set_id in range(len(candidate_probes))}
 
     def _make_universe_p(self):
         """Return a required coverage for each universe to use in set cover.
@@ -567,8 +567,8 @@ class SetCoverFilter(BaseFilter):
             # target genome to cover
             logger.info(("Building universe_p directly from desired "
                          "fractional coverage"))
-            for i in xrange(len(self.target_genomes)):
-                for j in xrange(len(self.target_genomes[i])):
+            for i in range(len(self.target_genomes)):
+                for j in range(len(self.target_genomes[i])):
                     universe_p[(i, j)] = self.coverage
         else:
             # self.coverage should be an int representing the number of
@@ -576,7 +576,7 @@ class SetCoverFilter(BaseFilter):
             # fraction using the size of each target genome
             logger.info(("Building universe_p from desired number of bp "
                          "to cover"))
-            for i in xrange(len(self.target_genomes)):
+            for i in range(len(self.target_genomes)):
                 for j, gnm in enumerate(self.target_genomes[i]):
                     desired_coverage = min(self.coverage, gnm.size())
                     universe_p[(i, j)] = float(desired_coverage) / gnm.size()
@@ -620,7 +620,7 @@ class SetCoverFilter(BaseFilter):
         if self.cover_groupings_separately:
             # For each grouping, construct a set cover instance and solve it
             set_ids_in_cover = set()
-            for i in xrange(len(self.target_genomes)):
+            for i in range(len(self.target_genomes)):
                 # The costs, universe_p, and ranks input may have extra
                 # information for this instance, but should still be valid
                 # input to the solver (i.e., they contain all the necessary
@@ -629,13 +629,13 @@ class SetCoverFilter(BaseFilter):
                 # only giving coverage for universes corresponding to target
                 # genomes that come from this grouping.
                 sets_for_instance = {}
-                for set_id in sets.iterkeys():
+                for set_id in sets.keys():
                     # For a universe_id, universe_id[0] gives the grouping
                     # of that universe and should equal i to be included in
                     # this instance
                     coverage_for_set_id = {
                         universe_id: sets[set_id][universe_id]
-                        for universe_id in sets[set_id].iterkeys()
+                        for universe_id in sets[set_id].keys()
                         if universe_id[0] == i
                     }
                     if len(coverage_for_set_id) > 0:

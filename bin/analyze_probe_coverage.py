@@ -35,7 +35,7 @@ def main(args):
 
     # Read the FASTA file of probes
     fasta = seq_io.read_fasta(args.probes_fasta)
-    probes = [probe.Probe.from_str(seq) for _, seq in fasta.iteritems()]
+    probes = [probe.Probe.from_str(seq) for _, seq in fasta.items()]
 
     # Run the coverage analyzer
     analyzer = coverage_analysis.Analyzer(

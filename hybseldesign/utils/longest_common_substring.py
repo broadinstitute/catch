@@ -34,7 +34,7 @@ def k_lcf(a, b, k):
     n = len(a)
     m = len(b)
     ell, r_a, r_b = 0, 0, 0
-    for d in xrange(-m + 1, n):
+    for d in range(-m + 1, n):
         i = max(-d, 0) + d
         j = max(-d, 0)
         Q = deque([])
@@ -98,9 +98,9 @@ def k_lcf_around_anchor(a, b, anchor_start, anchor_end, k):
     # Convert a and b to NumPy arrays, which is useful for quickly
     # computing mismatch positions
     if not isinstance(a, np.ndarray):
-        a = np.fromstring(a, dtype='S1')
+        a = np.fromiter(a, dtype='U1')
     if not isinstance(b, np.ndarray):
-        b = np.fromstring(b, dtype='S1')
+        b = np.fromiter(b, dtype='U1')
 
     # Check that the anchor is the same in a and b
     if np.any(a[anchor_start:anchor_end] != b[anchor_start:anchor_end]):
@@ -130,7 +130,7 @@ def k_lcf_around_anchor(a, b, anchor_start, anchor_end, k):
     anchor_len = anchor_end - anchor_start
     max_common_substring_len = -1
     max_common_substring_start = -1
-    for i in xrange(k + 1):
+    for i in range(k + 1):
         # Consider the longest common substring that includes the anchor
         # and has i mismatches left of the anchor and k-i mismatches
         # right of the anchor. (This will have k mismatches in total,

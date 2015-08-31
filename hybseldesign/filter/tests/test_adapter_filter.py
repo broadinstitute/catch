@@ -120,7 +120,7 @@ class TestAdapterFilter(unittest.TestCase):
                                                          'MNOPQR', 'STUVWX'],
                                                         ['DEFGHI', 'JKLMNO',
                                                          'PQRSTU', 'UVWXYZ'])
-        self.assertItemsEqual(output, desired_output)
+        self.assertCountEqual(output, desired_output)
 
     def test_two_genomes(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZ'],
@@ -141,7 +141,7 @@ class TestAdapterFilter(unittest.TestCase):
             ['ABCDEF', 'GHIJKL', 'MNOPQR', 'STUVWX', 'ZYXWVU', 'TSRQPO',
              'NMLKJI', 'HGFEDC'], ['DEFGHI', 'JKLMNO', 'PQRSTU', 'UVWXYZ',
                                    'WVUTSR', 'QPONML', 'KJIHGF', 'FEDCBA'])
-        self.assertItemsEqual(output, desired_output)
+        self.assertCountEqual(output, desired_output)
 
     def test_almost_identical_probe(self):
         """Test four probes that align like:
@@ -165,7 +165,7 @@ class TestAdapterFilter(unittest.TestCase):
                                                              'KLMNOP'],
                                                             ['FGHIJK',
                                                              'FGHXJK'])
-            self.assertItemsEqual(output, desired_output)
+            self.assertCountEqual(output, desired_output)
 
             # Check votes too
             votes = f._make_votes_across_target_genomes(input)
@@ -196,7 +196,7 @@ class TestAdapterFilter(unittest.TestCase):
                                                          'MNOPQR'],
                                                         ['XYZABC', 'DEFGHI',
                                                          'JKLMNO'])
-        self.assertItemsEqual(output, desired_output)
+        self.assertCountEqual(output, desired_output)
 
         # Check votes too
         votes = f._make_votes_across_target_genomes(input)
@@ -217,7 +217,7 @@ class TestAdapterFilter(unittest.TestCase):
                                                10)
 
         desired_output = self.make_probes_with_adapters(['ABCDEF'], ['EFKLMN'])
-        self.assertItemsEqual(output, desired_output)
+        self.assertCountEqual(output, desired_output)
 
         # Check votes too
         votes = f._make_votes_across_target_genomes(input)
@@ -239,7 +239,7 @@ class TestAdapterFilter(unittest.TestCase):
                                                          'GYYJKL', 'IYYLMN'],
                                                         ['DEFGHI', 'JKLMNO',
                                                          'DEFGYY'])
-        self.assertItemsEqual(output, desired_output)
+        self.assertCountEqual(output, desired_output)
 
     def tearDown(self):
         # Re-enable logging

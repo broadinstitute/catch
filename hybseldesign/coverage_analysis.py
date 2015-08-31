@@ -111,7 +111,7 @@ class Analyzer:
             self.target_genomes_names = target_genomes_names
         else:
             self.target_genomes_names = ["Group %d" % i
-                                         for i in xrange(len(target_genomes))]
+                                         for i in range(len(target_genomes))]
 
         self.mismatches = mismatches
         self.lcf_thres = lcf_thres
@@ -206,7 +206,7 @@ class Analyzer:
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(
                     sequence,
                     merge_overlapping=False)
-                for p, cover_ranges in probe_cover_ranges.iteritems():
+                for p, cover_ranges in probe_cover_ranges.items():
                     for cover_range in cover_ranges:
                         # Extend the range covered by probe p on both sides
                         # by self.cover_extension
@@ -339,7 +339,7 @@ class Analyzer:
                 if prev_endpoint != None:
                     # Update number of probes between prev_endpoint and
                     # endpoint
-                    for pos in xrange(prev_endpoint, endpoint):
+                    for pos in range(prev_endpoint, endpoint):
                         probe_counts[pos] = curr_count
                 # Compute the net change in number of probe covers at
                 # this endpoint, which will last until the next endpoint
@@ -484,11 +484,11 @@ class Analyzer:
     def print_analysis(self):
         """Print the number of probes and a table of results of the analysis.
         """
-        print "NUMBER OF PROBES: %d" % len(self.probes)
-        print
-        print pretty_print.table(self._make_data_matrix_string(),
+        print("NUMBER OF PROBES: %d" % len(self.probes))
+        print()
+        print(pretty_print.table(self._make_data_matrix_string(),
                                  ["left", "right", "right"],
-                                 header_underline=True)
+                                 header_underline=True))
 
     def write_sliding_window_coverage(self, fn):
         """Write coverage in sliding windows to a file.

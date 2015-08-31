@@ -20,7 +20,7 @@ class TestFastaFilter(unittest.TestCase):
         logging.disable(logging.WARNING)
 
     def test_basic(self):
-        fasta_file = tempfile.NamedTemporaryFile()
+        fasta_file = tempfile.NamedTemporaryFile(mode='w')
         fasta_file.write(">probe1\n")
         fasta_file.write("ATCGATCG\n")
         fasta_file.write(">probe2\n")
@@ -41,7 +41,7 @@ class TestFastaFilter(unittest.TestCase):
         fasta_file.close()
 
     def test_skip_reverse_complements(self):
-        fasta_file = tempfile.NamedTemporaryFile()
+        fasta_file = tempfile.NamedTemporaryFile(mode='w')
         fasta_file.write(">probe1\n")
         fasta_file.write("ATCGATCG\n")
         fasta_file.write(">probe2 | reverse complement of probe1\n")
