@@ -11,5 +11,5 @@ from hybseldesign.datasets import GenomesDatasetSingleChrom
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 ds = GenomesDatasetSingleChrom(__name__, __file__, __spec__)
-ds.set_fasta_path("data/hiv2_without_ltr.fasta", relative=True)
+ds.add_fasta_path("data/hiv2_without_ltr.fasta", relative=True)
 sys.modules[__name__] = ds

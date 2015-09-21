@@ -48,11 +48,8 @@ def main(args):
                     'hybseldesign.datasets.' + bg)
             except ImportError:
                 raise ValueError("Unknown dataset %s" % bg)
-            if dataset.is_multi_chr():
-                for fp in dataset.fasta_paths:
-                    blacklisted_genomes_fasta += [fp]
-            else:
-                blacklisted_genomes_fasta += [dataset.fasta_path]
+            for fp in dataset.fasta_paths:
+                blacklisted_genomes_fasta += [fp]
 
     # Set the maximum number of processes in multiprocessing pools
     if args.max_num_processes:
