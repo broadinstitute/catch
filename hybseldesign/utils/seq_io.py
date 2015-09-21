@@ -42,15 +42,16 @@ def read_dataset_genomes(dataset):
             genomes += [genome.Genome.from_chrs(seqs)]
     else:
         # There is just one sequence (chromosome) for each genome in
-        # this dataset. The dataset should have a path to just one FASTA
-        # file (dataset.fasta_path), and the sequences in this file
-        # should correspond to the different genomes. The headers of each
-        # sequence are ignored.
+        # this dataset. The dataset should have a path to one or more
+        # FASTA files (dataset.fasta_paths), and the sequences in each
+        # file should correspond to the different genomes. The headers of
+        # each sequence are ignored.
         logger.debug("Reading dataset %s with one chromosome per genome",
                      dataset.__name__)
-        seqs = list(read_fasta(dataset.fasta_path).values())
-        for seq in seqs:
-            genomes += [genome.Genome.from_one_seq(seq)]
+        for fn in dataset.fasta_paths:
+            seqs = list(read_fasta(fn).values())
+            for seq in seqs:
+                genomes += [genome.Genome.from_one_seq(seq)]
 
     return genomes
 

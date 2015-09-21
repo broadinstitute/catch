@@ -19,7 +19,8 @@ class TestEbola2014FASTARead(unittest.TestCase):
         # Disable logging
         logging.disable(logging.INFO)
 
-        self.seqs_map = seq_io.read_fasta(ebola2014.fasta_path)
+        assert len(ebola2014.fasta_paths) == 1
+        self.seqs_map = seq_io.read_fasta(ebola2014.fasta_paths[0])
         self.seqs = list(self.seqs_map.values())
 
     def test_num_seqs(self):
@@ -49,7 +50,8 @@ class TestEbola2014FASTARead(unittest.TestCase):
         Tests this by comparing to the output from read_fasta.
         """
         generator_seqs = []
-        for seq in seq_io.iterate_fasta(ebola2014.fasta_path):
+        assert len(ebola2014.fasta_paths) == 1
+        for seq in seq_io.iterate_fasta(ebola2014.fasta_paths[0]):
             generator_seqs += [seq]
         self.assertEqual(generator_seqs, self.seqs)
 
@@ -73,9 +75,10 @@ class TestDatasetGenomeRead(unittest.TestCase):
         enters the condition of reading just one sequence per genome.
         """
         genomes = seq_io.read_dataset_genomes(ebola2014)
+        assert len(ebola2014.fasta_paths) == 1
         desired_genomes = [
             genome.Genome.from_one_seq(s)
-            for s in seq_io.read_fasta(ebola2014.fasta_path).values()
+            for s in seq_io.read_fasta(ebola2014.fasta_paths[0]).values()
         ]
         self.assertEqual(genomes, desired_genomes)
 

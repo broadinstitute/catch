@@ -94,7 +94,7 @@ class TestCandidateProbesOnEbola2014(unittest.TestCase):
     """
 
     def setUp(self):
-        seqs = list(seq_io.read_fasta(ebola2014.fasta_path).values())
+        seqs = [gnm.seqs[0] for gnm in seq_io.read_dataset_genomes(ebola2014)]
         self.probes = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
             probe_length=100,

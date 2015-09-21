@@ -36,14 +36,34 @@ class GenomesDataset:
         else:
             return True
 
+    def add_fasta_path(self, path, relative=False):
+        """Add a FASTA file giving sequences corresponding to this dataset.
+
+        When is_multi_chr() is True, the FASTA file should give one
+        sample/individual genome for this dataset (each sequence in the
+        file corresponding to a chromosome). When is_multi_chr() is False,
+        the FASTA file can give multiple samples/individual genomes, where
+        each sequence in the file corresponds to a genome; adding more than
+        one FASTA file is equivalent to specifying one FASTA file that
+        is the concatenation of the multiple files.
+
+        Args:
+            path: path to FASTA file
+            relative: when True, path is assumed to be relative to the
+                path of the dataset file (self.__file__)
+        """
+        if relative:
+            path = join(dirname(self.__file__), path)
+        self.fasta_paths += [path]
+
 
 class GenomesDatasetSingleChrom(GenomesDataset):
     """Dataset whose genomes have one chromosome.
 
     This is used when the genome held by this dataset can be fully
     specified by one sequence (i.e., there are not multiple chromosomes).
-    All of the sample/individual genomes should be in a single FASTA file
-    set by set_fasta_path().
+    All of the sample/individual genomes should be specified as individual
+    sequences across one or more FASTA files added with add_fasta_path().
     """
 
     def __init__(self, __name__, __file__, __spec__):
@@ -55,19 +75,7 @@ class GenomesDatasetSingleChrom(GenomesDataset):
                 corresponding to this dataset
         """
         GenomesDataset.__init__(self, __name__, __file__, __spec__)
-        self.fasta_path = None
-
-    def set_fasta_path(self, path, relative=False):
-        """Set the FASTA file for the genome samples stored by this dataset.
-
-        Args:
-            path: path to FASTA file
-            relative: when True, path is assumed to be relative to the
-                path of the dataset file (self.__file__)
-        """
-        if relative:
-            path = join(dirname(self.__file__), path)
-        self.fasta_path = path
+        self.fasta_paths = []
 
 
 class GenomesDatasetMultiChrom(GenomesDataset):
@@ -107,15 +115,3 @@ class GenomesDatasetMultiChrom(GenomesDataset):
         self.chrs = chrs
         self.seq_header_to_chr = seq_header_to_chr
         self.fasta_paths = []
-
-    def add_fasta_path(self, path, relative=False):
-        """Add FASTA file giving one sample/individual genome for this dataset.
-
-        Args:
-            path: path to FASTA file
-            relative: when True, path is assumed to be relative to the
-                path of the dataset file (self.__file__)
-        """
-        if relative:
-            path = join(dirname(self.__file__), path)
-        self.fasta_paths += [path]
