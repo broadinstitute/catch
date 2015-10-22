@@ -516,7 +516,7 @@ class SetCoverFilter(BaseFilter):
         # upward. The probe(s) with the smallest tuple rank get(s)
         # rank 0, the probe(s) with the next smallest tuple rank get(s)
         # rank 1, and so on..
-        all_rank_tuples = sorted(rank_val.values())
+        all_rank_tuples = sorted(set(rank_val.values()))
         tuple_rank_idx = {}
         for i in range(len(all_rank_tuples)):
             tuple_rank_idx[all_rank_tuples[i]] = i
