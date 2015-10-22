@@ -89,13 +89,14 @@ def read_fasta(fn, data_type='str', replace_degenerate=True,
         curr_seq_name = ""
         for line in f:
             line = line.rstrip()
-            if curr_seq_name == "":
-                # Must encounter a new sequence
-                assert line.startswith('>')
             if len(line) == 0:
                 # Reset the sequence being read on an empty line
                 curr_seq_name = ""
-            elif line.startswith('>'):
+                continue
+            if curr_seq_name == "":
+                # Must encounter a new sequence
+                assert line.startswith('>')
+            if line.startswith('>'):
                 curr_seq_name = line[1:]
                 m[curr_seq_name] = ''
             else:
@@ -154,6 +155,9 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
         curr_seq = ''
         for line in f:
             line = line.rstrip()
+            if len(line) == 0:
+                # Skip the blank line
+                continue
             if line.startswith('>'):
                 # Yield the current sequence (if there is one) and reset the
                 # sequence being read
