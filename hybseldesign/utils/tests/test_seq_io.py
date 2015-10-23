@@ -1,7 +1,9 @@
 """Tests for seq_io module.
 """
 
+from collections import OrderedDict
 import logging
+import tempfile
 import unittest
 
 from hybseldesign.datasets import ebola2014
@@ -61,6 +63,9 @@ class TestEbola2014FASTARead(unittest.TestCase):
 
 
 class TestDatasetGenomeRead(unittest.TestCase):
+    """Tests reading a dataset.
+    """
+
     def setUp(self):
         # Disable logging
         logging.disable(logging.INFO)
@@ -83,5 +88,65 @@ class TestDatasetGenomeRead(unittest.TestCase):
         self.assertEqual(genomes, desired_genomes)
 
     def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
+
+class TestFastaEmptyLineRead(unittest.TestCase):
+    """Tests reading a fasta file with empty lines.
+
+    This has previously led to errors being thrown.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+        # Write the temporary fasta file
+        self.fasta = tempfile.NamedTemporaryFile(mode='w')
+        self.fasta.write(">genome_1\n")
+        self.fasta.write("ATACG\n")
+        self.fasta.write("TATGC\n")
+        self.fasta.write(">genome_2\n")
+        self.fasta.write("ATCG\n")
+        self.fasta.write("TT\n")
+        self.fasta.write("GG\n")
+        self.fasta.write("\n")
+        self.fasta.write(">genome_3\n")
+        self.fasta.write("AAA\n")
+        self.fasta.write("CCC\n")
+        self.fasta.write("\n")
+        self.fasta.write("\n")
+        self.fasta.write(">genome_4\n")
+        self.fasta.write("ATA\n")
+        self.fasta.write("CGC\n")
+        self.fasta.write("\n")
+        self.fasta.write("\n")
+        self.fasta.write("\n")
+        self.fasta.write(">genome_5\n")
+        self.fasta.write("AGGA\n")
+        self.fasta.write("CAAT\n")
+        self.fasta.write("\n")
+        self.fasta.write("\n")
+        self.fasta.seek(0)
+
+        self.expected = OrderedDict()
+        self.expected["genome_1"] = "ATACGTATGC"
+        self.expected["genome_2"] = "ATCGTTGG"
+        self.expected["genome_3"] = "AAACCC"
+        self.expected["genome_4"] = "ATACGC"
+        self.expected["genome_5"] = "AGGACAAT"
+
+    def test_read(self):
+        seqs = seq_io.read_fasta(self.fasta.name)
+        self.assertEqual(seqs, self.expected)
+
+    def test_iterate(self):
+        seqs = list(seq_io.iterate_fasta(self.fasta.name))
+        self.assertEqual(seqs, list(self.expected.values()))
+
+    def tearDown(self):
+        self.fasta.close()
+
         # Re-enable logging
         logging.disable(logging.NOTSET)
