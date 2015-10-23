@@ -28,12 +28,27 @@ def main(args):
     genomes_grouped = []
     genomes_grouped_names = []
     for ds in args.dataset:
-        try:
-            dataset = importlib.import_module('hybseldesign.datasets.' + ds)
-        except ImportError:
-            raise ValueError("Unknown dataset %s" % ds)
-        genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
-        genomes_grouped_names += [ds]
+        if ds.startswith('collection:'):
+            # Process a collection of datasets
+            collection_name = ds[len('collection:'):]
+            try:
+                collection = importlib.import_module(
+                    'hybseldesign.datasets.collections.' + collection_name)
+            except ImportError:
+                raise ValueError("Unknown dataset collection %s" %
+                                 collection_name)
+            for name, dataset in collection.import_all():
+                genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
+                genomes_grouped_names += [name]
+        else:
+            # Process an individual dataset
+            try:
+                dataset = importlib.import_module(
+                            'hybseldesign.datasets.' + ds)
+            except ImportError:
+                raise ValueError("Unknown dataset %s" % ds)
+            genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
+            genomes_grouped_names += [ds]
 
     if args.limit_target_genomes:
         genomes_grouped = [genomes[:args.limit_target_genomes]
@@ -257,7 +272,10 @@ if __name__ == "__main__":
                         nargs='+',
                         required=True,
                         help=("Labels for one or more target datasets (e.g., "
-                              "one label per species)"))
+                              "one label per species); alternatively, "
+                              "start with 'collection:' (e.g., "
+                              "'collection:viruses_with_human_host') to "
+                              "specify an available collection of datasets"))
     parser.add_argument(
         "--limit_target_genomes",
         type=int,

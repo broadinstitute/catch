@@ -1,6 +1,7 @@
 """Convenience classes and functions for working with datasets.
 """
 
+import importlib
 import logging
 from os.path import dirname
 from os.path import join
@@ -115,3 +116,34 @@ class GenomesDatasetMultiChrom(GenomesDataset):
         self.chrs = chrs
         self.seq_header_to_chr = seq_header_to_chr
         self.fasta_paths = []
+
+
+class DatasetCollection:
+    """Immutable collection of datasets.
+    """
+
+    def __init__(self, dataset_names):
+        """
+        Args:
+            dataset_names: list of the names of the datasets (modules)
+                in this collection
+        """
+        self.dataset_names = dataset_names
+
+    def import_all(self):
+        """Import and return the datasets (modules) in this collection.
+
+        Returns:
+            List of tuples (name, dataset) where 'name' is the name of a
+            dataset and 'dataset' is the imported dataset object
+        """
+        datasets = []
+        for name in self.dataset_names:
+            try:
+                dataset = importlib.import_module(
+                                'hybseldesign.datasets.' + name)
+            except ImportError:
+                raise ValueError(("Unknown dataset %s; cannot import into "
+                                  "collection") % name)
+            datasets += [(name, dataset)]
+        return datasets
