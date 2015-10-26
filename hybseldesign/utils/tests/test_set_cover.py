@@ -542,11 +542,12 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
             np.sum([costs[set_id] for set_id in output])
         return float(sum_of_weights_of_selected_sets) / sum_of_all_weights
 
-    def test_random(self):
+    def test_random_noncontiguous(self):
         output_set = self.run_random(False, False, False)
         output_array = self.run_random(True, False, False)
         self.assertEqual(output_set, output_array)
 
+    def test_random_contiguous(self):
         # When testing with use_intervalsets, the integers generated should
         # be contiguous (set cover will run very slowly with use_intervalsets
         # if the integers are spaced apart)
