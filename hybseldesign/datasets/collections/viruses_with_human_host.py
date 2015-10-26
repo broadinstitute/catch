@@ -176,6 +176,7 @@ DATASETS = [
     'measles',
     'menangle',
     'mercadeo',
+    'mers',
     'metapneumovirus',
     'mobala',
     'modoc',
