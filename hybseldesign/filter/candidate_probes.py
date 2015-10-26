@@ -9,7 +9,6 @@ import sys
 
 import numpy as np
 
-from hybseldesign.datasets import ebola2014
 from hybseldesign import probe
 from hybseldesign.utils import seq_io
 
