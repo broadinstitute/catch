@@ -3,7 +3,7 @@
 
 import unittest
 
-from hybseldesign.datasets import ebola2014
+from hybseldesign.datasets import ebola_zaire_with_2014
 from hybseldesign.filter import candidate_probes
 from hybseldesign.utils import seq_io
 
@@ -89,12 +89,13 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
             ['ATCGNC'] + ['ATCGNC', 'TCGATA'] + ['TCGNCG', 'TCGNCG', 'TCGATA'])
 
 
-class TestCandidateProbesOnEbola2014(unittest.TestCase):
-    """Tests the candidate probes from the Ebola 2014 dataset.
+class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
+    """Tests the candidate probes from the Ebola Zaire (w/ 2014) dataset.
     """
 
     def setUp(self):
-        seqs = [gnm.seqs[0] for gnm in seq_io.read_dataset_genomes(ebola2014)]
+        seqs = [gnm.seqs[0]
+                for gnm in seq_io.read_dataset_genomes(ebola_zaire_with_2014)]
         self.probes = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
             probe_length=100,
