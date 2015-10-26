@@ -3,6 +3,11 @@
 Most of the sequences in these datasets were automatically downloaded
 from GenBank by filtering its list of all viral genomes (taxId:10239)
 for those sequences whose host contains 'human'.
+
+Note that this uses versions of HIV (1 and 2) sequences in which
+the LTRs have been stripped from both ends -- i.e., it contains
+the 'hiv1_without_ltr' and 'hiv2_without_ltr' datasets rather than
+the 'hiv1' and 'hiv2' datasets.
 """
 
 import sys
@@ -112,8 +117,8 @@ DATASETS = [
     'herpesvirus_7',
     'herpesvirus_8',
     'hervk',
-    'hiv1',
-    'hiv2',
+    'hiv1_without_ltr',
+    'hiv2_without_ltr',
     'hpiv_1',
     'hpiv_2',
     'hpiv_3',
