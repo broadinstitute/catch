@@ -634,10 +634,14 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     def test_random_small_genome(self):
         self.run_random(100, 15000, 25000, 300)
 
-    def test_random_large_genome(self):
-        self.run_random(2, 1500000, 2500000, 30000)
+    def test_random_large_genome1(self):
+        self.run_random(1, 1500000, 2500000, 30000, seed=1)
 
-    def run_random(self, n, genome_min, genome_max, num_probes):
+    def test_random_large_genome2(self):
+        self.run_random(1, 1500000, 2500000, 30000, seed=2)
+
+    def run_random(self, n, genome_min, genome_max, num_probes,
+                   seed=1, n_workers=2):
         """Run tests with a randomly generated sequence.
 
         Repeatedly runs tests in which a sequence is randomly generated,
@@ -653,8 +657,10 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 randomly chosen between genome_min and genome_max
             num_probes: the number of probes generated from the random
                 sequence
+            seed: random number generator seed
+            n_workers: number of workers to have in a probe finding pool
         """
-        np.random.seed(1)
+        np.random.seed(seed)
         for n in range(n):
             # Choose either lcf_thres=80 or lcf_thres=100
             lcf_thres = np.random.choice([80, 100])
@@ -702,7 +708,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
             f = probe.probe_covers_sequence_by_longest_common_substring(
                 3, lcf_thres)
-            probe.open_probe_finding_pool(kmer_map, f)
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
             probe.close_probe_finding_pool()
             # Check that this didn't find any extraneous probes and that
@@ -732,8 +738,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                     for found_cv in found_cover_ranges:
                         left_diff = desired_cv[0] - found_cv[0]
                         right_diff = found_cv[1] - desired_cv[1]
-                        if left_diff >= -5 and left_diff < 15:
-                            if right_diff >= -5 and right_diff < 15:
+                        if left_diff >= -7 and left_diff < 15:
+                            if right_diff >= -7 and right_diff < 15:
                                 found_desired_cv = True
                                 break
                     self.assertTrue(found_desired_cv)
