@@ -43,6 +43,7 @@ mismatches between a sequence and a probe.
 """
 
 from collections import defaultdict
+import gc
 import logging
 import re
 
@@ -255,6 +256,8 @@ class SetCoverFilter(BaseFilter):
                     length_so_far += len(sequence)
 
         probe.close_probe_finding_pool()
+        del kmer_probe_map
+        gc.collect()
 
         # Make an IntervalSet out of the intervals of each set. But if
         # there is just one interval in a set, then save space by leaving
@@ -511,6 +514,8 @@ class SetCoverFilter(BaseFilter):
 
         if need_probe_finding_pool:
             probe.close_probe_finding_pool()
+            del kmer_probe_map
+            gc.collect()
 
         # Convert the ranks, specified as tuples, into ranks from 0
         # upward. The probe(s) with the smallest tuple rank get(s)

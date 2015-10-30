@@ -6,6 +6,7 @@ import bisect
 import ctypes
 from collections import defaultdict
 from functools import partial
+import gc
 import hashlib
 import logging
 import multiprocessing
@@ -894,7 +895,7 @@ def close_probe_finding_pool():
         # to the processes). So make a best effort in calling these functions
         # -- i.e., use a timeout around calls to these functions
         try:
-            with timeout.time_limit(5):
+            with timeout.time_limit(60):
                 _pfp_pool.terminate()
                 _pfp_pool.join()
         except timeout.TimeoutException:
@@ -916,8 +917,9 @@ def close_probe_finding_pool():
 
     del _pfp_pool
     _pfp_is_open = False
-
     del _pfp_work_was_submitted
+
+    gc.collect()
 
 
 def _find_probe_covers_in_subsequence(bounds,
