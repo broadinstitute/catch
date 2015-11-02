@@ -635,13 +635,15 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         self.run_random(100, 15000, 25000, 300)
 
     def test_random_large_genome1(self):
-        self.run_random(1, 1500000, 2500000, 30000, seed=1)
+        self.run_random(1, 1500000, 2500000, 30000,
+                        lcf_thres=100, seed=1)
 
     def test_random_large_genome2(self):
-        self.run_random(1, 1500000, 2500000, 30000, seed=2)
+        self.run_random(1, 500000, 1000000, 6000,
+                        lcf_thres=80, seed=2)
 
     def run_random(self, n, genome_min, genome_max, num_probes,
-                   seed=1, n_workers=2):
+                   lcf_thres=None, seed=1, n_workers=2):
         """Run tests with a randomly generated sequence.
 
         Repeatedly runs tests in which a sequence is randomly generated,
@@ -657,13 +659,20 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 randomly chosen between genome_min and genome_max
             num_probes: the number of probes generated from the random
                 sequence
+            lcf_thres: lcf threshold parameter; when None, it is
+                randomly chosen among 80 and 100
             seed: random number generator seed
             n_workers: number of workers to have in a probe finding pool
         """
         np.random.seed(seed)
+        fixed_lcf_thres = lcf_thres
+
         for n in range(n):
-            # Choose either lcf_thres=80 or lcf_thres=100
-            lcf_thres = np.random.choice([80, 100])
+            if fixed_lcf_thres is not None:
+                lcf_thres = fixed_lcf_thres
+            else:
+                # Choose either lcf_thres=80 or lcf_thres=100
+                lcf_thres = np.random.choice([80, 100])
             # Make a random sequence
             seq_length = np.random.randint(genome_min, genome_max)
             sequence = "".join(np.random.choice(['A', 'T', 'C', 'G'],
