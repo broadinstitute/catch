@@ -113,6 +113,32 @@ class TestIntervalSet(unittest.TestCase):
                                                (400, 500)],
                                 [(100, 175), (350, 400), (500, 600)])
 
+    def compare_overlaps_interval(self, interval_set_intervals,
+                                  interval_to_check, desired_output):
+        interval_set = IntervalSet(interval_set_intervals)
+        start, end = interval_to_check
+        self.assertEqual(interval_set.overlaps_interval(start, end),
+                         desired_output)
+
+    def test_overlaps_interval(self):
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (-2, 6), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (3, 5), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (4, 8), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (-2, 8), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (9, 12), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (10, 12), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (8, 16), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (12, 16), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (3, 12), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (3, 16), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (-2, 16), True)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (-2, 1), False)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (5, 8), False)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (6, 9), False)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (14, 20), False)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (16, 20), False)
+        self.compare_overlaps_interval([(1, 5), (10, 14)], (5, 10), False)
+
 
 class TestMergeOverlapping(unittest.TestCase):
     """Tests the merge_overlapping function.

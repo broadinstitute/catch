@@ -235,6 +235,27 @@ class IntervalSet(object):
             return within_self and not within_other
         return IntervalSet(self._merge(other, include_in_merge))
 
+    def overlaps_interval(self, start, end):
+        """Returns true iff this interval set overlaps (start, end).
+
+        Note that we could generalize this to check whether this interval
+        set overlaps another by calling self.intersection(..) and
+        checking whether the result is empty. However, for a single
+        interval, this method should run faster.
+
+        Args:
+            start: start of an interval
+            end: end of an interval
+
+        Returns:
+            True iff at least one of the intervals in this IntervalSet
+            overlaps the interval (start, end)
+        """
+        for interval_start, interval_end in self.intervals:
+            if end > interval_start and start < interval_end:
+                return True
+        return False
+
     def __len__(self):
         """Count the number of integer elements contained within all intervals.
 
