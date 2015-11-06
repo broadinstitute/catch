@@ -555,12 +555,27 @@ def approx_multiuniverse(sets,
                         else:
                             memoized_set_start = memoized_set.first_start
                             memoized_set_end = memoized_set.last_end
-                        if (memoized_set_start < s.last_end and
-                                memoized_set_end > s.first_start):
-                            # memoized_set overlaps s, so invalidate it
-                            del memoized_intersect_counts[universe_id][set_id]
-                        # Else, memoized_set lies entirely outside of s, so
-                        # there is no need to invalidate its memoized value
+                        if (memoized_set_start >= s.last_end or
+                                memoized_set_end <= s.first_start):
+                            # memoized_set lies entirely outside of s, so
+                            # there is no need to invalidate its memoized value
+                            continue
+                        if (isinstance(memoized_set, interval.IntervalSet) and
+                            not memoized_set.overlaps_interval(s.first_start,
+                                                               s.last_end)):
+                            # since memoized_set does not overlap
+                            # (s.first_start, s.last_end), it is also true
+                            # that memoized_set does not overlap s -- so there
+                            # is not need to invalidate its memoized value
+                            continue
+                        # memoized_set might overlap s, so invalidate it
+                        # ('might' because we only checked against
+                        #  (s.first_start, s.last_end))
+                        # (we could fully check with a call to
+                        #  memoized_set.intersection(s) and seeing if the
+                        #  result is nonempty, but this is just as expensive
+                        #  as the consequence of invalidating memoized_set)
+                        del memoized_intersect_counts[universe_id][set_id]
                 else:
                     # The universe was modified. Since we are not using
                     # interval sets, there are no obvious optimizations --
