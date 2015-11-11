@@ -823,15 +823,20 @@ def open_probe_finding_pool(kmer_probe_map,
     # a timeout on opening the pool, and try again if it times out. It
     # appears, from testing, that opening a pool may timeout a few times in
     # a row, but eventually succeeds.
+    time_limit = 60
     while True:
         try:
-            with timeout.time_limit(5):
+            with timeout.time_limit(time_limit):
                 _pfp_pool = multiprocessing.Pool(num_processes)
             break
         except timeout.TimeoutException:
             # Try again
-            pass
+            logger.debug("Pool initialization timed out; trying again")
+            time_limit *= 2
+            continue
+
     _pfp_work_was_submitted = False
+    logger.debug("Successfully opened a probe finding pool")
 
 
 def close_probe_finding_pool():
@@ -895,7 +900,7 @@ def close_probe_finding_pool():
         # to the processes). So make a best effort in calling these functions
         # -- i.e., use a timeout around calls to these functions
         try:
-            with timeout.time_limit(60):
+            with timeout.time_limit(120):
                 _pfp_pool.terminate()
                 _pfp_pool.join()
         except timeout.TimeoutException:
@@ -905,6 +910,8 @@ def close_probe_finding_pool():
             # additional pools from being created, so let the program continue
             # to execute because it will generally be able to keep making
             # progress
+            logger.debug(("Terminating the probe finding pool timed out; "
+                          "ignoring"))
             pass
         except:
             # _pfp_pool.terminate() occassionally raises another exception
@@ -920,6 +927,7 @@ def close_probe_finding_pool():
     del _pfp_work_was_submitted
 
     gc.collect()
+    logger.debug("Successfully closed the probe finding pool")
 
 
 def _find_probe_covers_in_subsequence(bounds,
