@@ -342,8 +342,8 @@ def approx_multiuniverse(sets,
                 raise ValueError("ranks is missing a value for set %d" %
                                  set_id)
     # Track the current index (curr_rank_index) as we step through all
-    # of the ranks (rank_vals)
-    rank_vals = sorted(ranks.values())
+    # of the (distinct) ranks (rank_vals)
+    rank_vals = sorted(set(ranks.values()))
     curr_rank_index = 0
 
     num_that_can_be_uncovered = {}
