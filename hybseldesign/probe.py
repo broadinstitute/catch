@@ -900,9 +900,8 @@ def close_probe_finding_pool():
         # to the processes). So make a best effort in calling these functions
         # -- i.e., use a timeout around calls to these functions
         try:
-            with timeout.time_limit(120):
+            with timeout.time_limit(60):
                 _pfp_pool.terminate()
-                _pfp_pool.join()
         except timeout.TimeoutException:
             # Ignore the timeout
             # If _pfp_pool.terminate() or _pfp_pool.join() fails this will
@@ -920,6 +919,24 @@ def close_probe_finding_pool():
             # correctness or prevent additional pools from being created, so
             # is better to ignore it than to let the exception crash the
             # program
+            pass
+
+        try:
+            with timeout.time_limit(60):
+                _pfp_pool.join()
+        except timeout.TimeoutException:
+            # Ignore the timeout
+            # If _pfp_pool.terminate() or _pfp_pool.join() fails this will
+            # not affect correctness and will not necessarily prevent
+            # additional pools from being created, so let the program continue
+            # to execute because it will generally be able to keep making
+            # progress
+            logger.debug(("Joining the probe finding pool timed out; "
+                          "ignoring"))
+            pass
+        except:
+            # Ignore any additional exception from _pfp_pool.join() rather
+            # than letting it crash the program
             pass
 
     del _pfp_pool
