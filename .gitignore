@@ -54,3 +54,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# vim swap files
+*.swp
+
+# start.sh script
+start.sh
