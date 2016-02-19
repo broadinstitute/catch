@@ -476,8 +476,8 @@ def _construct_pigeonholed_kmer_probe_map(probes,
 def construct_kmer_probe_map_to_find_probe_covers(probes,
                                                   mismatches,
                                                   lcf_thres,
-                                                  min_k=10,
-                                                  k=10,
+                                                  min_k=20,
+                                                  k=20,
                                                   include_positions=True):
     """Construct map from k-mers to probes that contain these k-mers.
 
@@ -731,7 +731,7 @@ set_max_num_processes_for_probe_finding_pools()
 
 
 def open_probe_finding_pool(kmer_probe_map,
-                            cover_range_for_probe_in_subsequence_fn=None,
+                            cover_range_for_probe_in_subsequence_fn,
                             num_processes=None):
     """Open a pool for calling find_probe_covers_in_sequence().
 
@@ -778,12 +778,6 @@ def open_probe_finding_pool(kmer_probe_map,
             raise RuntimeError("Probe finding pool is already open")
     except NameError:
         pass
-
-    if cover_range_for_probe_in_subsequence_fn is None:
-        # By default, determine a cover range using a longest common
-        # substring with its default parameters
-        cover_range_for_probe_in_subsequence_fn = \
-            probe_covers_sequence_by_longest_common_substring()
 
     if num_processes is None:
         num_processes = min(multiprocessing.cpu_count(),
@@ -1196,8 +1190,8 @@ def find_probe_covers_in_sequence(sequence,
     return probe_cover_ranges_cleaned
 
 
-def probe_covers_sequence_by_longest_common_substring(mismatches=0,
-                                                      lcf_thres=100):
+def probe_covers_sequence_by_longest_common_substring(mismatches,
+                                                      lcf_thres):
     """Return a function that determines coverage of a probe in a sequence.
 
     The returned function lcf takes a probe sequence (probe.seq) and a
