@@ -94,8 +94,14 @@ class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
     """
 
     def setUp(self):
+        """Read the dataset's genomes and create candidate probes.
+
+        Only process the first 100 genomes to avoid using too much memory
+        with the candidate probes.
+        """
         seqs = [gnm.seqs[0]
                 for gnm in seq_io.read_dataset_genomes(ebola_zaire_with_2014)]
+        seqs = seqs[:100]
         self.probes_100 = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
             probe_length=100,
