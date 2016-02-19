@@ -1191,7 +1191,8 @@ def find_probe_covers_in_sequence(sequence,
 
 
 def probe_covers_sequence_by_longest_common_substring(mismatches,
-                                                      lcf_thres):
+                                                      lcf_thres,
+                                                      island_of_exact_match=0):
     """Return a function that determines coverage of a probe in a sequence.
 
     The returned function lcf takes a probe sequence (probe.seq) and a
@@ -1208,6 +1209,16 @@ def probe_covers_sequence_by_longest_common_substring(mismatches,
     sequence and sequence) of sequence that the probe covers, where
     the range is the bounds of the longest common substring.
 
+    Furthermore, lcf requires that there be a longest common substring
+    with 0 mismatches, based around the anchor, of length at least
+    'island_of_exact_match'. If this is not met, lcf returns None.
+    This helps simulate hybridization, which often requires an island
+    of 100% identity between a probe and a fragment in order for the
+    probe to hybridize to (and capture) the fragment; the length of
+    this island is a parameter, often about 20-30 bp. When
+    'island_of_exact_match' is unset and given a default value of 0,
+    this requirement not effectively not applied.
+
     Args:
         mismatches/lcf_thres: if the length of the longest common
             substring with at most 'mismatches' mismatches is >=
@@ -1215,6 +1226,11 @@ def probe_covers_sequence_by_longest_common_substring(mismatches,
             bounds of the longest common substring; otherwise it outputs
             None, indicating that the provided probe that does cover
             the provided sequence
+        island_of_exact_match: in order for the returned function (lcf)
+            to output bounds, require that there be an exact match of
+            at least length 'island_of_exact_match' between the probe
+            and the provided sequence (i.e., a longest common substring
+            with 0 mismatches that has this length)
 
     Returns:
         function that, given a probe and sequence anchored at a shared
@@ -1224,9 +1240,18 @@ def probe_covers_sequence_by_longest_common_substring(mismatches,
     def lcf(probe_seq, sequence, kmer_start, kmer_end):
         l, start = longest_common_substring.k_lcf_around_anchor(
             probe_seq, sequence, kmer_start, kmer_end, mismatches)
-        if l >= lcf_thres:
-            return (start, start + l)
-        else:
+        if l < lcf_thres:
             return None
+
+        if island_of_exact_match > 0:
+            if mismatches == 0:
+                exact_match_l = l
+            else:
+                exact_match_l, _ = longest_common_substring.k_lcf_around_anchor(
+                    probe_seq, sequence, kmer_start, kmer_end, 0)
+            if exact_match_l < island_of_exact_match:
+                return None
+
+        return (start, start + l)
 
     return lcf

@@ -44,6 +44,7 @@ def main(args):
         args.lcf_thres,
         genomes_grouped,
         genomes_grouped_names,
+        island_of_exact_match=args.island_of_exact_match,
         cover_extension=args.cover_extension)
     analyzer.run()
     if args.write_analysis_to_tsv:
@@ -72,6 +73,15 @@ if __name__ == "__main__":
               "sequence if the two share a substring with at most "
               "'mismatches' mismatches that has length >= 'lcf_thres' "
               "bp"))
+    parser.add_argument(
+        "--island_of_exact_match",
+        type=int,
+        default=0,
+        help=("(Optional) When determining whether a probe covers a "
+              "sequence, require that there be an exact match (i.e., "
+              "no mismatches) of length at least 'island_of_exact_"
+              "match' bp between a portion of the probe and a portion "
+              "of the sequence"))
     parser.add_argument(
         "-e", "--cover_extension",
         type=int,

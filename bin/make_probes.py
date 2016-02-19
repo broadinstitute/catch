@@ -81,6 +81,11 @@ def main(args):
                         "(%d), which is usually undesirable and may lead "
                         "to undefined behavior"),
                         args.lcf_thres, args.probe_length)
+    if args.island_of_exact_match > args.probe_length:
+        logger.warning(("island_of_exact_match (%d) is grater than "
+                        "probe_length (%d), which is usually undesirable "
+                        "and may lead to undefined behavior"),
+                        args.island_of_exact_match, args.probe_length)
 
     # Set the maximum number of processes in multiprocessing pools
     if args.max_num_processes:
@@ -100,8 +105,10 @@ def main(args):
     scf = set_cover_filter.SetCoverFilter(
         mismatches=args.mismatches,
         lcf_thres=args.lcf_thres,
+        island_of_exact_match=args.island_of_exact_match,
         mismatches_tolerant=args.mismatches_tolerant,
         lcf_thres_tolerant=args.lcf_thres_tolerant,
+        island_of_exact_match_tolerant=args.island_of_exact_match_tolerant,
         identify=args.identify,
         blacklisted_genomes=blacklisted_genomes_fasta,
         coverage=args.coverage,
@@ -112,7 +119,9 @@ def main(args):
     af = adapter_filter.AdapterFilter(tuple(args.adapter_a),
                                       tuple(args.adapter_b),
                                       mismatches=args.mismatches,
-                                      lcf_thres=args.lcf_thres)
+                                      lcf_thres=args.lcf_thres,
+                                      island_of_exact_match=\
+                                        args.island_of_exact_match)
     #  4) Reverse complement (rc) -- add the reverse complement of each
     #     probe that remains
     rc = reverse_complement_filter.ReverseComplementFilter()
@@ -150,6 +159,7 @@ def main(args):
             args.lcf_thres,
             genomes_grouped,
             genomes_grouped_names,
+            island_of_exact_match=args.island_of_exact_match,
             cover_extension=args.cover_extension)
         analyzer.run()
         if args.write_analysis_to_tsv:
@@ -192,6 +202,15 @@ if __name__ == "__main__":
               "'mismatches' mismatches that has length >= 'lcf_thres' "
               "bp; if unspecified, this is set to probe_length"))
     parser.add_argument(
+        "--island_of_exact_match",
+        type=int,
+        default=0,
+        help=("(Optional) When determining whether a probe covers a "
+              "sequence, require that there be an exact match (i.e., "
+              "no mismatches) of length at least 'island_of_exact_"
+              "match' bp between a portion of the probe and a portion "
+              "of the sequence"))
+    parser.add_argument(
         "-mt", "--mismatches_tolerant",
         type=int,
         help=("(Optional) A more tolerant value for '--mismatches'; "
@@ -207,6 +226,16 @@ if __name__ == "__main__":
               "Allows for capturing more possible hybridizations "
               "(i.e., more sensitivity) when designing probes for "
               "identification or when genomes are blacklisted."))
+    parser.add_argument(
+        "--island_of_exact_match_tolerant",
+        type=int,
+        default=0,
+        help=("(Optional) A more tolerant value for '--island_of_"
+              "exact_match'; this should be less than the value of "
+              "'--island_of_exact_match'. Allows for capturing more "
+              "possible hybridizations (i.e., more sensitivity) "
+              "when designing probes for identification or when "
+              "genomes are blacklisted."))
     parser.add_argument(
         "-i", "--identify",
         dest="identify",

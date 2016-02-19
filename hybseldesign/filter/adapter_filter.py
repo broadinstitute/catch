@@ -125,6 +125,7 @@ class AdapterFilter(BaseFilter):
                  adapter_b,
                  mismatches,
                  lcf_thres,
+                 island_of_exact_match=0,
                  kmer_probe_map_k=20):
         """
         Args:
@@ -137,6 +138,9 @@ class AdapterFilter(BaseFilter):
             mismatches/lcf_thres: consider a probe to hybridize to a
                 sequence if a stretch of 'lcf_thres' or more bp aligns with
                 'mismatches' or fewer mismatched bp
+            island_of_exact_match: for a probe to hybridize to a sequence,
+                require that there be an exact match of length at least
+                'island_of_exact_match'
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
         """
@@ -151,7 +155,8 @@ class AdapterFilter(BaseFilter):
         self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches=mismatches, lcf_thres=lcf_thres)
+                mismatches=mismatches, lcf_thres=lcf_thres,
+                island_of_exact_match=island_of_exact_match)
         self.kmer_probe_map_k = kmer_probe_map_k
 
     def _votes_in_sequence(self, probes, sequence):

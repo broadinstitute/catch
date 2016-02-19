@@ -78,6 +78,7 @@ class Analyzer:
                  lcf_thres,
                  target_genomes,
                  target_genomes_names=None,
+                 island_of_exact_match=0,
                  cover_extension=0,
                  kmer_probe_map_k=10):
         """
@@ -95,6 +96,9 @@ class Analyzer:
             target_genomes_names: list [s_1, s_2, ..., s_m] of strings where
                 the name of the i'th genome grouping (from target_genomes) is
                 s_i. When None, the name of the i'th grouping is "Group i".
+            island_of_exact_match: for a probe to hybridize to a sequence,
+                require that there be an exact match of length at least
+                'island_of_exact_match'
             cover_extension: number of bp by which to extend the coverage on
                 each side of a probe; a probe "covers" the portion of the
                 sequence that it hybridizes to, as well as 'cover_extension'
@@ -117,7 +121,7 @@ class Analyzer:
         self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches, lcf_thres)
+                mismatches, lcf_thres, island_of_exact_match)
         self.cover_extension = cover_extension
         self.kmer_probe_map_k = kmer_probe_map_k
 
