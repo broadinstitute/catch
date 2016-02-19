@@ -141,6 +141,10 @@ def main(args):
     if args.skip_adapters:
         filters.remove(af)
 
+    # Don't add reverse complements if desired
+    if args.skip_reverse_complements:
+        filters.remove(rc)
+
     # Design the probes
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
                                       probe_length=args.probe_length,
@@ -153,6 +157,7 @@ def main(args):
 
     if (args.print_analysis or args.write_analysis_to_tsv or
             args.write_sliding_window_coverage):
+        rc_too = False if args.skip_reverse_complements else True
         analyzer = coverage_analysis.Analyzer(
             pb.final_probes,
             args.mismatches,
@@ -160,7 +165,8 @@ def main(args):
             genomes_grouped,
             genomes_grouped_names,
             island_of_exact_match=args.island_of_exact_match,
-            cover_extension=args.cover_extension)
+            cover_extension=args.cover_extension,
+            rc_too=rc_too)
         analyzer.run()
         if args.write_analysis_to_tsv:
             analyzer.write_data_matrix_as_tsv(
@@ -292,6 +298,11 @@ if __name__ == "__main__":
                         dest="skip_adapters",
                         action="store_true",
                         help=("Do not add adapters to the ends of probes"))
+    parser.add_argument("--skip_reverse_complements",
+                        dest="skip_reverse_complements",
+                        action="store_true",
+                        help=("Do not add to the output the reverse "
+                              "complement of each probe"))
     parser.add_argument(
         "--filter_from_fasta",
         help=("(Optional) A FASTA file from which to select candidate probes. "
