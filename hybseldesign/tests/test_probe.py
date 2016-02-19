@@ -444,6 +444,16 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
         match = f('ZZZZZAGHIJYZ', self.seq, 6, 9)
         self.assertTrue(match is None)
 
+    def test_match_with_island_of_exact_match(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
+        match = f('ZZZGHIGHIJXLDEF', self.seq, 6, 9)
+        self.assertEquals(match, (6, 12))
+
+    def test_no_match_with_island_of_exact_match(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
+        match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9)
+        self.assertTrue(match is None)
+
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
@@ -544,6 +554,58 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             probe.open_probe_finding_pool(kmer_map, f, n_workers)
             found = probe.find_probe_covers_in_sequence(sequence)
             self.assertCountEqual(found[a], [(3, 13), (25, 38)])
+            probe.close_probe_finding_pool()
+
+    def test_island_with_exact_match1(self):
+        """Tests the 'island_with_exact_match' argument for
+        probe.probe_covers_sequence_by_longest_common_substring(..).
+        """
+        np.random.seed(1)
+        sequence = 'ABCDEFGHIJKLMNOPYDEFGHQRSTU'
+        a = probe.Probe.from_str('XDEFGH')
+        b = probe.Probe.from_str('CXEFGH')
+        c = probe.Probe.from_str('CDXFGH')
+        d = probe.Probe.from_str('CDEXGH')
+        e = probe.Probe.from_str('CDEFXH')
+        f = probe.Probe.from_str('CDEFGX')
+        g = probe.Probe.from_str('CDEFGH')
+        probes = [a, b, c, d, e, f, g]
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 1, 6, k=3)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        fn = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, fn, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertCountEqual(found[a], [(2, 8), (16, 22)])
+            self.assertCountEqual(found[b], [(2, 8)])
+            self.assertFalse(c in found)
+            self.assertFalse(d in found)
+            self.assertCountEqual(found[e], [(2, 8)])
+            self.assertCountEqual(found[f], [(2, 8)])
+            self.assertCountEqual(found[g], [(2, 8), (16, 22)])
+            probe.close_probe_finding_pool()
+
+    def test_island_with_exact_match2(self):
+        """Tests the 'island_with_exact_match' argument for
+        probe.probe_covers_sequence_by_longest_common_substring(..).
+        """
+        np.random.seed(1)
+        sequence = 'ABCDEFGHIJKLMNOPCDEFGHQRSTU'
+        a = probe.Probe.from_str('HXJKLMNOPCDE')
+        b = probe.Probe.from_str('XIJKXMNOXCDE')
+        c = probe.Probe.from_str('XIJKXMNOPXDE')
+        probes = [a, b, c]
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 3, 6, k=3)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        fn = probe.probe_covers_sequence_by_longest_common_substring(3, 6, 4)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, fn, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertCountEqual(found[a], [(7, 19)])
+            self.assertFalse(b in found)
+            self.assertCountEqual(found[c], [(7, 19)])
             probe.close_probe_finding_pool()
 
     def test_pigeonhole_with_mismatch(self):
