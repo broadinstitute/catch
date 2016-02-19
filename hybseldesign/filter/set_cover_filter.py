@@ -63,8 +63,8 @@ class SetCoverFilter(BaseFilter):
     """
 
     def __init__(self,
-                 mismatches=0,
-                 lcf_thres=100,
+                 mismatches,
+                 lcf_thres,
                  mismatches_tolerant=None,
                  lcf_thres_tolerant=None,
                  identify=False,

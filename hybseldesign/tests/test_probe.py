@@ -631,8 +631,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             probe.close_probe_finding_pool()
             time.sleep(1)
 
-    def test_random_small_genome(self):
-        self.run_random(100, 15000, 25000, 300)
+    def test_random_small_genome1(self):
+        self.run_random(100, 15000, 25000, 300, seed=1)
+
+    def test_random_small_genome1(self):
+        self.run_random(100, 15000, 25000, 300, probe_length=75,
+                        lcf_thres=75, seed=2)
 
     def test_random_large_genome1(self):
         self.run_random(1, 1500000, 2500000, 30000,
@@ -642,8 +646,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         self.run_random(1, 500000, 1000000, 6000,
                         lcf_thres=80, seed=2)
 
+    def test_random_large_genome3(self):
+        self.run_random(1, 500000, 1000000, 6000, probe_length=75,
+                        lcf_thres=75, seed=3)
+
     def run_random(self, n, genome_min, genome_max, num_probes,
-                   lcf_thres=None, seed=1, n_workers=2):
+                   probe_length=100, lcf_thres=None, seed=1, n_workers=2):
         """Run tests with a randomly generated sequence.
 
         Repeatedly runs tests in which a sequence is randomly generated,
@@ -659,6 +667,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 randomly chosen between genome_min and genome_max
             num_probes: the number of probes generated from the random
                 sequence
+            probe_length: number of bp to make each probe
             lcf_thres: lcf threshold parameter; when None, it is
                 randomly chosen among 80 and 100
             seed: random number generator seed
@@ -682,10 +691,9 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             # Make num_probes random probes
             probes = []
             for m in range(num_probes):
-                probe_length = 100
                 subseq_start = np.random.randint(0, seq_length - probe_length)
                 subseq_end = subseq_start + probe_length
-                cover_length = np.random.randint(lcf_thres, 101)
+                cover_length = np.random.randint(lcf_thres, probe_length + 1)
                 cover_start = subseq_start + \
                     np.random.randint(0, probe_length - cover_length + 1)
                 cover_end = min(seq_length, cover_start + cover_length)

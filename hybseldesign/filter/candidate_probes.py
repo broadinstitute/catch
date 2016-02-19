@@ -16,8 +16,8 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
 def make_candidate_probes_from_sequence(seq,
-                                        probe_length=100,
-                                        probe_stride=50,
+                                        probe_length,
+                                        probe_stride,
                                         min_n_string_length=2,
                                         insert_bugs=False):
     """Generate a list of candidate probes from a sequence.
@@ -136,8 +136,8 @@ def make_candidate_probes_from_sequence(seq,
 
 def make_candidate_probes_from_sequences(
         seqs,
-        probe_length=100,
-        probe_stride=50,
+        probe_length,
+        probe_stride,
         min_n_string_length=2,
         insert_bugs=False,
         move_all_n_string_flanking_probes_to_end=False):

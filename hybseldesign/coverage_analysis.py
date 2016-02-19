@@ -74,16 +74,20 @@ class Analyzer:
 
     def __init__(self,
                  probes,
+                 mismatches,
+                 lcf_thres,
                  target_genomes,
                  target_genomes_names=None,
-                 mismatches=0,
-                 lcf_thres=100,
                  cover_extension=0,
                  kmer_probe_map_k=10):
         """
         Args:
             probes: collection of instances of probe.Probe that form a
                 complete probe set
+            mismatches/lcf_thres: consider a probe to hybridize to a sequence
+                if a stretch of 'lcf_thres' or more bp aligns with
+                'mismatches' or fewer mismatched bp; used to compute whether
+                a probe "covers" a portion of a sequence
             target_genomes: list [g_1, g_2, ..., g_m] of m groupings of
                 genomes, where each g_i is a list of genome.Genomes belonging
                 to group i. For example, a group may be a species and each g_i
@@ -91,10 +95,6 @@ class Analyzer:
             target_genomes_names: list [s_1, s_2, ..., s_m] of strings where
                 the name of the i'th genome grouping (from target_genomes) is
                 s_i. When None, the name of the i'th grouping is "Group i".
-            mismatches/lcf_thres: consider a probe to hybridize to a sequence
-                if a stretch of 'lcf_thres' or more bp aligns with
-                'mismatches' or fewer mismatched bp; used to compute whether
-                a probe "covers" a portion of a sequence
             cover_extension: number of bp by which to extend the coverage on
                 each side of a probe; a probe "covers" the portion of the
                 sequence that it hybridizes to, as well as 'cover_extension'

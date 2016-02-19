@@ -40,10 +40,10 @@ def main(args):
     # Run the coverage analyzer
     analyzer = coverage_analysis.Analyzer(
         probes,
+        args.mismatches,
+        args.lcf_thres,
         genomes_grouped,
         genomes_grouped_names,
-        mismatches=args.mismatches,
-        lcf_thres=args.lcf_thres,
         cover_extension=args.cover_extension)
     analyzer.run()
     if args.write_analysis_to_tsv:

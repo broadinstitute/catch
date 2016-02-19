@@ -27,10 +27,10 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         probes_str = ['ATCCAT', 'TTTGAA', 'GAAGCG', 'ATGGAT', 'AAACCC']
         probes = [probe.Probe.from_str(p) for p in probes_str]
         self.analyzer = ca.Analyzer(probes,
-                                    [[genome_a], [genome_b]],
-                                    target_genomes_names=["g_a", "g_b"],
                                     mismatches=0,
                                     lcf_thres=6,
+                                    target_genomes=[[genome_a], [genome_b]],
+                                    target_genomes_names=["g_a", "g_b"],
                                     kmer_probe_map_k=3)
         self.analyzer.run(window_length=6, window_stride=3)
 
@@ -238,10 +238,10 @@ class TestAnalyzerCoversWithCoverExtension(unittest.TestCase):
                       'CCCCCC', 'AAACCC']
         probes = [probe.Probe.from_str(p) for p in probes_str]
         self.analyzer = ca.Analyzer(probes,
-                                    [[genome_a], [genome_b]],
-                                    target_genomes_names=["g_a", "g_b"],
                                     mismatches=0,
                                     lcf_thres=6,
+                                    target_genomes=[[genome_a], [genome_b]],
+                                    target_genomes_names=["g_a", "g_b"],
                                     cover_extension=2,
                                     kmer_probe_map_k=3)
         self.analyzer.run(window_length=6, window_stride=3)

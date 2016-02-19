@@ -24,6 +24,8 @@ hg19.add_fasta_path(
 
 
 def main(args):
+    logger = logging.getLogger(__name__)
+
     # Read the genomes from FASTA sequences
     genomes_grouped = []
     genomes_grouped_names = []
@@ -65,6 +67,20 @@ def main(args):
                 raise ValueError("Unknown dataset %s" % bg)
             for fp in dataset.fasta_paths:
                 blacklisted_genomes_fasta += [fp]
+
+    # Setup and verify parameters related to probe length
+    if not args.lcf_thres:
+        args.lcf_thres = args.probe_length
+    if args.probe_stride > args.probe_length:
+        logger.warning(("probe_stride (%d) is greater than probe_length "
+                        "(%d), which is usually undesirable and may lead "
+                        "to undefined behavior"),
+                        args.probe_stride, args.probe_length)
+    if args.lcf_thres > args.probe_length:
+        logger.warning(("lcf_thres (%d) is greater than probe_length "
+                        "(%d), which is usually undesirable and may lead "
+                        "to undefined behavior"),
+                        args.lcf_thres, args.probe_length)
 
     # Set the maximum number of processes in multiprocessing pools
     if args.max_num_processes:
@@ -117,7 +133,9 @@ def main(args):
         filters.remove(af)
 
     # Design the probes
-    pb = probe_designer.ProbeDesigner(genomes_grouped, filters)
+    pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
+                                      probe_length=args.probe_length,
+                                      probe_stride=args.probe_stride)
     pb.design()
 
     if args.output_probes:
@@ -128,10 +146,10 @@ def main(args):
             args.write_sliding_window_coverage):
         analyzer = coverage_analysis.Analyzer(
             pb.final_probes,
+            args.mismatches,
+            args.lcf_thres,
             genomes_grouped,
             genomes_grouped_names,
-            mismatches=args.mismatches,
-            lcf_thres=args.lcf_thres,
             cover_extension=args.cover_extension)
         analyzer.run()
         if args.write_analysis_to_tsv:
@@ -150,6 +168,17 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-pl", "--probe_length",
+        type=int,
+        default=100,
+        help=("(Optional) The number of bp in each probe"))
+    parser.add_argument(
+        "-ps", "--probe_stride",
+        type=int,
+        default=50,
+        help=("(Optional) Generate candidate probes from the input "
+              "that are separated by this number of bp"))
+    parser.add_argument(
         "-m", "--mismatches",
         required=True,
         type=int,
@@ -157,12 +186,11 @@ if __name__ == "__main__":
               "whether a probe covers a sequence"))
     parser.add_argument(
         "-l", "--lcf_thres",
-        required=True,
         type=int,
-        help=("Say that a portion of a probe covers a portion of a "
-              "sequence if the two share a substring with at most "
+        help=("(Optional) Say that a portion of a probe covers a portion "
+              "of a sequence if the two share a substring with at most "
               "'mismatches' mismatches that has length >= 'lcf_thres' "
-              "bp"))
+              "bp; if unspecified, this is set to probe_length"))
     parser.add_argument(
         "-mt", "--mismatches_tolerant",
         type=int,
