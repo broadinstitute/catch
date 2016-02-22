@@ -9,8 +9,18 @@ dataset can be found on GenBank with a search for:
 whereas the sequences in this dataset can be found with a search for:
     ("Zika virus"[porgn:__txid64320]) NOT complete
 
-**why we keep them separate / why probe design is hard on partial
-sequences**
+These partial sequences are kept separate from full genomes because
+this software package is meant to use full genomes as input. Designing
+probes with many partial sequences of the same region (e.g., the
+same protein or the 3' UTR) may lead to more probes than are
+necessary. The reason is that many of the partial sequences may be
+slightly offset from each other (i.e., unlike in complete genomes,
+their endpoints are not in alignment) and separate probes will be
+needed to capture each of the ends of each of these partial sequences.
+In actual hybrid selection, these probes are extraneous because it
+is performed on complete genomes and so probes that might only
+hybridize to a piece of the end of a partial sequence will actually
+capture the desired fragment.
 """
 
 import sys

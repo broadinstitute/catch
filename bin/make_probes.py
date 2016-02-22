@@ -82,7 +82,7 @@ def main(args):
                         "to undefined behavior"),
                         args.lcf_thres, args.probe_length)
     if args.island_of_exact_match > args.probe_length:
-        logger.warning(("island_of_exact_match (%d) is grater than "
+        logger.warning(("island_of_exact_match (%d) is greater than "
                         "probe_length (%d), which is usually undesirable "
                         "and may lead to undefined behavior"),
                         args.island_of_exact_match, args.probe_length)
