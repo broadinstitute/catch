@@ -11,6 +11,7 @@ from hybseldesign.datasets import hg19
 from hybseldesign.filter import adapter_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import fasta_filter
+from hybseldesign.filter import n_expansion_filter
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import set_cover_filter
@@ -132,6 +133,13 @@ def main(args):
         ff = fasta_filter.FastaFilter(args.filter_from_fasta,
                                       skip_reverse_complements=True)
         filters.insert(0, ff)
+
+    # Add an N expansion filter just before the reverse complement
+    # filter if desired
+    if args.expand_n:
+        rc_pos = filters.index(rc)
+        nef = n_expansion_filter.NExpansionFilter()
+        filters.insert(rc_pos, nef)
 
     # Don't apply the set cover filter if desired
     if args.skip_set_cover:
@@ -303,6 +311,16 @@ if __name__ == "__main__":
                         action="store_true",
                         help=("Do not add to the output the reverse "
                               "complement of each probe"))
+    parser.add_argument(
+        "--expand_n",
+        dest="expand_n",
+        action="store_true",
+        help=("Expand each probe so that 'N' bases are replaced by real "
+              "bases; for example, the probe 'ANA' would be replaced "
+              "with the probes 'AAA', 'ATA', 'ACA', and 'AGA'; this is "
+              "done combinatorially across all 'N' bases in a probe, and "
+              "thus the number of new probes grows exponentially with the "
+              "number of 'N' bases in a probe"))
     parser.add_argument(
         "--filter_from_fasta",
         help=("(Optional) A FASTA file from which to select candidate probes. "
