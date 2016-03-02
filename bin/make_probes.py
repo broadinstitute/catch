@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Design probes by treating the problem as an instance of set cover."""
 
 import argparse

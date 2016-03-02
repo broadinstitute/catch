@@ -14,4 +14,9 @@ setup(name='hybseldesign',
       author='Hayden Metsky',
       author_email='hayden@mit.edu',
       packages=find_packages(),
-      requires=['numpy'], )
+      install_requires=['numpy'],
+      scripts=[
+          'bin/make_probes.py',
+          'bin/analyze_probe_coverage.py',
+          'bin/replicate_original_probes.py',
+      ])
