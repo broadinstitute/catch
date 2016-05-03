@@ -447,7 +447,7 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
     def test_match_with_island_of_exact_match(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
         match = f('ZZZGHIGHIJXLDEF', self.seq, 6, 9)
-        self.assertEquals(match, (6, 12))
+        self.assertEqual(match, (6, 12))
 
     def test_no_match_with_island_of_exact_match(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
