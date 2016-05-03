@@ -26,9 +26,9 @@ class TestEbolaZaireFASTARead(unittest.TestCase):
         self.seqs = list(self.seqs_map.values())
 
     def test_num_seqs(self):
-        """Test that there are 791 sequences.
+        """Test that there are 682 sequences.
         """
-        self.assertEqual(len(self.seqs), 791)
+        self.assertEqual(len(self.seqs), 682)
 
     def test_seq_length(self):
         """Test that all sequences are of length 18-19 kbp.
