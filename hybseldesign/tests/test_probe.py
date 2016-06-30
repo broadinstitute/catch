@@ -444,6 +444,16 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
         match = f('ZZZZZAGHIJYZ', self.seq, 6, 9)
         self.assertTrue(match is None)
 
+    def test_match_with_island_of_exact_match(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
+        match = f('ZZZGHIGHIJXLDEF', self.seq, 6, 9)
+        self.assertEqual(match, (6, 12))
+
+    def test_no_match_with_island_of_exact_match(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
+        match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9)
+        self.assertTrue(match is None)
+
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
@@ -546,6 +556,58 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             self.assertCountEqual(found[a], [(3, 13), (25, 38)])
             probe.close_probe_finding_pool()
 
+    def test_island_with_exact_match1(self):
+        """Tests the 'island_with_exact_match' argument for
+        probe.probe_covers_sequence_by_longest_common_substring(..).
+        """
+        np.random.seed(1)
+        sequence = 'ABCDEFGHIJKLMNOPYDEFGHQRSTU'
+        a = probe.Probe.from_str('XDEFGH')
+        b = probe.Probe.from_str('CXEFGH')
+        c = probe.Probe.from_str('CDXFGH')
+        d = probe.Probe.from_str('CDEXGH')
+        e = probe.Probe.from_str('CDEFXH')
+        f = probe.Probe.from_str('CDEFGX')
+        g = probe.Probe.from_str('CDEFGH')
+        probes = [a, b, c, d, e, f, g]
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 1, 6, k=3)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        fn = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, fn, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertCountEqual(found[a], [(2, 8), (16, 22)])
+            self.assertCountEqual(found[b], [(2, 8)])
+            self.assertFalse(c in found)
+            self.assertFalse(d in found)
+            self.assertCountEqual(found[e], [(2, 8)])
+            self.assertCountEqual(found[f], [(2, 8)])
+            self.assertCountEqual(found[g], [(2, 8), (16, 22)])
+            probe.close_probe_finding_pool()
+
+    def test_island_with_exact_match2(self):
+        """Tests the 'island_with_exact_match' argument for
+        probe.probe_covers_sequence_by_longest_common_substring(..).
+        """
+        np.random.seed(1)
+        sequence = 'ABCDEFGHIJKLMNOPCDEFGHQRSTU'
+        a = probe.Probe.from_str('HXJKLMNOPCDE')
+        b = probe.Probe.from_str('XIJKXMNOXCDE')
+        c = probe.Probe.from_str('XIJKXMNOPXDE')
+        probes = [a, b, c]
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 3, 6, k=3)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        fn = probe.probe_covers_sequence_by_longest_common_substring(3, 6, 4)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, fn, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertCountEqual(found[a], [(7, 19)])
+            self.assertFalse(b in found)
+            self.assertCountEqual(found[c], [(7, 19)])
+            probe.close_probe_finding_pool()
+
     def test_pigeonhole_with_mismatch(self):
         """Tests with short sequence and short probes
         where the call to construct_kmer_probe_map_to_find_probe_covers tries
@@ -631,8 +693,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             probe.close_probe_finding_pool()
             time.sleep(1)
 
-    def test_random_small_genome(self):
-        self.run_random(100, 15000, 25000, 300)
+    def test_random_small_genome1(self):
+        self.run_random(100, 15000, 25000, 300, seed=1)
+
+    def test_random_small_genome1(self):
+        self.run_random(100, 15000, 25000, 300, probe_length=75,
+                        lcf_thres=75, seed=2)
 
     def test_random_large_genome1(self):
         self.run_random(1, 1500000, 2500000, 30000,
@@ -642,8 +708,12 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         self.run_random(1, 500000, 1000000, 6000,
                         lcf_thres=80, seed=2)
 
+    def test_random_large_genome3(self):
+        self.run_random(1, 500000, 1000000, 6000, probe_length=75,
+                        lcf_thres=75, seed=3)
+
     def run_random(self, n, genome_min, genome_max, num_probes,
-                   lcf_thres=None, seed=1, n_workers=2):
+                   probe_length=100, lcf_thres=None, seed=1, n_workers=2):
         """Run tests with a randomly generated sequence.
 
         Repeatedly runs tests in which a sequence is randomly generated,
@@ -659,6 +729,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 randomly chosen between genome_min and genome_max
             num_probes: the number of probes generated from the random
                 sequence
+            probe_length: number of bp to make each probe
             lcf_thres: lcf threshold parameter; when None, it is
                 randomly chosen among 80 and 100
             seed: random number generator seed
@@ -682,10 +753,9 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             # Make num_probes random probes
             probes = []
             for m in range(num_probes):
-                probe_length = 100
                 subseq_start = np.random.randint(0, seq_length - probe_length)
                 subseq_end = subseq_start + probe_length
-                cover_length = np.random.randint(lcf_thres, 101)
+                cover_length = np.random.randint(lcf_thres, probe_length + 1)
                 cover_start = subseq_start + \
                     np.random.randint(0, probe_length - cover_length + 1)
                 cover_end = min(seq_length, cover_start + cover_length)

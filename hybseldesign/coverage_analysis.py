@@ -74,16 +74,22 @@ class Analyzer:
 
     def __init__(self,
                  probes,
+                 mismatches,
+                 lcf_thres,
                  target_genomes,
                  target_genomes_names=None,
-                 mismatches=0,
-                 lcf_thres=100,
+                 island_of_exact_match=0,
                  cover_extension=0,
-                 kmer_probe_map_k=10):
+                 kmer_probe_map_k=10,
+                 rc_too=True):
         """
         Args:
             probes: collection of instances of probe.Probe that form a
                 complete probe set
+            mismatches/lcf_thres: consider a probe to hybridize to a sequence
+                if a stretch of 'lcf_thres' or more bp aligns with
+                'mismatches' or fewer mismatched bp; used to compute whether
+                a probe "covers" a portion of a sequence
             target_genomes: list [g_1, g_2, ..., g_m] of m groupings of
                 genomes, where each g_i is a list of genome.Genomes belonging
                 to group i. For example, a group may be a species and each g_i
@@ -91,16 +97,18 @@ class Analyzer:
             target_genomes_names: list [s_1, s_2, ..., s_m] of strings where
                 the name of the i'th genome grouping (from target_genomes) is
                 s_i. When None, the name of the i'th grouping is "Group i".
-            mismatches/lcf_thres: consider a probe to hybridize to a sequence
-                if a stretch of 'lcf_thres' or more bp aligns with
-                'mismatches' or fewer mismatched bp; used to compute whether
-                a probe "covers" a portion of a sequence
+            island_of_exact_match: for a probe to hybridize to a sequence,
+                require that there be an exact match of length at least
+                'island_of_exact_match'
             cover_extension: number of bp by which to extend the coverage on
                 each side of a probe; a probe "covers" the portion of the
                 sequence that it hybridizes to, as well as 'cover_extension'
                 bp on each side of that portion
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
+            rc_too: when True, analyze all the target genomes in
+                target_genomes, as well as their reverse complements (when
+                False, do not analyze reverse complements)
         """
         self.probes = probes
         self.target_genomes = target_genomes
@@ -117,34 +125,30 @@ class Analyzer:
         self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches, lcf_thres)
+                mismatches, lcf_thres, island_of_exact_match)
         self.cover_extension = cover_extension
         self.kmer_probe_map_k = kmer_probe_map_k
+        self.rc_too = rc_too
 
-    def _iter_target_genomes(self, rc_too=False):
+    def _iter_target_genomes(self):
         """Yield target genomes across groupings to iterate over.
 
-        Args:
-            rc_too: when True, also yields False and True for each
-                target genome
 
         Yields:
-            i, j, gnm [, rc]
+            i, j, gnm, rc
                 - i is the index of a target genome grouping
                 - j is the index of a genome in grouping i
                 - gnm is an instance of genome.Genome corresponding to
                   to genome j in grouping i
-                - if rc_too is True, rc cycles through False and True
+                - if self.rc_too is True, rc cycles through False and True
                   so that an iterator can take the reverse complement
-                  of gnm's sequences
+                  of gnm's sequences; otherwise, rc is only False
         """
         for i, genomes_from_group in enumerate(self.target_genomes):
             for j, gnm in enumerate(genomes_from_group):
-                if rc_too:
-                    yield i, j, gnm, False
+                yield i, j, gnm, False
+                if self.rc_too:
                     yield i, j, gnm, True
-                else:
-                    yield i, j, gnm
 
     def _find_covers_in_target_genomes(self):
         """Find intervals across the target genomes covered by the probe set.
@@ -180,7 +184,7 @@ class Analyzer:
                                       self.cover_range_fn)
 
         self.target_covers = {}
-        for i, j, gnm, rc in self._iter_target_genomes(True):
+        for i, j, gnm, rc in self._iter_target_genomes():
             if not rc:
                 logger.info(("Computing coverage in grouping %d (of %d), "
                              "with target genome %d (of %d)"), i + 1,
@@ -240,7 +244,7 @@ class Analyzer:
         """
         logger.info("Computing bases covered across target genomes")
         self.bp_covered = {}
-        for i, j, gnm, rc in self._iter_target_genomes(True):
+        for i, j, gnm, rc in self._iter_target_genomes():
             if i not in self.bp_covered:
                 self.bp_covered[i] = {}
             if j not in self.bp_covered[i]:
@@ -270,7 +274,7 @@ class Analyzer:
         """
         logger.info("Computing average coverage across target genomes")
         self.average_coverage = {}
-        for i, j, gnm, rc in self._iter_target_genomes(True):
+        for i, j, gnm, rc in self._iter_target_genomes():
             if i not in self.average_coverage:
                 self.average_coverage[i] = {}
             if j not in self.average_coverage[i]:
@@ -314,7 +318,7 @@ class Analyzer:
         """
         logger.info("Computing sliding coverage across target genomes")
         self.sliding_coverage = {}
-        for i, j, gnm, rc in self._iter_target_genomes(True):
+        for i, j, gnm, rc in self._iter_target_genomes():
             if i not in self.sliding_coverage:
                 self.sliding_coverage[i] = {}
             if j not in self.sliding_coverage[i]:
@@ -402,7 +406,7 @@ class Analyzer:
                  "Average coverage/depth over unambig"]]
 
         # Create a row for every genome, including reverse complements
-        for i, j, gnm, rc in self._iter_target_genomes(True):
+        for i, j, gnm, rc in self._iter_target_genomes():
             col_header = "%s, genome %d" % (self.target_genomes_names[i], j)
             if rc:
                 col_header += " (rc)"
@@ -440,7 +444,7 @@ class Analyzer:
                  "Average coverage/depth\n[over unambig]"]]
 
         # Create a row for every genome, including reverse complements
-        for i, j, gnm, rc in self._iter_target_genomes(True):
+        for i, j, gnm, rc in self._iter_target_genomes():
             col_header = "%s, genome %d" % (self.target_genomes_names[i], j)
             if rc:
                 col_header += " (rc)"
@@ -498,7 +502,7 @@ class Analyzer:
         """
         with open(fn, 'w') as f:
             # Create an entry for every genome, including reverse complements
-            for i, j, gnm, rc in self._iter_target_genomes(True):
+            for i, j, gnm, rc in self._iter_target_genomes():
                 header = "%s, genome %d" % (self.target_genomes_names[i], j)
                 if rc:
                     header += " (rc)"

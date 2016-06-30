@@ -63,10 +63,12 @@ class SetCoverFilter(BaseFilter):
     """
 
     def __init__(self,
-                 mismatches=0,
-                 lcf_thres=100,
+                 mismatches,
+                 lcf_thres,
+                 island_of_exact_match=0,
                  mismatches_tolerant=None,
                  lcf_thres_tolerant=None,
+                 island_of_exact_match_tolerant=None,
                  identify=False,
                  blacklisted_genomes=[],
                  coverage=1.0,
@@ -79,6 +81,9 @@ class SetCoverFilter(BaseFilter):
                 if a stretch of 'lcf_thres' or more bp aligns with
                 'mismatches' or fewer mismatched bp; used to compute whether
                 a probe "covers" a portion of a sequence
+            island_of_exact_match: for a probe to hybridize to a sequence,
+                require that there be an exact match of length at least
+                'island_of_exact_match'
             mismatches_tolerant/lcf_thres_tolerant: more tolerant
                 values corresponding to 'mismatches' and 'lcf_thres'. It should
                 generally be true that 'mismatches_tolerant' > 'mismatches' and
@@ -90,6 +95,10 @@ class SetCoverFilter(BaseFilter):
                 to capture more potential hybridizations (i.e., be more
                 sensitive). When not set, they are by default equal to
                 'mismatches' and 'lcf_thres'.
+            island_of_exact_match_tolerant: more tolerant value corresponding
+                to 'island_of_exact_match'. It should generally be true
+                that this value is less than 'island_of_exact_match'. Used
+                when mismatches_tolerant/lcf_thres_tolerant are used.
             identify: when True, indicates that probes should be designed
                 with the identification option enabled (default is False)
             blacklisted_genomes: list of paths to FASTA files of genomes
@@ -132,17 +141,21 @@ class SetCoverFilter(BaseFilter):
         self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches, lcf_thres)
+                mismatches, lcf_thres, island_of_exact_match)
 
         if not mismatches_tolerant:
             mismatches_tolerant = mismatches
         if not lcf_thres_tolerant:
             lcf_thres_tolerant = lcf_thres
+        if not island_of_exact_match_tolerant:
+            island_of_exact_match_tolerant = island_of_exact_match
         self.mismatches_tolerant = mismatches_tolerant
         self.lcf_thres_tolerant = lcf_thres_tolerant
+        self.island_of_exact_match_tolerant = island_of_exact_match_tolerant
         self.cover_range_tolerant_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches_tolerant, lcf_thres_tolerant)
+                mismatches_tolerant, lcf_thres_tolerant,
+                island_of_exact_match_tolerant)
 
         # Warn if identification is enabled but the coverage is high
         if identify:

@@ -11,6 +11,7 @@ from hybseldesign.datasets import hg19
 from hybseldesign.filter import adapter_filter
 from hybseldesign.filter import duplicate_filter
 from hybseldesign.filter import fasta_filter
+from hybseldesign.filter import n_expansion_filter
 from hybseldesign.filter import probe_designer
 from hybseldesign.filter import reverse_complement_filter
 from hybseldesign.filter import set_cover_filter
@@ -24,6 +25,8 @@ hg19.add_fasta_path(
 
 
 def main(args):
+    logger = logging.getLogger(__name__)
+
     # Read the genomes from FASTA sequences
     genomes_grouped = []
     genomes_grouped_names = []
@@ -66,6 +69,25 @@ def main(args):
             for fp in dataset.fasta_paths:
                 blacklisted_genomes_fasta += [fp]
 
+    # Setup and verify parameters related to probe length
+    if not args.lcf_thres:
+        args.lcf_thres = args.probe_length
+    if args.probe_stride > args.probe_length:
+        logger.warning(("probe_stride (%d) is greater than probe_length "
+                        "(%d), which is usually undesirable and may lead "
+                        "to undefined behavior"),
+                        args.probe_stride, args.probe_length)
+    if args.lcf_thres > args.probe_length:
+        logger.warning(("lcf_thres (%d) is greater than probe_length "
+                        "(%d), which is usually undesirable and may lead "
+                        "to undefined behavior"),
+                        args.lcf_thres, args.probe_length)
+    if args.island_of_exact_match > args.probe_length:
+        logger.warning(("island_of_exact_match (%d) is greater than "
+                        "probe_length (%d), which is usually undesirable "
+                        "and may lead to undefined behavior"),
+                        args.island_of_exact_match, args.probe_length)
+
     # Set the maximum number of processes in multiprocessing pools
     if args.max_num_processes:
         probe.set_max_num_processes_for_probe_finding_pools(
@@ -84,8 +106,10 @@ def main(args):
     scf = set_cover_filter.SetCoverFilter(
         mismatches=args.mismatches,
         lcf_thres=args.lcf_thres,
+        island_of_exact_match=args.island_of_exact_match,
         mismatches_tolerant=args.mismatches_tolerant,
         lcf_thres_tolerant=args.lcf_thres_tolerant,
+        island_of_exact_match_tolerant=args.island_of_exact_match_tolerant,
         identify=args.identify,
         blacklisted_genomes=blacklisted_genomes_fasta,
         coverage=args.coverage,
@@ -96,7 +120,9 @@ def main(args):
     af = adapter_filter.AdapterFilter(tuple(args.adapter_a),
                                       tuple(args.adapter_b),
                                       mismatches=args.mismatches,
-                                      lcf_thres=args.lcf_thres)
+                                      lcf_thres=args.lcf_thres,
+                                      island_of_exact_match=\
+                                        args.island_of_exact_match)
     #  4) Reverse complement (rc) -- add the reverse complement of each
     #     probe that remains
     rc = reverse_complement_filter.ReverseComplementFilter()
@@ -108,6 +134,13 @@ def main(args):
                                       skip_reverse_complements=True)
         filters.insert(0, ff)
 
+    # Add an N expansion filter just before the reverse complement
+    # filter if desired
+    if args.expand_n:
+        rc_pos = filters.index(rc)
+        nef = n_expansion_filter.NExpansionFilter()
+        filters.insert(rc_pos, nef)
+
     # Don't apply the set cover filter if desired
     if args.skip_set_cover:
         filters.remove(scf)
@@ -116,8 +149,14 @@ def main(args):
     if args.skip_adapters:
         filters.remove(af)
 
+    # Don't add reverse complements if desired
+    if args.skip_reverse_complements:
+        filters.remove(rc)
+
     # Design the probes
-    pb = probe_designer.ProbeDesigner(genomes_grouped, filters)
+    pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
+                                      probe_length=args.probe_length,
+                                      probe_stride=args.probe_stride)
     pb.design()
 
     if args.output_probes:
@@ -126,13 +165,16 @@ def main(args):
 
     if (args.print_analysis or args.write_analysis_to_tsv or
             args.write_sliding_window_coverage):
+        rc_too = False if args.skip_reverse_complements else True
         analyzer = coverage_analysis.Analyzer(
             pb.final_probes,
+            args.mismatches,
+            args.lcf_thres,
             genomes_grouped,
             genomes_grouped_names,
-            mismatches=args.mismatches,
-            lcf_thres=args.lcf_thres,
-            cover_extension=args.cover_extension)
+            island_of_exact_match=args.island_of_exact_match,
+            cover_extension=args.cover_extension,
+            rc_too=rc_too)
         analyzer.run()
         if args.write_analysis_to_tsv:
             analyzer.write_data_matrix_as_tsv(
@@ -150,6 +192,17 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-pl", "--probe_length",
+        type=int,
+        default=100,
+        help=("(Optional) The number of bp in each probe"))
+    parser.add_argument(
+        "-ps", "--probe_stride",
+        type=int,
+        default=50,
+        help=("(Optional) Generate candidate probes from the input "
+              "that are separated by this number of bp"))
+    parser.add_argument(
         "-m", "--mismatches",
         required=True,
         type=int,
@@ -157,12 +210,20 @@ if __name__ == "__main__":
               "whether a probe covers a sequence"))
     parser.add_argument(
         "-l", "--lcf_thres",
-        required=True,
         type=int,
-        help=("Say that a portion of a probe covers a portion of a "
-              "sequence if the two share a substring with at most "
+        help=("(Optional) Say that a portion of a probe covers a portion "
+              "of a sequence if the two share a substring with at most "
               "'mismatches' mismatches that has length >= 'lcf_thres' "
-              "bp"))
+              "bp; if unspecified, this is set to probe_length"))
+    parser.add_argument(
+        "--island_of_exact_match",
+        type=int,
+        default=0,
+        help=("(Optional) When determining whether a probe covers a "
+              "sequence, require that there be an exact match (i.e., "
+              "no mismatches) of length at least 'island_of_exact_"
+              "match' bp between a portion of the probe and a portion "
+              "of the sequence"))
     parser.add_argument(
         "-mt", "--mismatches_tolerant",
         type=int,
@@ -179,6 +240,16 @@ if __name__ == "__main__":
               "Allows for capturing more possible hybridizations "
               "(i.e., more sensitivity) when designing probes for "
               "identification or when genomes are blacklisted."))
+    parser.add_argument(
+        "--island_of_exact_match_tolerant",
+        type=int,
+        default=0,
+        help=("(Optional) A more tolerant value for '--island_of_"
+              "exact_match'; this should be less than the value of "
+              "'--island_of_exact_match'. Allows for capturing more "
+              "possible hybridizations (i.e., more sensitivity) "
+              "when designing probes for identification or when "
+              "genomes are blacklisted."))
     parser.add_argument(
         "-i", "--identify",
         dest="identify",
@@ -235,6 +306,21 @@ if __name__ == "__main__":
                         dest="skip_adapters",
                         action="store_true",
                         help=("Do not add adapters to the ends of probes"))
+    parser.add_argument("--skip_reverse_complements",
+                        dest="skip_reverse_complements",
+                        action="store_true",
+                        help=("Do not add to the output the reverse "
+                              "complement of each probe"))
+    parser.add_argument(
+        "--expand_n",
+        dest="expand_n",
+        action="store_true",
+        help=("Expand each probe so that 'N' bases are replaced by real "
+              "bases; for example, the probe 'ANA' would be replaced "
+              "with the probes 'AAA', 'ATA', 'ACA', and 'AGA'; this is "
+              "done combinatorially across all 'N' bases in a probe, and "
+              "thus the number of new probes grows exponentially with the "
+              "number of 'N' bases in a probe"))
     parser.add_argument(
         "--filter_from_fasta",
         help=("(Optional) A FASTA file from which to select candidate probes. "

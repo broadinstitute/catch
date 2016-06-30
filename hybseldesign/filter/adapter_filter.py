@@ -123,22 +123,26 @@ class AdapterFilter(BaseFilter):
     def __init__(self,
                  adapter_a,
                  adapter_b,
-                 mismatches=0,
-                 lcf_thres=100,
+                 mismatches,
+                 lcf_thres,
+                 island_of_exact_match=0,
                  kmer_probe_map_k=20):
         """
         Args:
-            mismatches/lcf_thres: consider a probe to hybridize to a
-                sequence if a stretch of 'lcf_thres' or more bp aligns with
-                'mismatches' or fewer mismatched bp
-            kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
-                uses this value as min_k and k
             adapter_a: tuple (x, y) where x gives the A adapter sequence to
                 add onto the 5' end of a probe and y gives the A adapter
                 sequence to add onto the 3' end of a probe
             adapter_b: tuple (x, y) where x gives the B adapter sequence to
                 add onto the 5' end of a probe and y gives the B adapter
                 sequence to add onto the 3' end of a probe
+            mismatches/lcf_thres: consider a probe to hybridize to a
+                sequence if a stretch of 'lcf_thres' or more bp aligns with
+                'mismatches' or fewer mismatched bp
+            island_of_exact_match: for a probe to hybridize to a sequence,
+                require that there be an exact match of length at least
+                'island_of_exact_match'
+            kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
+                uses this value as min_k and k
         """
         if len(adapter_a) != 2 or len(adapter_b) != 2:
             raise ValueError(("adapter_a/adapter_b arguments must be tuples "
@@ -151,7 +155,8 @@ class AdapterFilter(BaseFilter):
         self.lcf_thres = lcf_thres
         self.cover_range_fn = \
             probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches=mismatches, lcf_thres=lcf_thres)
+                mismatches=mismatches, lcf_thres=lcf_thres,
+                island_of_exact_match=island_of_exact_match)
         self.kmer_probe_map_k = kmer_probe_map_k
 
     def _votes_in_sequence(self, probes, sequence):

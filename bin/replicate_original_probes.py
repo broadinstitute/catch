@@ -52,14 +52,16 @@ def main(args):
     #  bugs that were present in the code's prior version when
     #  generating the set of candidate probes)
     pb = probe_designer.ProbeDesigner(seqs, filters,
+                                      probe_length=100, probe_stride=50,
                                       replicate_first_version=True)
     pb.design()
 
     if args.print_analysis:
         analyzer = coverage_analysis.Analyzer(pb.final_probes,
+                                              args.mismatch_thres,
+                                              100,
                                               seqs,
-                                              [args.dataset],
-                                              mismatches=args.mismatch_thres)
+                                              [args.dataset])
         analyzer.run()
         analyzer.print_analysis()
     else:

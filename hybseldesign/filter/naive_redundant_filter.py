@@ -142,8 +142,8 @@ def redundant_shift_and_mismatch_count(shift=0,
     return are_redundant
 
 
-def redundant_longest_common_substring(mismatches=0,
-                                       lcf_thres=100,
+def redundant_longest_common_substring(mismatches,
+                                       lcf_thres,
                                        prune_with_heuristic=True):
     """Return a function for determining probe redundancy.
 
