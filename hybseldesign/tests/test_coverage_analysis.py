@@ -27,10 +27,10 @@ class TestAnalyzerWithTwoTargetGenomes(unittest.TestCase):
         probes_str = ['ATCCAT', 'TTTGAA', 'GAAGCG', 'ATGGAT', 'AAACCC']
         probes = [probe.Probe.from_str(p) for p in probes_str]
         self.analyzer = ca.Analyzer(probes,
-                                    [[genome_a], [genome_b]],
-                                    target_genomes_names=["g_a", "g_b"],
                                     mismatches=0,
                                     lcf_thres=6,
+                                    target_genomes=[[genome_a], [genome_b]],
+                                    target_genomes_names=["g_a", "g_b"],
                                     kmer_probe_map_k=3)
         self.analyzer.run(window_length=6, window_stride=3)
 
@@ -238,10 +238,10 @@ class TestAnalyzerCoversWithCoverExtension(unittest.TestCase):
                       'CCCCCC', 'AAACCC']
         probes = [probe.Probe.from_str(p) for p in probes_str]
         self.analyzer = ca.Analyzer(probes,
-                                    [[genome_a], [genome_b]],
-                                    target_genomes_names=["g_a", "g_b"],
                                     mismatches=0,
                                     lcf_thres=6,
+                                    target_genomes=[[genome_a], [genome_b]],
+                                    target_genomes_names=["g_a", "g_b"],
                                     cover_extension=2,
                                     kmer_probe_map_k=3)
         self.analyzer.run(window_length=6, window_stride=3)
@@ -262,3 +262,56 @@ class TestAnalyzerCoversWithCoverExtension(unittest.TestCase):
                               [(0, 7), (8, 16)])    # coverage in chr1 and chr2
         self.assertCountEqual(self.analyzer.target_covers[1][0][True],
                               [])   # no coverage in reverse complement
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
+class TestAnalyzerCoversWithoutReverseComplement(unittest.TestCase):
+    """Tests the probe covers found when explicitly not looking at
+    reverse complements.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+        # Create Analyzer instance with two target genomes
+        genome_a = genome.Genome.from_one_seq('ATCCATCCATNGGGTTTGAAGCG')
+        probes_str = ['ATCCAT', 'TTTGAA', 'GAAGCG']
+        probes = [probe.Probe.from_str(p) for p in probes_str]
+        self.analyzer = ca.Analyzer(probes,
+                                    mismatches=0,
+                                    lcf_thres=6,
+                                    target_genomes=[[genome_a]],
+                                    target_genomes_names=["g_a"],
+                                    cover_extension=2,
+                                    kmer_probe_map_k=3,
+                                    rc_too=False)
+        self.analyzer.run(window_length=6, window_stride=3)
+
+    def test_probe_cover_ranges(self):
+        """Test the probe cover ranges that are found.
+
+        Check in given sequence and check that reverse complement covers
+        is None.
+        """
+        # genome_a
+        self.assertCountEqual(self.analyzer.target_covers[0][0][False],
+                              [(0, 8), (2, 12), (12, 22), (15, 23)])
+        self.assertIsNone(self.analyzer.target_covers[0][0][True])
+
+    def test_data_matrix_string(self):
+        """Test the data matrix generated.
+        """
+        data = self.analyzer._make_data_matrix_string()
+        expected = [["Genome",
+                     "Num bases covered\n[over unambig]",
+                     "Average coverage/depth\n[over unambig]"],
+                    ["g_a, genome 0", "23 (100.00%) [104.55%]",
+                     "1.57 [1.64]"]]
+        self.assertEqual(data, expected)
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)

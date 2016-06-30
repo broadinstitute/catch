@@ -16,8 +16,8 @@ class ProbeDesigner:
     There is an (ordered) list of one or more provided filters.
     """
 
-    def __init__(self, genomes, filters, probe_length=100,
-            probe_stride=50, replicate_first_version=False):
+    def __init__(self, genomes, filters, probe_length,
+            probe_stride, replicate_first_version=False):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where

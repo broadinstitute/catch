@@ -94,22 +94,47 @@ class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
     """
 
     def setUp(self):
+        """Read the dataset's genomes and create candidate probes.
+
+        Only process the first 100 genomes to avoid using too much memory
+        with the candidate probes.
+        """
         seqs = [gnm.seqs[0]
                 for gnm in seq_io.read_dataset_genomes(ebola_zaire_with_2014)]
-        self.probes = candidate_probes.make_candidate_probes_from_sequences(
+        seqs = seqs[:100]
+        self.probes_100 = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
             probe_length=100,
             probe_stride=50,
             min_n_string_length=2)
+        self.probes_75 = candidate_probes.make_candidate_probes_from_sequences(
+            seqs,
+            probe_length=75,
+            probe_stride=25,
+            min_n_string_length=2)
 
     def test_probe_length(self):
-        """Test that all probes are 100 bp.
+        """Test that all probes are the correct length.
         """
-        for probe in self.probes:
+        for probe in self.probes_100:
             self.assertEqual(len(probe.seq), 100)
+        for probe in self.probes_75:
+            self.assertEqual(len(probe.seq), 75)
+
+    def test_probe_count(self):
+        """Test that probe counts are in roughly a correct ratio.
+
+        Since probes_75 has a stride of 25 and probes_100 has a stride of
+        50, there should be roughly twice as many probes in probes_75 as
+        in probes_100.
+        """
+        ratio = float(len(self.probes_75)) / len(self.probes_100)
+        self.assertTrue(1.95 < ratio < 2.05)
 
     def test_n_string(self):
         """Test that no probes have a string of two or more 'N's.
         """
-        for probe in self.probes:
+        for probe in self.probes_100:
+            self.assertNotIn('NN', ''.join(probe.seq))
+        for probe in self.probes_75:
             self.assertNotIn('NN', ''.join(probe.seq))
