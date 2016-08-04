@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Run the coverage analysis module on a provided list of probe sequences."""
 
 import argparse
