@@ -56,6 +56,25 @@ def read_dataset_genomes(dataset):
     return genomes
 
 
+def read_genomes_from_fasta(fn):
+    """Read genomes from a fasta file.
+
+    This assumes that the genomes each have one chromosome -- i.e.,
+    that genomes are not broken up into separate sequences within
+    the fasta.
+
+    Returns:
+        list of genome.Genome
+    """
+    logger.debug("Reading fasta %s; assuming one sequence per genome", fn)
+
+    genomes = []
+    seqs = list(read_fasta(fn).values())
+    for seq in seqs:
+        genomes += [genome.Genome.from_one_seq(seq)]
+    return genomes
+
+
 def read_fasta(fn, data_type='str', replace_degenerate=True,
                skip_gaps=True, make_uppercase=True):
     """Read a FASTA file.

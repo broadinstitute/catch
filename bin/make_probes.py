@@ -4,6 +4,7 @@
 import argparse
 import importlib
 import logging
+import os
 
 from hybseldesign import coverage_analysis
 from hybseldesign import probe
@@ -43,6 +44,11 @@ def main(args):
             for name, dataset in collection.import_all():
                 genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
                 genomes_grouped_names += [name]
+        elif ds.startswith('custom:'):
+            # Process a custom fasta file with sequences
+            fasta_path = ds[len('custom:'):]
+            genomes_grouped += [seq_io.read_genomes_from_fasta(fasta_path)]
+            genomes_grouped_names += [os.path.basename(fasta_path)]
         else:
             # Process an individual dataset
             try:
@@ -361,7 +367,10 @@ if __name__ == "__main__":
                               "one label per species); alternatively, "
                               "start with 'collection:' (e.g., "
                               "'collection:viruses_with_human_host') to "
-                              "specify an available collection of datasets"))
+                              "specify an available collection of datasets; "
+                              "or specify 'custom:X' to read genomes "
+                              "from a custom file, where X is a path to "
+                              "a fasta file"))
     parser.add_argument(
         "--limit_target_genomes",
         type=int,
