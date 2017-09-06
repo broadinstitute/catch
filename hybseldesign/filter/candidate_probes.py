@@ -19,6 +19,7 @@ def make_candidate_probes_from_sequence(seq,
                                         probe_length,
                                         probe_stride,
                                         min_n_string_length=2,
+                                        allow_small_seqs=None,
                                         insert_bugs=False):
     """Generate a list of candidate probes from a sequence.
 
@@ -34,6 +35,9 @@ def make_candidate_probes_from_sequence(seq,
         min_n_string_length: possible probes that would contain strings
             of this number or more N's are discarded and, instead, new
             probes flanking the string are added
+        allow_small_seqs: if set, allow sequences that are smaller than the
+            probe length by creating candidate probes equal to the sequence;
+            the value gives the minimum allowed probe (sequence) length
         insert_bugs: add bugs to the code in order to replicate past
             software (the first version of probe design, as Matlab code)
             and its results
@@ -41,12 +45,28 @@ def make_candidate_probes_from_sequence(seq,
     Returns:
         list of candidate probes as instances of probe.Probe
     """
-    if probe_length > len(seq):
-        raise ValueError("Invalid probe_length " + str(probe_length))
+    n_string_query = re.compile('(N{' + str(min_n_string_length) + ',})')
+
+    if len(seq) < probe_length:
+        if allow_small_seqs:
+            if len(seq) < allow_small_seqs:
+                raise ValueError(("Allowing sequences smaller than the probe "
+                                  "length (" + str(probe_length) + "), but "
+                                  "input sequence is smaller than minimum "
+                                  "allowed length"))
+            else:
+                if n_string_query.search(seq):
+                    raise ValueError(("Only possible probe from input "
+                                      "sequence has too long a stretch of N's"))
+                else:
+                    # Make a probe equal to this sequence
+                    return [probe.Probe.from_str(seq)]
+        else:
+            raise ValueError(("An input sequence is smaller than the probe "
+                              "length (" + str(probe_length) + ")"))
 
     if isinstance(seq, np.ndarray):
         seq = ''.join(seq)
-    n_string_query = re.compile('(N{' + str(min_n_string_length) + ',})')
 
     # Make a probe based on the subsequence seq[start:end].
     # Namely, if that subsequence contains no string of N's, then it
@@ -139,6 +159,7 @@ def make_candidate_probes_from_sequences(
         probe_length,
         probe_stride,
         min_n_string_length=2,
+        allow_small_seqs=None,
         insert_bugs=False,
         move_all_n_string_flanking_probes_to_end=False):
     """Generate a list of candidate probes from a list of sequences.
@@ -155,6 +176,9 @@ def make_candidate_probes_from_sequences(
         min_n_string_length: possible probes that would contain strings
             of this number or more N's are discarded and, instead, new
             probes flanking the string are added
+        allow_small_seqs: if set, allow sequences that are smaller than the
+            probe length by creating candidate probes equal to the sequence;
+            the value gives the minimum allowed probe (sequence) length
         insert_bugs: add bugs to the code in order to replicate past
             software (the first version of probe design, as Matlab code)
             and its results
@@ -181,6 +205,7 @@ def make_candidate_probes_from_sequences(
             probe_length=probe_length,
             probe_stride=probe_stride,
             min_n_string_length=min_n_string_length,
+            allow_small_seqs=allow_small_seqs,
             insert_bugs=insert_bugs)
 
     if move_all_n_string_flanking_probes_to_end:

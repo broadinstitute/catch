@@ -162,7 +162,8 @@ def main(args):
     # Design the probes
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
                                       probe_length=args.probe_length,
-                                      probe_stride=args.probe_stride)
+                                      probe_stride=args.probe_stride,
+                                      allow_small_seqs=args.small_seq_min)
     pb.design()
 
     if args.output_probes:
@@ -230,6 +231,24 @@ if __name__ == "__main__":
               "no mismatches) of length at least 'island_of_exact_"
               "match' bp between a portion of the probe and a portion "
               "of the sequence"))
+    parser.add_argument(
+        "--small_seq_min",
+        type=int,
+        help=("(Optional) If set, allow sequences as input that are "
+              "shorter than 'probe_length' (when not set, the program will "
+              "error on such input). The value of this argument is the "
+              "minimum sequence length that should be accepted as input. "
+              "When a sequence is less than 'probe_length', a candidate "
+              "probe is created that is equal to the sequence; thus, "
+              "the output probes may have different lengths. Note that, "
+              "when this is set, it would be a good idea to also set "
+              "'lcf_thres' to be a value smaller than 'probe_length' -- "
+              "ideally the length of the shortest input sequence; otherwise, "
+              "a candidate probe constructed directly from a short "
+              "input sequence (i.e., one that is shorter than 'probe_length') "
+              "won't be able to map to (i.e., cover) that sequence because "
+              "its longest common substring would be shorter than "
+              "'lcf_thres'."))
     parser.add_argument(
         "-mt", "--mismatches_tolerant",
         type=int,

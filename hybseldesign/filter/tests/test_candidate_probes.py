@@ -71,6 +71,41 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
             p, ['ATCGNC', 'TCGNCG'] + ['ATCGNC', 'TCGNCG', 'TCGATA', 'TCGATA',
                                        'CGATAT'])
 
+    def test_small_seqs(self):
+        """Test sequences smaller than the probe length.
+        """
+        with self.assertRaises(ValueError):
+            candidate_probes.make_candidate_probes_from_sequences(
+                ['ATCGATCGATCG', 'CCGG'],
+                probe_length=6,
+                probe_stride=3,
+                min_n_string_length=2)
+
+        with self.assertRaises(ValueError):
+            candidate_probes.make_candidate_probes_from_sequences(
+                ['ATCGATCGATCG', 'CCGG'],
+                probe_length=6,
+                probe_stride=3,
+                allow_small_seqs=5,
+                min_n_string_length=2)
+
+        with self.assertRaises(ValueError):
+            candidate_probes.make_candidate_probes_from_sequences(
+                ['ATCGATCGATCG', 'CNNN'],
+                probe_length=6,
+                probe_stride=3,
+                allow_small_seqs=4,
+                min_n_string_length=2)
+
+        p = candidate_probes.make_candidate_probes_from_sequences(
+            ['ATCGATCGATCG', 'CCGG'],
+            probe_length=6,
+            probe_stride=3,
+            allow_small_seqs=4,
+            min_n_string_length=2)
+        p = [''.join(x.seq) for x in p]
+        self.assertCountEqual(p, ['ATCGAT', 'GATCGA', 'CGATCG'] + ['CCGG'])
+
     def test_buggy(self):
         """Tests the version with bugs, intended to replicate the original
         candidate probe designer.

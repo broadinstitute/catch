@@ -17,7 +17,8 @@ class ProbeDesigner:
     """
 
     def __init__(self, genomes, filters, probe_length,
-            probe_stride, replicate_first_version=False):
+            probe_stride, allow_small_seqs=None,
+            replicate_first_version=False):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
@@ -29,6 +30,9 @@ class ProbeDesigner:
             probe_length: generate candidate probes with this number of bp
             probe_stride: generate probes from each sequence separated by
                 this number of bp
+            allow_small_seqs: if set, allow sequences that are smaller than the
+                probe length by creating candidate probes equal to the sequence;
+                the value gives the minimum allowed probe (sequence) length
             replicate_first_version: when True, candidate probes are
                 explicitly designed in a (buggy) way intended to replicate
                 the first version (Matlab code) of probe design
@@ -37,6 +41,7 @@ class ProbeDesigner:
         self.filters = filters
         self.probe_length = probe_length
         self.probe_stride = probe_stride
+        self.allow_small_seqs = allow_small_seqs
         self.replicate_first_version = replicate_first_version
 
     def design(self):
@@ -61,7 +66,9 @@ class ProbeDesigner:
                 self.candidate_probes += candidate_probes.\
                     make_candidate_probes_from_sequences(
                         g.seqs, probe_length=self.probe_length,
-                        probe_stride=self.probe_stride, **replicate_args)
+                        probe_stride=self.probe_stride,
+                        allow_small_seqs=self.allow_small_seqs,
+                        **replicate_args)
 
         probes = self.candidate_probes
         for f in self.filters:

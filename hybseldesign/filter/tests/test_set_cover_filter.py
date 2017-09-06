@@ -207,6 +207,19 @@ class TestSetCoverFilter(unittest.TestCase):
             self.verify_target_genome_coverage(probes, target_genomes,
                                                f, num_bp)
 
+    def test_varying_probe_length(self):
+        target_genomes = [['ABCDEFGHIJKLM',
+                           'ABCXE',
+                           'CXEGH']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        candidate_probes = ['ABCDEF', 'DEFGHI', 'GHIJKLM', 'ABCXE', 'CXEGH']
+        f, probes = self.get_filter_and_output(
+            5, 0, target_genomes, candidate_probes, 1.0)
+        probes_str = [''.join(x.seq) for x in probes]
+        self.assertCountEqual(probes_str,
+                              ['ABCDEF', 'GHIJKLM', 'ABCXE', 'CXEGH'])
+        self.verify_target_genome_coverage(probes, target_genomes, f, 1.0)
+
     def test_cover_extension1(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                            'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF']]

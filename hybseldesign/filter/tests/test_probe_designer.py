@@ -95,6 +95,31 @@ class TestProbeDesigner(unittest.TestCase):
         self.assertEqual(pb.candidate_probes, desired_candidate_probes)
         self.assertEqual(pb.final_probes, desired_final_probes)
 
+    def test_with_small_sequences(self):
+        """A test with a duplicate filter and input sequences that are smaller
+        than the probe length.
+        """
+        seqs = [[genome.Genome.from_one_seq('ABCDEFGHIJKLMN'),
+                 genome.Genome.from_one_seq('ABCDEFGHIXKLMN'),
+                 genome.Genome.from_one_seq('XYZAB')]]
+        desired_candidate_probes = \
+            ['ABCDEF', 'DEFGHI', 'GHIJKL', 'IJKLMN',
+             'ABCDEF', 'DEFGHI', 'GHIXKL', 'IXKLMN',
+             'XYZAB']
+        desired_candidate_probes = \
+            [probe.Probe.from_str(s) for s in desired_candidate_probes]
+        desired_final_probes = ['ABCDEF', 'DEFGHI', 'GHIJKL', 'IJKLMN',
+                                'GHIXKL', 'IXKLMN', 'XYZAB']
+        desired_final_probes = \
+            [probe.Probe.from_str(s) for s in desired_final_probes]
+        df = duplicate_filter.DuplicateFilter()
+        pb = probe_designer.ProbeDesigner(seqs, [df], probe_length=6,
+                                          probe_stride=3,
+                                          allow_small_seqs=5)
+        pb.design()
+        self.assertEqual(pb.candidate_probes, desired_candidate_probes)
+        self.assertEqual(pb.final_probes, desired_final_probes)
+
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
