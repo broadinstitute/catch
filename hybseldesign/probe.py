@@ -252,9 +252,9 @@ class Probe:
                     return True
             return False
         else:
-            rand_kmer_positions = np.random.random_integers(0,
-                                                            len(self.seq) - k,
-                                                            num_kmers_to_test)
+            rand_kmer_positions = np.random.randint(0,
+                                                    len(self.seq) - k + 1,
+                                                    num_kmers_to_test)
             for n in range(num_kmers_to_test):
                 # Read a random k-mer from self and explicitly test for
                 # its presence in other
