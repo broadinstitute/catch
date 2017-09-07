@@ -241,14 +241,14 @@ if __name__ == "__main__":
               "When a sequence is less than 'probe_length', a candidate "
               "probe is created that is equal to the sequence; thus, "
               "the output probes may have different lengths. Note that, "
-              "when this is set, it would be a good idea to also set "
+              "when this is set, it might be a good idea to also set "
               "'lcf_thres' to be a value smaller than 'probe_length' -- "
-              "ideally the length of the shortest input sequence; otherwise, "
-              "a candidate probe constructed directly from a short "
-              "input sequence (i.e., one that is shorter than 'probe_length') "
-              "won't be able to map to (i.e., cover) that sequence because "
-              "its longest common substring would be shorter than "
-              "'lcf_thres'."))
+              "e.g., the length of the shortest input sequence; otherwise, "
+              "when a probe of length p_l is mapped to a sequence of length "
+              "s_l, then lcf_thres is treated as being min(lcf_thres, p_l, "
+              "s_l) so that a probe is able to 'cover' a sequence shorter "
+              "than the probe and so that a probe shorter than 'lcf_thres' "
+              "is able to 'cover' a sequence"))
     parser.add_argument(
         "-mt", "--mismatches_tolerant",
         type=int,

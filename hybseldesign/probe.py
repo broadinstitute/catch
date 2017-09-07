@@ -1024,7 +1024,8 @@ def _find_probe_covers_in_subsequence(bounds,
                 kmer_start = pos
             cover_range = \
                 _pfp_cover_range_for_probe_in_subsequence_fn(
-                    probe_seq, subsequence, kmer_start, kmer_start + k)
+                    probe_seq, subsequence, kmer_start, kmer_start + k,
+                    len(probe_seq_full), len(sequence))
             if cover_range is None:
                 # probe does not meet the threshold for covering this
                 # subsequence
@@ -1195,7 +1196,7 @@ def probe_covers_sequence_by_longest_common_substring(mismatches,
                                                       island_of_exact_match=0):
     """Return a function that determines coverage of a probe in a sequence.
 
-    The returned function lcf takes a probe sequence (probe.seq) and a
+    The returned function lcf takes a probe sequence (probe_seq) and a
     sequence (intended to be the same length), as well as the indices
     of a shared k-mer around which both are anchored/aligned. That is,
     it should be true that
@@ -1207,7 +1208,14 @@ def probe_covers_sequence_by_longest_common_substring(mismatches,
     a portion (namely, the common substring) of the probe covers
     sequence, and lcf returns the range (shared by both the probe
     sequence and sequence) of sequence that the probe covers, where
-    the range is the bounds of the longest common substring.
+    the range is the bounds of the longest common substring. lcf also
+    accepts the length of the probe (probe_seq can actually be a
+    subsequence of the probe if the probe hangs off the end of a
+    sequence, so len(probe_seq) is not helpful) and the length of the
+    sequence (the argument sequence is generally a subsequence of the
+    full sequence, so len(sequence) is not helpful); if either is less than
+    lcf_thres, then lcf_thres is taken to be the length of the full
+    probe or the full sequence, whichever is shorter.
 
     Furthermore, lcf requires that there be a longest common substring
     with 0 mismatches, based around the anchor, of length at least
@@ -1237,10 +1245,11 @@ def probe_covers_sequence_by_longest_common_substring(mismatches,
         k-mer, returns whether the probe covers part of the sequence and,
         if so, which part
     """
-    def lcf(probe_seq, sequence, kmer_start, kmer_end):
+    def lcf(probe_seq, sequence, kmer_start, kmer_end,
+            full_probe_len, full_sequence_len):
         l, start = longest_common_substring.k_lcf_around_anchor(
             probe_seq, sequence, kmer_start, kmer_end, mismatches)
-        if l < lcf_thres:
+        if l < min(lcf_thres, full_probe_len, full_sequence_len):
             return None
 
         if island_of_exact_match > 0:

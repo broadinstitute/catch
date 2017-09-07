@@ -400,12 +400,12 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
     def test_match_no_mismatches(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        match = f('ZZZABCGHIJKLXYZ', self.seq, 6, 9)
+        match = f('ZZZABCGHIJKLXYZ', self.seq, 6, 9, 15, len(self.seq))
         self.assertTrue(match is not None)
         start, end = match
         self.assertEqual(start, 6)
         self.assertEqual(end, 12)
-        match = f('ZZZZAFGHIJKLMDEF', self.seq, 6, 9)
+        match = f('ZZZZAFGHIJKLMDEF', self.seq, 6, 9, 15, len(self.seq))
         self.assertTrue(match is not None)
         start, end = match
         self.assertEqual(start, 5)
@@ -413,17 +413,17 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
     def test_match_with_mismatches(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-        match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9)
+        match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9, 15, len(self.seq))
         self.assertTrue(match is not None)
         start, end = match
         self.assertEqual(start, 6)
         self.assertEqual(end, 12)
-        match = f('ZZZZZZGHIJKXSWZ', self.seq, 6, 9)
+        match = f('ZZZZZZGHIJKXSWZ', self.seq, 6, 9, 15, len(self.seq))
         self.assertTrue(match is not None)
         start, end = match
         self.assertEqual(start, 6)
         self.assertEqual(end, 12)
-        match = f('ZZAGTFGHIJKXM', self.seq, 6, 9)
+        match = f('ZZAGTFGHIJKXM', self.seq, 6, 9, 13, len(self.seq))
         self.assertTrue(match is not None)
         start, end = match
         self.assertEqual(start, 5)
@@ -431,27 +431,57 @@ class TestProbeCoversSequenceByLongestCommonSubstring(unittest.TestCase):
 
     def test_no_match_no_mismatches(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
-        match = f('ZZZABCGHIXKLXYZ', self.seq, 6, 9)
+        match = f('ZZZABCGHIXKLXYZ', self.seq, 6, 9, 15, len(self.seq))
         self.assertTrue(match is None)
-        match = f('ZZZZZAGHIJKBC', self.seq, 6, 9)
+        match = f('ZZZZZAGHIJKBC', self.seq, 6, 9, 13, len(self.seq))
         self.assertTrue(match is None)
 
     def test_no_match_with_mismatches(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-        match = f('ZZZABCGHIXKXXYZ', self.seq, 6, 9)
+        match = f('ZZZABCGHIXKXXYZ', self.seq, 6, 9, 15, len(self.seq))
         self.assertTrue(match is None)
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
-        match = f('ZZZZZAGHIJYZ', self.seq, 6, 9)
+        match = f('ZZZZZAGHIJYZ', self.seq, 6, 9, 12, len(self.seq))
         self.assertTrue(match is None)
 
     def test_match_with_island_of_exact_match(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
-        match = f('ZZZGHIGHIJXLDEF', self.seq, 6, 9)
+        match = f('ZZZGHIGHIJXLDEF', self.seq, 6, 9, 15, len(self.seq))
         self.assertEqual(match, (6, 12))
 
     def test_no_match_with_island_of_exact_match(self):
         f = probe.probe_covers_sequence_by_longest_common_substring(1, 6, 4)
-        match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9)
+        match = f('ZZZGHIGHIXKLDEF', self.seq, 6, 9, 15, len(self.seq))
+        self.assertTrue(match is None)
+
+    def test_match_with_probe_smaller_than_lcf_thres(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(1, 6)
+        match = f('GHIX', self.seq[6:10], 1, 3, 4, len(self.seq[6:10]))
+        self.assertEqual(match, (0, 4))
+
+    def test_no_match_with_probe_smaller_than_lcf_thres(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+        match = f('GHIX', self.seq[6:10], 1, 3, 4, len(self.seq[6:10]))
+        self.assertTrue(match is None)
+
+    def test_match_from_probe_on_end(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 10)
+        match = f('ABCDEF', self.seq, 1, 3, 6, len(self.seq))
+        self.assertEqual(match, (0, 6))
+
+    def test_no_match_from_probe_on_end(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 10)
+        match = f('ABCDEF', self.seq, 1, 3, 10, len(self.seq))
+        self.assertTrue(match is None)
+
+    def test_match_with_probe_longer_than_sequence(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+        match = f('DEFG', 'DEFG', 1, 3, 7, 4)
+        self.assertEqual(match, (0, 4))
+
+    def test_no_match_with_probe_longer_than_sequence(self):
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+        match = f('DEFX', 'DEFG', 1, 3, 7, 4)
         self.assertTrue(match is None)
 
     def tearDown(self):
