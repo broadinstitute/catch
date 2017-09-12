@@ -20,10 +20,6 @@ from hybseldesign.utils import seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
-# Set the path to the hg19 fasta file (assuming this is a Broad machine)
-hg19.add_fasta_path(
-    "/seq/references/Homo_sapiens_assembly19/v1/Homo_sapiens_assembly19.fasta")
-
 
 def main(args):
     logger = logging.getLogger(__name__)
@@ -67,13 +63,19 @@ def main(args):
     blacklisted_genomes_fasta = []
     if args.blacklist_genomes:
         for bg in args.blacklist_genomes:
-            try:
-                dataset = importlib.import_module(
-                    'hybseldesign.datasets.' + bg)
-            except ImportError:
-                raise ValueError("Unknown dataset %s" % bg)
-            for fp in dataset.fasta_paths:
-                blacklisted_genomes_fasta += [fp]
+            if bg.startswith('custom:'):
+                # Process a custom fasta file with sequences
+                fasta_path = bg[len('custom:'):]
+                blacklisted_genomes_fasta += [fasta_path]
+            else:
+                # Process an individual dataset
+                try:
+                    dataset = importlib.import_module(
+                        'hybseldesign.datasets.' + bg)
+                except ImportError:
+                    raise ValueError("Unknown dataset %s" % bg)
+                for fp in dataset.fasta_paths:
+                    blacklisted_genomes_fasta += [fp]
 
     # Setup and verify parameters related to probe length
     if not args.lcf_thres:
