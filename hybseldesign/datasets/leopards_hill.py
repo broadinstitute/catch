@@ -1,6 +1,6 @@
 """Dataset with 'Leopards Hill virus' sequences.
 
-A dataset with 8 'Leopards Hill virus' sequences. The virus is
+A dataset with 6 'Leopards Hill virus' sequences. The virus is
 segmented and has 3 segments. Based on their strain and/or isolate,
 these sequences were able to be grouped into 3 genomes. Many genomes
 may have fewer than 3 segments.

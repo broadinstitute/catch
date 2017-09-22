@@ -1,6 +1,6 @@
 """Dataset with 'Aguacate virus' sequences.
 
-A dataset with 14 'Aguacate virus' sequences. The virus is segmented
+A dataset with 11 'Aguacate virus' sequences. The virus is segmented
 and has 3 segments. Based on their strain and/or isolate, these
 sequences were able to be grouped into 5 genomes. Many genomes may
 have fewer than 3 segments.

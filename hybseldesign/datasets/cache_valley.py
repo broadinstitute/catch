@@ -1,9 +1,9 @@
 """Dataset with 'Cache Valley virus' sequences.
 
-A dataset with 3 'Cache Valley virus' sequences. The virus is
-segmented and has 2 segments. Based on their strain and/or isolate,
-these sequences were able to be grouped into 3 genomes. Many genomes
-may have fewer than 2 segments.
+A dataset with 10 'Cache Valley virus' sequences. The virus is
+segmented and has 3 segments. Based on their strain and/or isolate,
+these sequences were able to be grouped into 8 genomes. Many genomes
+may have fewer than 3 segments.
 
 Note that the sequences in this dataset are a subset of those in the
 'bunyamwera' dataset.
@@ -20,16 +20,16 @@ from hybseldesign.datasets import GenomesDatasetMultiChrom
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
-chrs = ["segment_" + seg for seg in ['M', 'S']]
+chrs = ["segment_" + seg for seg in ['L', 'M', 'S']]
 
 def seq_header_to_chr(header):
     import re
-    c = re.compile(r'\[segment (M|S)\]')
+    c = re.compile(r'\[segment (L|M|S)\]')
     m = c.search(header)
     if not m:
         raise ValueError("Unknown segment in header %s" % header)
     seg = m.group(1)
-    valid_segs = ['M', 'S']
+    valid_segs = ['L', 'M', 'S']
     if seg not in valid_segs:
         raise ValueError("Unknown segment %s" % seg)
     return "segment_" + seg

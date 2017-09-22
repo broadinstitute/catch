@@ -1,6 +1,6 @@
 """Dataset with 'Tacaribe mammarenavirus' sequences.
 
-A dataset with 5 'Tacaribe mammarenavirus' sequences. The virus is
+A dataset with 4 'Tacaribe mammarenavirus' sequences. The virus is
 segmented and has 2 segments. Based on their strain and/or isolate,
 these sequences were able to be grouped into 4 genomes. Many genomes
 may have fewer than 2 segments.

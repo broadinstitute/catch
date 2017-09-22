@@ -1,6 +1,6 @@
 """Dataset with 'Dengue virus 2' sequences.
 
-A dataset with 1251 'Dengue virus 2' genomes.
+A dataset with 915 'Dengue virus 2' genomes.
 
 Note that the sequences in this dataset are a subset of those in the
 'dengue' dataset.

@@ -1,6 +1,6 @@
 """Dataset with 'Rotavirus I' sequences.
 
-A dataset with 22 'Rotavirus I' sequences. The virus is segmented and
+A dataset with 14 'Rotavirus I' sequences. The virus is segmented and
 has 11 segments. Based on their strain and/or isolate, these sequences
 were able to be grouped into 2 genomes. Many genomes may have fewer
 than 11 segments.

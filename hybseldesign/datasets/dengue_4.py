@@ -1,6 +1,6 @@
 """Dataset with 'Dengue virus 4' sequences.
 
-A dataset with 199 'Dengue virus 4' genomes.
+A dataset with 146 'Dengue virus 4' genomes.
 
 Note that the sequences in this dataset are a subset of those in the
 'dengue' dataset.

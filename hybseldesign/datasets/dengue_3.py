@@ -1,6 +1,6 @@
 """Dataset with 'Dengue virus 3' sequences.
 
-A dataset with 893 'Dengue virus 3' genomes.
+A dataset with 633 'Dengue virus 3' genomes.
 
 Note that the sequences in this dataset are a subset of those in the
 'dengue' dataset.

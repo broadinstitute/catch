@@ -1,6 +1,6 @@
 """Dataset with 'Luna mammarenavirus' sequences.
 
-A dataset with 10 'Luna mammarenavirus' sequences. The virus is
+A dataset with 8 'Luna mammarenavirus' sequences. The virus is
 segmented and has 2 segments. Based on their strain and/or isolate,
 these sequences were able to be grouped into 5 genomes. Many genomes
 may have fewer than 2 segments.
