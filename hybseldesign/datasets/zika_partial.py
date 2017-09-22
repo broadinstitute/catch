@@ -4,9 +4,9 @@ A dataset with 221 'Zika virus' partial sequences. These consist mostly
 of UTRs and partial coding sequences (i.e., particular proteins). This
 dataset is distinct from the 'zika' dataset, which only contains full
 genomes (or complete coding sequences). The sequences in the 'zika'
-dataset can be found on GenBank with a search for:
-    "Zika virus"[porgn:__txid64320] AND complete
-whereas the sequences in this dataset can be found with a search for:
+dataset are based on complete genomes in NCBI's viral accession list,
+whereas the sequences in this dataset can be found with a search on
+GenBank for:
     ("Zika virus"[porgn:__txid64320]) NOT complete
 
 These partial sequences are kept separate from full genomes because
