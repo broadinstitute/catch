@@ -1,6 +1,6 @@
 """Dataset with 'Human immunodeficiency virus 1' sequences without LTRs.
 
-A dataset with 1959 'Human immunodeficiency virus 1' genomes where the
+A dataset with 1686 'Human immunodeficiency virus 1' genomes where the
 LTR is stripped from both the 5' and 3' ends of each genome. These
 sequences are based on the sequences in the 'hiv1' dataset.
 """
