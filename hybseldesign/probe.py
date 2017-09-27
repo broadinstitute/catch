@@ -573,7 +573,7 @@ class SharedKmerProbeMap:
     """
 
     def __init__(self, keys, probe_seqs_ind, probe_pos, probe_seqs, k,
-            probe_seqs_to_probe):
+            probe_seqs_to_probe, native_dict):
         """Accepts arrays containing the information of a kmer_probe_map.
 
         These arrays are allocated using multiprocessing.sharedctypes.RawArray
@@ -604,6 +604,7 @@ class SharedKmerProbeMap:
             probe_seqs_to_probe: dict mapping probe sequences (as strings)
                 to the instances of probe.Probe from which these sequences
                 came
+            native_dict: kmer_probe_map as a native Python dict
         """
         self.keys = keys
         self.probe_seqs_ind = probe_seqs_ind
@@ -611,6 +612,7 @@ class SharedKmerProbeMap:
         self.probe_seqs = probe_seqs
         self.k = k
         self.probe_seqs_to_probe = probe_seqs_to_probe
+        self.native_dict = native_dict
 
     def get(self, kmer):
         """Get the value in kmer_probe_map for the given kmer.
@@ -710,8 +712,15 @@ class SharedKmerProbeMap:
                 probe_pos[i] = pos
                 i += 1
 
+        # Fill in native_dict
+        native_dict = defaultdict(list)
+        for kmer in kmer_probe_map.keys():
+            for probe, pos in kmer_probe_map[kmer]:
+                native_dict[kmer].append((probe.seq_str, pos))
+        native_dict = dict(native_dict)
+
         return SharedKmerProbeMap(keys, probe_seqs_ind, probe_pos, probe_seqs,
-                                  k, probe_seqs_to_probe)
+                                  k, probe_seqs_to_probe, native_dict)
 
 
 def set_max_num_processes_for_probe_finding_pools(max_num_processes=8):
@@ -732,7 +741,8 @@ set_max_num_processes_for_probe_finding_pools()
 
 def open_probe_finding_pool(kmer_probe_map,
                             cover_range_for_probe_in_subsequence_fn,
-                            num_processes=None):
+                            num_processes=None,
+                            use_native_dict=False):
     """Open a pool for calling find_probe_covers_in_sequence().
 
     The variables to share with the processes (e.g., kmer_probe_map.keys)
@@ -756,6 +766,12 @@ def open_probe_finding_pool(kmer_probe_map,
         num_processes: number of processes/workers to have in the pool;
             if None, uses min(the number of CPUs in the system,
             _pfp_max_num_processes)
+        use_native_dict: use the native Python dict in kmer_probe_map
+            rather than the primitive types that are more suited to
+            sharing across processes; depending on the input, this can
+            result in considerably more memory use (see SharedKmerProbeMap
+            for an explanation of why) but may provide an improvement
+            in runtime
 
     Raises:
         RuntimeError if the pool is already open; only one pool may be
@@ -772,6 +788,8 @@ def open_probe_finding_pool(kmer_probe_map,
     global _pfp_kmer_probe_map_probe_seqs
     global _pfp_kmer_probe_map_probe_seqs_to_probe
     global _pfp_kmer_probe_map_k
+    global _pfp_kmer_probe_map_native
+    global _pfp_kmer_probe_map_use_native
 
     try:
         if _pfp_is_open:
@@ -806,6 +824,8 @@ def open_probe_finding_pool(kmer_probe_map,
     _pfp_kmer_probe_map_probe_seqs_to_probe = \
         kmer_probe_map.probe_seqs_to_probe
     _pfp_kmer_probe_map_k = kmer_probe_map.k
+    _pfp_kmer_probe_map_native = kmer_probe_map.native_dict
+    _pfp_kmer_probe_map_use_native = use_native_dict
 
     # Note that the pool must be created at the very end of this function
     # because the only global variables shared with processes in this
@@ -853,6 +873,8 @@ def close_probe_finding_pool():
     global _pfp_kmer_probe_map_probe_seqs
     global _pfp_kmer_probe_map_probe_seqs_to_probe
     global _pfp_kmer_probe_map_k
+    global _pfp_kmer_probe_map_native
+    global _pfp_kmer_probe_map_use_native
 
     pfp_is_open = False
     try:
@@ -873,6 +895,8 @@ def close_probe_finding_pool():
     del _pfp_kmer_probe_map_probe_seqs
     del _pfp_kmer_probe_map_probe_seqs_to_probe
     del _pfp_kmer_probe_map_k
+    del _pfp_kmer_probe_map_native
+    del _pfp_kmer_probe_map_use_native
 
     # In Python versions earlier than 2.7.3 there is a bug (see
     # http://bugs.python.org/issue12157) that occurs if a pool p is
@@ -975,14 +999,20 @@ def _find_probe_covers_in_subsequence(bounds,
     global _pfp_kmer_probe_map_probe_pos
     global _pfp_kmer_probe_map_probe_seqs
     global _pfp_kmer_probe_map_k
+    global _pfp_kmer_probe_map_use_native
 
-    shared_kmer_probe_map = SharedKmerProbeMap(
-        _pfp_kmer_probe_map_keys,
-        _pfp_kmer_probe_map_probe_seqs_ind,
-        _pfp_kmer_probe_map_probe_pos,
-        _pfp_kmer_probe_map_probe_seqs,
-        _pfp_kmer_probe_map_k,
-        None)
+    if _pfp_kmer_probe_map_use_native:
+        global _pfp_kmer_probe_map_native
+        shared_kmer_probe_map = _pfp_kmer_probe_map_native
+    else:
+        shared_kmer_probe_map = SharedKmerProbeMap(
+            _pfp_kmer_probe_map_keys,
+            _pfp_kmer_probe_map_probe_seqs_ind,
+            _pfp_kmer_probe_map_probe_pos,
+            _pfp_kmer_probe_map_probe_seqs,
+            _pfp_kmer_probe_map_k,
+            None,
+            None)
     k = _pfp_kmer_probe_map_k
     # Each time a probe is found to cover a range of sequence,
     # add that range, as a tuple, to the probe's entry in

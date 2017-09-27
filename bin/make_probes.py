@@ -122,7 +122,8 @@ def main(args):
         blacklisted_genomes=blacklisted_genomes_fasta,
         coverage=args.coverage,
         cover_extension=args.cover_extension,
-        cover_groupings_separately=args.cover_groupings_separately)
+        cover_groupings_separately=args.cover_groupings_separately,
+        kmer_probe_map_use_native_dict=args.use_native_dict_when_finding_tolerant_coverage)
     #  3) Adapter filter (af) -- add adapters to both the 5' and 3' ends
     #     of each probe
     af = adapter_filter.AdapterFilter(tuple(args.adapter_a),
@@ -446,6 +447,19 @@ if __name__ == "__main__":
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
               "of CPUs in the system, max_num_processes) processes"))
+    parser.add_argument(
+        "--use_native_dict_when_finding_tolerant_coverage",
+        dest="use_native_dict_when_finding_tolerant_coverage",
+        action="store_true",
+        help=("When finding probe coverage for blacklisting and "
+              "identification (i.e., when using tolerant parameters), "
+              "use a native Python dict as the kmer_probe_map across "
+              "processes, rather than the primitives in SharedKmerProbeMap "
+              "that are more suited to sharing across processes. Depending "
+              "on the input (particularly if there are many candidate probes) "
+              "this may result in substantial memory usage; but it may provide "
+              "an improvement in runtime when there are relatively few "
+              "candidate probes and a very large blacklisted input"))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",

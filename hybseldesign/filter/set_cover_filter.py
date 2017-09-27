@@ -74,7 +74,8 @@ class SetCoverFilter(BaseFilter):
                  coverage=1.0,
                  cover_extension=0,
                  cover_groupings_separately=False,
-                 kmer_probe_map_k=20):
+                 kmer_probe_map_k=20,
+                 kmer_probe_map_use_native_dict=False):
         """
         Args:
             mismatches/lcf_thres: consider a probe to hybridize to a sequence
@@ -136,6 +137,12 @@ class SetCoverFilter(BaseFilter):
                 a nucleotide level.
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
+            kmer_probe_map_use_native_dict: when finding probe covers
+                for identification or blacklisting, use the native
+                Python dict of SharedKmerProbeMap rather than its primitive
+                types that are more suited for sharing across processes;
+                depending on the input this can result in considerably
+                more memory use but may give an improvement in runtime
         """
         self.mismatches = mismatches
         self.lcf_thres = lcf_thres
@@ -171,6 +178,7 @@ class SetCoverFilter(BaseFilter):
         self.cover_extension = cover_extension
         self.cover_groupings_separately = cover_groupings_separately
         self.kmer_probe_map_k = kmer_probe_map_k
+        self.kmer_probe_map_use_native_dict = kmer_probe_map_use_native_dict
 
     def _make_sets(self, candidate_probes):
         """Return a collection of sets to use in set cover.
@@ -492,8 +500,10 @@ class SetCoverFilter(BaseFilter):
                     min_k=self.kmer_probe_map_k,
                     k=self.kmer_probe_map_k)
             )
-            probe.open_probe_finding_pool(kmer_probe_map,
-                                          self.cover_range_tolerant_fn)
+            probe.open_probe_finding_pool(
+                kmer_probe_map,
+                self.cover_range_tolerant_fn,
+                use_native_dict=self.kmer_probe_map_use_native_dict)
 
         if self.identify:
             # Find the number of target genome groupings (e.g., species)
