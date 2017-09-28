@@ -742,8 +742,13 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         self.run_random(1, 500000, 1000000, 6000, probe_length=75,
                         lcf_thres=75, seed=3)
 
+    def test_random_large_genome_native_dict(self):
+        self.run_random(1, 1500000, 2500000, 30000,
+                        lcf_thres=100, seed=4, use_native_dict=True)
+
     def run_random(self, n, genome_min, genome_max, num_probes,
-                   probe_length=100, lcf_thres=None, seed=1, n_workers=2):
+                   probe_length=100, lcf_thres=None, seed=1, n_workers=2,
+                   use_native_dict=False):
         """Run tests with a randomly generated sequence.
 
         Repeatedly runs tests in which a sequence is randomly generated,
@@ -764,6 +769,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 randomly chosen among 80 and 100
             seed: random number generator seed
             n_workers: number of workers to have in a probe finding pool
+            use_native_dict: have the probe finding pool use a native Python
+                dict
         """
         np.random.seed(seed)
         fixed_lcf_thres = lcf_thres
@@ -817,7 +824,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
             f = probe.probe_covers_sequence_by_longest_common_substring(
                 3, lcf_thres)
-            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            probe.open_probe_finding_pool(kmer_map, f, n_workers,
+                                          use_native_dict=use_native_dict)
             found = probe.find_probe_covers_in_sequence(sequence)
             probe.close_probe_finding_pool()
             # Check that this didn't find any extraneous probes and that
