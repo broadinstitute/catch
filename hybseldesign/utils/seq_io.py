@@ -1,6 +1,7 @@
 """Utilities for working with sequence i/o.
 """
 
+from collections import defaultdict
 from collections import OrderedDict
 import gzip
 import logging
@@ -28,19 +29,36 @@ def read_dataset_genomes(dataset):
 
     if dataset.is_multi_chr():
         # The genomes in this dataset have more than one chromosome.
-        # The dataset should have one or more paths to FASTA files
-        # (dataset.fasta_paths), where each file gives one genome
-        # (sample) and the sequences in that file correspond to the
-        # different chromosomes. The header of each sequence should be
-        # a chromosome in dataset.chrs.
         logger.debug("Reading dataset %s broken up by chromosome",
                      dataset.__name__)
-        for fn in dataset.fasta_paths:
-            seq_map = read_fasta(fn)
-            seq_map_by_chr = {dataset.seq_header_to_chr(header): seq_map[header]
-                              for header in seq_map.keys()}
-            seqs = OrderedDict(seq_map_by_chr)
-            genomes += [genome.Genome.from_chrs(seqs)]
+        if dataset.seq_header_to_genome is None:
+            # The dataset should have one or more paths to FASTA files
+            # (dataset.fasta_paths), where each file gives one genome
+            # (sample) and the sequences in that file correspond to the
+            # different chromosomes. The header of each sequence should
+            # specify a chromosome in dataset.chrs.
+            for fn in dataset.fasta_paths:
+                seq_map = read_fasta(fn)
+                seq_map_by_chr = {dataset.seq_header_to_chr(header): seq_map[header]
+                                  for header in seq_map.keys()}
+                seqs = OrderedDict(seq_map_by_chr)
+                genomes += [genome.Genome.from_chrs(seqs)]
+        else:
+            # The dataset should have one or more paths to FASTA files
+            # (dataset.fasta_paths), where each file gives one or more
+            # genomes and their corresponding chromosomes. The header of
+            # each sequence should specify a genome ID and a chromosome
+            # in dataset.chrs.
+            genomes_by_id = defaultdict(list)
+            for fn in dataset.fasta_paths:
+                seq_map = read_fasta(fn)
+                for header, seq in seq_map.items():
+                    genome_id = dataset.seq_header_to_genome(header)
+                    chrom = dataset.seq_header_to_chr(header)
+                    genomes_by_id[genome_id].append((chrom, seq))
+            for genome_id, seq_tups in genomes_by_id.items():
+                seqs = OrderedDict(seq_tups)
+                genomes += [genome.Genome.from_chrs(seqs)]
     else:
         # There is just one sequence (chromosome) for each genome in
         # this dataset. The dataset should have a path to one or more

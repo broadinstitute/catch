@@ -87,10 +87,17 @@ class GenomesDatasetMultiChrom(GenomesDataset):
     in which each sequence in the file corresponds to a chromosome; there
     is typically more than one FASTA file for the dataset, and they should
     each be added with add_fasta_path().
+
+    If there are many genomes, keeping each in a separate FASTA file may
+    result in an unwiedly number of files. If seq_header_to_genome is
+    provided, then this will assume that the provided FASTA paths (which
+    may be just one) have an ID for each genome in the sequence headers.
+    This allows multiple genomes to be placed in a single FASTA file,
+    and for the segments of each genome to be grouped.
     """
 
     def __init__(self, __name__, __file__, __spec__,
-                 chrs, seq_header_to_chr):
+                 chrs, seq_header_to_chr, seq_header_to_genome=None):
         """
         Args:
             __name__: name of this dataset (module)
@@ -103,6 +110,11 @@ class GenomesDatasetMultiChrom(GenomesDataset):
             seq_header_to_chr: function that takes a sequence header from
                 a FASTA file and returns the chr (as a string) from that
                 header
+            seq_header_to_genome: (optional) function that takes a
+                sequence header from a FASTA file and returns an ID for
+                the genome from that header; if not provided, then this
+                assumes that all of the sequences in a FASTA file are from
+                a single genome
         """
         if len(chrs) == 1:
             logger.critical(("Typically when there is just one chromosome, "
@@ -115,6 +127,7 @@ class GenomesDatasetMultiChrom(GenomesDataset):
         GenomesDataset.__init__(self, __name__, __file__, __spec__)
         self.chrs = chrs
         self.seq_header_to_chr = seq_header_to_chr
+        self.seq_header_to_genome = seq_header_to_genome
         self.fasta_paths = []
 
 
