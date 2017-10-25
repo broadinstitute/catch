@@ -37,6 +37,7 @@ def seq_header_to_genome(header):
     m = c.search(header)
     return m.group(1)
 
+
 ds = GenomesDatasetMultiChrom(__name__, __file__, __spec__,
                               chrs, seq_header_to_chr,
                               seq_header_to_genome=seq_header_to_genome)

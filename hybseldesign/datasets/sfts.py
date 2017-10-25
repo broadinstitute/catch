@@ -31,11 +31,17 @@ def seq_header_to_chr(header):
         raise ValueError("Unknown segment %s" % seg)
     return "segment_" + seg
 
+def seq_header_to_genome(header):
+    import re
+    c = re.compile(r'\[genome (.+)\]')
+    m = c.search(header)
+    return m.group(1)
+
 
 ds = GenomesDatasetMultiChrom(__name__, __file__, __spec__,
-                              chrs, seq_header_to_chr)
+                              chrs, seq_header_to_chr,
+                              seq_header_to_genome=seq_header_to_genome)
 
-for f in listdir(join(dirname(__file__), "data/sfts/")):
-    ds.add_fasta_path("data/sfts/" + f, relative=True)
+ds.add_fasta_path("data/sfts.fasta", relative=True)
 
 sys.modules[__name__] = ds
