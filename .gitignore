@@ -1,5 +1,3 @@
-hybseldesign/VERSION
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -58,5 +56,5 @@ target/
 # vim swap files
 *.swp
 
-# start.sh script
-start.sh
+# Created VERSION file
+hybseldesign/VERSION
