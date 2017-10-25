@@ -8,45 +8,60 @@ hybsel_design is a Python package for designing probes to be used in hybrid sele
 
 ## Dependencies
 
-hybsel_design is tested under Python 3.5, but should also work under earlier versions of Python 3. It requires NumPy; it is tested with NumPy 1.9.0.
+hybsel_design requires:
+* Python >= 3.5
+* NumPy >= 1.9.0
 
+hybsel_design comes with viral sequence data to use as input.
+If you wish to use this data, you'll need to install [Git LFS](https://git-lfs.github.com) so the data can be downloaded.
+To install Git LFS on a Broad machine, simply run:
 
-## Install and Develop
-
-### Install (not intended for development)
-hybsel_design is installed with `setuptools`. To install it in your local user directory, run:
-
-```
-$ python setup.py install --user
-```
-
-### Install for development
-To setup the package in your local user directory in development mode, in which changes are reflected immediately, run:
-
-```
-$ python setup.py develop --install-dir=~/.local/lib/python3.5/site-packages/
+```bash
+use .git-lfs-2.0.2
+git lfs install
 ```
 
-on a Broad machine. Or run:
+## Install
 
-```
-$ python setup.py develop --install-dir=~/Library/Python/3.5/lib/python/site-packages/
-```
+The easiest way to install hybsel_design is with `pip`:
 
-on OS X.
+```bash
+git clone git@github.com:broadinstitute/hybsel_design.git
+cd hybsel_design
+pip install -e .
+```
 
 ## Testing
 
 hybsel_design uses Python's `unittest` framework. To execute all unit tests, run:
 
-```
-$ python -m unittest discover
-```
-
-It is also possible to run unit tests on a particular package or module, or even run a particular test. For example:
-
-```
-$ python -m unittest hybseldesign.utils.tests.test_seq_io
+```bash
+python -m unittest discover
 ```
 
-runs tests for the `hybseldesign.utils.seq_io` module.
+## Running
+
+The main script to design probes is `bin/make_probes.py`.
+To see the arguments that the program accepts, run:
+
+```bash
+bin/make_probes.py -h
+```
+
+## Examples
+
+Here is a command that uses some common options:
+
+```bash
+bin/make_probes.py -d lassa -pl 75 -m 2 -e 50 -o lassa-probes.fasta
+```
+
+This will design probes that:
+* target Lassa virus (`-d lassa`)
+* are 75 nt long (`-pl 75`)
+* capture the entirety of each input genome, tolerating up to 2 mismatches (`-m 2`)
+* assume 50 nt on each side of the hybridization is captured as well (`-e 50`)
+
+and will save them to `lassa-probes.fasta`.
+
+To use a custom input instead of a provided dataset, use `-d custom:[path-to-sequences.fasta]`.
