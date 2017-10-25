@@ -1,1 +1,3 @@
+# Have git lfs track all data that is part of the repo
+# (added by @haydenm on 2017-10-25 during 'git lfs migrate')
 hybseldesign/datasets/data/** filter=lfs diff=lfs merge=lfs -text
