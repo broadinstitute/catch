@@ -19,8 +19,7 @@ def make_candidate_probes_from_sequence(seq,
                                         probe_length,
                                         probe_stride,
                                         min_n_string_length=2,
-                                        allow_small_seqs=None,
-                                        insert_bugs=False):
+                                        allow_small_seqs=None):
     """Generate a list of candidate probes from a sequence.
 
     It is possible (especially when there are strings of N's) that
@@ -38,9 +37,6 @@ def make_candidate_probes_from_sequence(seq,
         allow_small_seqs: if set, allow sequences that are smaller than the
             probe length by creating candidate probes equal to the sequence;
             the value gives the minimum allowed probe (sequence) length
-        insert_bugs: add bugs to the code in order to replicate past
-            software (the first version of probe design, as Matlab code)
-            and its results
 
     Returns:
         list of candidate probes as instances of probe.Probe
@@ -73,27 +69,16 @@ def make_candidate_probes_from_sequence(seq,
     # is a probe to be added and the probe is returned in a single-
     # valued list. Otherwise, an empty list is returned.
     def add_probe_from_subsequence(start, end,
-                                   is_flanking_n_string=False,
-                                   is_bug_location=False):
+                                   is_flanking_n_string=False):
         subseq = seq[start:end]
         probes = []
 
-        if insert_bugs and is_bug_location:
-            if 'N' in subseq:
-                # A bug was present that considered a probe with just a
-                # single 'N' (even if min_n_string_length > 1) to be invalid
-                # and otherwise to be valid
-                # (line 116 of Matlab code)
-                pass
-            else:
-                probes += [subseq]
-        else:
-            # Search for strings of min_n_string_length or more N's in subseq
-            # and only add a probe if there is not such a string
-            if not n_string_query.search(subseq):
-                # There's no string of N's, so this subsequence is a valid
-                # probe
-                probes += [subseq]
+        # Search for strings of min_n_string_length or more N's in subseq
+        # and only add a probe if there is not such a string
+        if not n_string_query.search(subseq):
+            # There's no string of N's, so this subsequence is a valid
+            # probe
+            probes += [subseq]
 
         # Convert the probes from a Python list of Python strings to a
         # list of probe.Probe
@@ -108,32 +93,13 @@ def make_candidate_probes_from_sequence(seq,
     for start in np.arange(0, len(seq), probe_stride):
         if start + probe_length > len(seq):
             break
-        if insert_bugs:
-            if start + probe_length == len(seq) and \
-                    start % probe_length == 0:
-                # A bug was present that stopped creating candidate probes
-                # one bp short of where it should have stopped (but only
-                # for the so-called 'A adapter'; this is not a problem for
-                # the 'B-adapter')
-                # (line 86 of Matlab code)
-                break
+        probes += add_probe_from_subsequence(start, start + probe_length)
 
-        # A particular bug was present only in designing the
-        # so-called 'B adapter'
-        # (line 116 of Matlab code)
-        is_bug_location = start % probe_length == probe_stride
-
-        probes += add_probe_from_subsequence(start, start + probe_length,
-                                             is_bug_location=is_bug_location)
     if len(seq) % probe_stride != 0:
         # There are bases on the right that were never covered, so add
         # another probe for this
-        if insert_bugs:
-            # A bug was present that ignored the bases on the end
-            pass
-        else:
-            probes += add_probe_from_subsequence(len(seq) - probe_length,
-                                                 len(seq))
+        probes += add_probe_from_subsequence(len(seq) - probe_length,
+                                             len(seq))
 
     # Add probes flanking each string of N's. Specifically, add a probe
     # to the left of a string and to the right. The called function
@@ -159,9 +125,7 @@ def make_candidate_probes_from_sequences(
         probe_length,
         probe_stride,
         min_n_string_length=2,
-        allow_small_seqs=None,
-        insert_bugs=False,
-        move_all_n_string_flanking_probes_to_end=False):
+        allow_small_seqs=None):
     """Generate a list of candidate probes from a list of sequences.
 
     It is possible (perhaps even likely depending on where
@@ -179,13 +143,6 @@ def make_candidate_probes_from_sequences(
         allow_small_seqs: if set, allow sequences that are smaller than the
             probe length by creating candidate probes equal to the sequence;
             the value gives the minimum allowed probe (sequence) length
-        insert_bugs: add bugs to the code in order to replicate past
-            software (the first version of probe design, as Matlab code)
-            and its results
-        move_all_n_string_flanking_probes_to_end: takes all probes that
-            were generated because they flank a string of N's, and moves
-            these to the end of the returned list; this is necessary to
-            replicate past code and results
 
     Returns:
         list of candidate probes as instances of probe.Probe
@@ -205,20 +162,6 @@ def make_candidate_probes_from_sequences(
             probe_length=probe_length,
             probe_stride=probe_stride,
             min_n_string_length=min_n_string_length,
-            allow_small_seqs=allow_small_seqs,
-            insert_bugs=insert_bugs)
-
-    if move_all_n_string_flanking_probes_to_end:
-        # To precisely replicate past software/results, this option
-        # moves all probes that flank a string of N's to the end
-        # of the returned list.
-        probes_non_n = []
-        probes_n = []
-        for p in probes:
-            if p.is_flanking_n_string:
-                probes_n += [p]
-            else:
-                probes_non_n += [p]
-        probes = probes_non_n + probes_n
+            allow_small_seqs=allow_small_seqs)
 
     return probes

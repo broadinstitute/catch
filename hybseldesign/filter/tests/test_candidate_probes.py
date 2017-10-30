@@ -106,23 +106,6 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
         p = [''.join(x.seq) for x in p]
         self.assertCountEqual(p, ['ATCGAT', 'GATCGA', 'CGATCG'] + ['CCGG'])
 
-    def test_buggy(self):
-        """Tests the version with bugs, intended to replicate the original
-        candidate probe designer.
-        """
-        p = candidate_probes.make_candidate_probes_from_sequences(
-            ['ATCGNCGNNTCG', 'ATCGNCGNNTCGATAT'],
-            probe_length=6,
-            probe_stride=3,
-            min_n_string_length=2,
-            insert_bugs=True,
-            move_all_n_string_flanking_probes_to_end=True)
-        p = [''.join(x.seq) for x in p]
-        # Use assertEqual rather than assertCountEqual to check order
-        self.assertEqual(
-            p,
-            ['ATCGNC'] + ['ATCGNC', 'TCGATA'] + ['TCGNCG', 'TCGNCG', 'TCGATA'])
-
 
 class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
     """Tests the candidate probes from the Ebola Zaire (w/ 2014) dataset.

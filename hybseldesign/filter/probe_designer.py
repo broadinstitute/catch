@@ -17,8 +17,7 @@ class ProbeDesigner:
     """
 
     def __init__(self, genomes, filters, probe_length,
-            probe_stride, allow_small_seqs=None,
-            replicate_first_version=False):
+            probe_stride, allow_small_seqs=None):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
@@ -33,16 +32,12 @@ class ProbeDesigner:
             allow_small_seqs: if set, allow sequences that are smaller than the
                 probe length by creating candidate probes equal to the sequence;
                 the value gives the minimum allowed probe (sequence) length
-            replicate_first_version: when True, candidate probes are
-                explicitly designed in a (buggy) way intended to replicate
-                the first version (Matlab code) of probe design
         """
         self.genomes = genomes
         self.filters = filters
         self.probe_length = probe_length
         self.probe_stride = probe_stride
         self.allow_small_seqs = allow_small_seqs
-        self.replicate_first_version = replicate_first_version
 
     def design(self):
         """Design probes using the provided filters.
@@ -51,13 +46,6 @@ class ProbeDesigner:
         filters. Stores the candidate probes in self.candidate_probes and
         the probes processed by the filters in self.final_probes.
         """
-        if self.replicate_first_version:
-            replicate_args = {
-                'insert_bugs': True,
-                'move_all_n_string_flanking_probes_to_end': True
-            }
-        else:
-            replicate_args = {}
 
         logger.info("Building candidate probes from target sequences")
         self.candidate_probes = []
@@ -67,8 +55,7 @@ class ProbeDesigner:
                     make_candidate_probes_from_sequences(
                         g.seqs, probe_length=self.probe_length,
                         probe_stride=self.probe_stride,
-                        allow_small_seqs=self.allow_small_seqs,
-                        **replicate_args)
+                        allow_small_seqs=self.allow_small_seqs)
 
         probes = self.candidate_probes
         for f in self.filters:

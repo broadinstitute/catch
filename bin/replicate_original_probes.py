@@ -48,12 +48,8 @@ def main(args):
     filters = [rc, df, nf]
 
     # Design the probes
-    # (including the replicate_first_version argument to execute
-    #  bugs that were present in the code's prior version when
-    #  generating the set of candidate probes)
     pb = probe_designer.ProbeDesigner(seqs, filters,
-                                      probe_length=100, probe_stride=50,
-                                      replicate_first_version=True)
+                                      probe_length=100, probe_stride=50)
     pb.design()
 
     if args.print_analysis:
