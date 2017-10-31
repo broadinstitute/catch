@@ -18,5 +18,5 @@ setup(name='hybseldesign',
       scripts=[
           'bin/make_probes.py',
           'bin/analyze_probe_coverage.py',
-          'bin/replicate_original_probes.py',
+          'bin/make_probes_naively.py',
       ])
