@@ -9,6 +9,7 @@ by bin/make_probes.py.
 import argparse
 import importlib
 import logging
+import random
 
 from hybseldesign import coverage_analysis
 from hybseldesign.filter import duplicate_filter
@@ -29,6 +30,17 @@ def main(args):
     except ImportError:
         raise ValueError("Unknown dataset %s" % ds)
     seqs = [seq_io.read_dataset_genomes(dataset)]
+
+    if (args.limit_target_genomes and
+            args.limit_target_genomes_randomly_with_replacement):
+        raise Exception(("Cannot --limit_target_genomes and "
+                         "--limit_target_genomes_randomly_with_replacement at "
+                         "the same time"))
+    elif args.limit_target_genomes:
+        seqs = [genomes[:args.limit_target_genomes] for genomes in seqs]
+    elif args.limit_target_genomes_randomly_with_replacement:
+        k = args.limit_target_genomes_randomly_with_replacement
+        seqs = [random.choices(genomes, k=k) for genomes in seqs]
 
     # Setup the filters needed for replication
     filters = []
@@ -140,6 +152,16 @@ if __name__ == "__main__":
                         action="store_true",
                         help=("Do not add to the output the reverse "
                               "complement of each probe"))
+    parser.add_argument(
+        "--limit_target_genomes",
+        type=int,
+        help=("(Optional) Use only the first N target genomes in the "
+              "dataset"))
+    parser.add_argument(
+        "--limit_target_genomes_randomly_with_replacement",
+        type=int,
+        help=("(Optional) Randomly select N target genomes in the "
+              "dataset with replacement"))
     parser.add_argument("--print_analysis",
                         dest="print_analysis",
                         action="store_true",
