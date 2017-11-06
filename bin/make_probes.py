@@ -5,6 +5,7 @@ import argparse
 import importlib
 import logging
 import os
+import random
 
 from hybseldesign import coverage_analysis
 from hybseldesign import probe
@@ -55,8 +56,18 @@ def main(args):
             genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
             genomes_grouped_names += [ds]
 
-    if args.limit_target_genomes:
+    if args.limit_target_genomes and args.limit_target_genomes_randomly:
+        raise Exception(("Cannot --limit_target_genomes and "
+                         "--limit_target_genomes_randomly at the same time"))
+    elif args.limit_target_genomes:
         genomes_grouped = [genomes[:args.limit_target_genomes]
+                           for genomes in genomes_grouped]
+    elif args.limit_target_genomes_randomly:
+        def sample_genomes(genomes):
+            n = min(len(genomes), args.limit_target_genomes_randomly)
+            indices = random.sample(range(len(genomes)), n)
+            return [genomes[i] for i in sorted(indices)]
+        genomes_grouped = [sample_genomes(genomes)
                            for genomes in genomes_grouped]
 
     # Store the FASTA paths of blacklisted genomes
@@ -397,6 +408,11 @@ if __name__ == "__main__":
         "--limit_target_genomes",
         type=int,
         help=("(Optional) Use only the first N target genomes in the "
+              "dataset"))
+    parser.add_argument(
+        "--limit_target_genomes_randomly",
+        type=int,
+        help=("(Optional) Randomly select N target genomes in the "
               "dataset"))
     parser.add_argument(
         "--adapter_a",
