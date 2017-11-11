@@ -63,19 +63,18 @@ def main(args):
         if args.naive_redundant_filter:
             # Naive redundant filter -- execute a greedy algorithm to
             # condense 'similar' probes down to one
-            shift, mismatches = args.naive_redundant_filter
+            mismatches, lcf_thres = args.naive_redundant_filter
             filt_class = naive_redundant_filter.NaiveRedundantFilter
         if args.dominating_set_filter:
             # Dominating set filter (dsf) -- construct a graph where each
             # node is a probe and edges connect 'similar' probes; then
             # approximate the smallest dominating set
-            shift, mismatches = args.dominating_set_filter
+            mismatches, lcf_thres = args.dominating_set_filter
             filt_class = dominating_set_filter.DominatingSetFilter
         # Construct a function to determine whether two probes are
         # redundant, and then instantiate the appropriate filter
-        redundant_fn = naive_redundant_filter.redundant_shift_and_mismatch_count(
-            shift=shift,
-            mismatch_thres=mismatches)
+        redundant_fn = naive_redundant_filter.redundant_longest_common_substring(
+                            mismatches, lcf_thres)
         filt = filt_class(redundant_fn)
         filters += [filt]
 
@@ -128,25 +127,22 @@ if __name__ == "__main__":
         "-nrf", "--naive_redundant_filter",
         nargs=2,
         type=int,
-        help=("Args: <shift> <mismatches>. Use the 'naive redundant "
+        help=("Args: <mismatches> <lcf_thres>. Use the 'naive redundant "
               "filter' -- i.e., iterate through a list of probes and, "
               "for each probe p, remove the following probes that are "
-              "redundant to p. Deem one probe redundant to another if, "
-              "as it is shifted from -shift to +shift bp relative "
-              "to the other, the minimum number of mismatches between "
-              "them is <= mismatches. This is meant to replicate a "
-              "prior approach for design."))
+              "redundant to p. Deem one probe redundant to another if "
+              "the longest common substring between them, up to "
+              "'mismatches' mismatches, is >= 'lcf_thres'."))
     parser.add_argument(
         "-dsf", "--dominating_set_filter",
         nargs=2,
         type=int,
-        help=("Args: <shift> <mismatches>. Use the 'dominating set "
+        help=("Args: <mismatches> <lcf_thres>. Use the 'dominating set "
               "filter' -- i.e., filter redundant probes by constructing "
               "a graph connecting redundant probes and approximating "
               "the smallest dominating set. Deem one probe redundant "
-              "to another if, as it is shifted from -shift to +shift bp "
-              "relative to the other, the minimum number of mismatches "
-              "between them is <= mismatches"))
+              "to another if the longest common substring between them, "
+              "up to 'mismatches' mismatches, is >= 'lcf_thres'."))
     parser.add_argument("--skip_reverse_complements",
                         dest="skip_reverse_complements",
                         action="store_true",

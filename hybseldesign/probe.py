@@ -170,7 +170,7 @@ class Probe:
         return kmers
 
     def shares_some_kmers(self, other,
-                          k=10,
+                          k=20,
                           num_kmers_to_test=10,
                           memoize_kmers=True):
         """Determine whether this probe likely shares one or more k-mers with other.
