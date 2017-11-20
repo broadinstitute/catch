@@ -37,7 +37,7 @@ class Probe:
         self.is_flanking_n_string = False
         self.header = None
 
-        self.kmers = defaultdict(set)
+        self.kmers = defaultdict(list)
         self.kmers_rand_choices = defaultdict(lambda: defaultdict(list))
 
     def mismatches(self, other):
@@ -229,12 +229,12 @@ class Probe:
             # Construct the k-mers for self and other if they have
             # not yet been constructed for the given k
             if len(self.kmers[k]) == 0:
-                self.kmers[k] = set(self.construct_kmers(k))
+                self.kmers[k] = self.construct_kmers(k)
             if len(other.kmers[k]) == 0:
-                other.kmers[k] = set(other.construct_kmers(k))
+                other.kmers[k] = other.construct_kmers(k)
 
             if len(self.kmers_rand_choices[k][num_kmers_to_test]) == 0:
-                rand_kmers = np.random.choice(list(self.kmers[k]),
+                rand_kmers = np.random.choice(self.kmers[k],
                                               size=num_kmers_to_test,
                                               replace=True)
                 # Memoize the random choices too because the calls to
@@ -246,9 +246,9 @@ class Probe:
                 rand_kmers = \
                     self.kmers_rand_choices[k][num_kmers_to_test]
 
-            other_kmers = other.kmers[k]
+            other_kmers_set = set(other.kmers[k])
             for rand_kmer in rand_kmers:
-                if rand_kmer in other_kmers:
+                if rand_kmer in other_kmers_set:
                     return True
             return False
         else:
