@@ -150,6 +150,25 @@ class TestProbe(unittest.TestCase):
         self.assertGreater(ac, 90)
         self.assertGreater(ca, 90)
 
+    def test_share_some_kmers_with_return_kmer(self):
+        """Test share_some_kmers method.
+        """
+        np.random.seed(1)
+        args = {'k': 5, 'num_kmers_to_test': 10, 'memoize_kmers': True,
+                'return_kmer': True}
+        a = probe.Probe.from_str('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        b = probe.Probe.from_str('ZYXWVUTSRQPONMLKJIHGFEDCBA')
+        c = probe.Probe.from_str('ABCXDEFGHIJKLMNOPQRATUVWYZ')
+        for i in range(100):
+            ac = a.shares_some_kmers(c, **args)
+            if ac:
+                self.assertTrue(ac in a.seq_str)
+                self.assertTrue(ac in c.seq_str)
+            ca = c.shares_some_kmers(a, **args)
+            if ca:
+                self.assertTrue(ca in a.seq_str)
+                self.assertTrue(ca in c.seq_str)
+
     def test_construct_kmers(self):
         """Test construct_kmers method.
         """

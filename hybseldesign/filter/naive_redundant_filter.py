@@ -16,6 +16,7 @@ designing probes for hybrid selection.
 import logging
 
 from hybseldesign.filter.base_filter import BaseFilter
+from hybseldesign.utils import longest_common_substring
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -144,7 +145,7 @@ def redundant_shift_and_mismatch_count(shift=0,
 
 def redundant_longest_common_substring(mismatches,
                                        lcf_thres,
-                                       prune_with_heuristic=True):
+                                       prune_with_heuristic_and_anchor=True):
     """Return a function for determining probe redundancy.
 
     The returned function determines whether two probes are redundant
@@ -156,26 +157,59 @@ def redundant_longest_common_substring(mismatches,
             substring with at most 'mismatches' mismatches is >=
             'lcf_thres', then the returned function returns True;
             otherwise it returns False
-        prune_with_heuristic: when True, a heuristic
+        prune_with_heuristic_and_anchor: when True, a heuristic
             (probe.shares_some_kmers) is called to determine whether the
             two probes might be redundant. If it outputs that they are
             likely not, then the returned function outputs False and the
             longest common substring (a costly operation) is not computed.
             Both false positives and false negatives are possible, but
-            should be rare.
+            should be rare. Furthermore, this uses a k-mer returned by
+            probe.shares_some_kmers as an anchor when determining the
+            longest common substring of two probes. This can lead to
+            a considerable speed improvement in determining the longest
+            common substring, but risks not finding the true longest
+            common substring (i.e., if the anchor is misleading).
 
     Returns:
         function that returns True or False depending on whether two
         probes are redundant
     """
     def are_redundant(probe_a, probe_b):
-        if prune_with_heuristic:
-            if not probe_a.shares_some_kmers(probe_b):
+        if prune_with_heuristic_and_anchor:
+            kmer = probe_a.shares_some_kmers(probe_b, return_kmer=True)
+            if not kmer:
                 # probe_a and probe_b are likely not redundant, so don't
                 # bother computing their longest common substring
                 return False
-        lcf_length = probe_a.longest_common_substring_length(probe_b,
-                                                             mismatches)
-        return lcf_length >= lcf_thres
+
+            # kmer is an anchor; find it in each of the probes
+            probe_a_str = probe_a.seq_str
+            probe_b_str = probe_b.seq_str
+            probe_a_pos = probe_a_str.find(kmer)
+            probe_b_pos = probe_b_str.find(kmer)
+
+            # Since kmer was returned as an anchor, it should be
+            # present in both probes
+            assert probe_a_pos >= 0 and probe_b_pos >= 0
+
+            # Trim a probe so they have the same anchor positions
+            if probe_a_pos > probe_b_pos:
+                probe_a_str = probe_a_str[(probe_a_pos - probe_b_pos):]
+                anchor_start = probe_b_pos
+            else:
+                probe_b_str = probe_b_str[(probe_b_pos - probe_a_pos):]
+                anchor_start = probe_a_pos
+            anchor_end = anchor_start + len(kmer)
+
+            # Find the length of the longest common substring using the
+            # anchor
+            lcf_length, _ = longest_common_substring.k_lcf_around_anchor(
+                probe_a_str, probe_b_str, anchor_start, anchor_end,
+                mismatches)
+            return lcf_length >= lcf_thres
+        else:
+            lcf_length = probe_a.longest_common_substring_length(probe_b,
+                                                                 mismatches)
+            return lcf_length >= lcf_thres
 
     return are_redundant

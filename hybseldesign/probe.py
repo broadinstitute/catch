@@ -172,7 +172,8 @@ class Probe:
     def shares_some_kmers(self, other,
                           k=20,
                           num_kmers_to_test=10,
-                          memoize_kmers=True):
+                          memoize_kmers=True,
+                          return_kmer=False):
         """Determine whether this probe likely shares one or more k-mers with other.
 
         This heuristic outputs whether it is likely that self and
@@ -220,10 +221,15 @@ class Probe:
                 for other; randomly selected k-mers is costly, so this is
                 useful when this function is called repeatedly on the same
                 probe(s)
+            return_kmer: when set, if this function determines that the
+                probes do share k-mers, then it returns one of the
+                k-mers that they share (rather than the value True)
 
         Returns:
             True or False depending on whether this probe likely shares
-            one or more k-mers with other
+            one or more k-mers with other; if True and return_kmer is
+            True, then this returns the tuple a k-mer that the two probes
+            share rather than the value True
         """
         if memoize_kmers:
             # Construct the k-mers for self and other if they have
@@ -249,7 +255,7 @@ class Probe:
             other_kmers_set = set(other.kmers[k])
             for rand_kmer in rand_kmers:
                 if rand_kmer in other_kmers_set:
-                    return True
+                    return rand_kmer if return_kmer else True
             return False
         else:
             rand_kmer_positions = np.random.randint(0,
@@ -261,7 +267,7 @@ class Probe:
                 rand_kmer_pos = rand_kmer_positions[n]
                 rand_kmer = self.seq_str[rand_kmer_pos:(rand_kmer_pos + k)]
                 if rand_kmer in other.seq_str:
-                    return True
+                    return rand_kmer if return_kmer else True
             return False
 
     def identifier(self, length=10):
