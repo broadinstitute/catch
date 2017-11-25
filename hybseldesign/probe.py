@@ -37,8 +37,8 @@ class Probe:
         self.is_flanking_n_string = False
         self.header = None
 
-        self.kmers = defaultdict(list)
-        self.kmers_rand_choices = defaultdict(lambda: defaultdict(list))
+        self.kmers = defaultdict(set)
+        self.kmers_rand_choices = defaultdict(lambda: defaultdict(set))
 
     def mismatches(self, other):
         """Count number of mismatches with other.
@@ -235,14 +235,26 @@ class Probe:
             # Construct the k-mers for self and other if they have
             # not yet been constructed for the given k
             if len(self.kmers[k]) == 0:
-                self.kmers[k] = self.construct_kmers(k)
+                self.kmers[k] = set(self.construct_kmers(k))
             if len(other.kmers[k]) == 0:
-                other.kmers[k] = other.construct_kmers(k)
+                other.kmers[k] = set(other.construct_kmers(k))
 
             if len(self.kmers_rand_choices[k][num_kmers_to_test]) == 0:
-                rand_kmers = np.random.choice(self.kmers[k],
+                # Instead of using self.kmers[k], redetermine a list
+                # of kmers. self.kmers[k] is a set, and so if this
+                # probe is repetitive (i.e., k-mers appear multiple
+                # times) those k-mers would only be weighted once
+                # in the random selection; we want them to be picked
+                # more often if they appear more often
+                kmers_list = self.construct_kmers(k)
+                rand_kmers = np.random.choice(kmers_list,
                                               size=num_kmers_to_test,
                                               replace=True)
+                # rand_kmers can be treated as a set because if
+                # a k-mer appears multiple times in rand_kmers, it
+                # only needs to be compared against other k-mers
+                # once
+                rand_kmers = set(rand_kmers)
                 # Memoize the random choices too because the calls to
                 # list(self.kmers[k]) and to np.random.choice are
                 # slow
@@ -252,11 +264,15 @@ class Probe:
                 rand_kmers = \
                     self.kmers_rand_choices[k][num_kmers_to_test]
 
-            other_kmers_set = set(other.kmers[k])
-            for rand_kmer in rand_kmers:
-                if rand_kmer in other_kmers_set:
-                    return rand_kmer if return_kmer else True
-            return False
+            kmers_intrst = rand_kmers & other.kmers[k]
+            if kmers_intrst:
+                # Pick out an arbitrary k-mer from the intersection
+                # of rand_kmers and other.kmers[k] (i.e., one that
+                # is shared between self and other)
+                shared_kmer = next(iter(kmers_intrst))
+                return shared_kmer if return_kmer else True
+            else:
+                return False
         else:
             rand_kmer_positions = np.random.randint(0,
                                                     len(self.seq) - k + 1,
