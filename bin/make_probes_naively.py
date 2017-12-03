@@ -24,12 +24,18 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 def main(args):
     # Read the FASTA sequences
+    ds = args.dataset
     try:
-        dataset = importlib.import_module(
-            'hybseldesign.datasets.' + args.dataset)
+        if ds.startswith('custom:'):
+            # Process a custom fasta file with sequences
+            fasta_path = ds[len('custom:'):]
+            seqs = [seq_io.read_genomes_from_fasta(fasta_path)]
+        else:
+            dataset = importlib.import_module(
+                'hybseldesign.datasets.' + ds)
+            seqs = [seq_io.read_dataset_genomes(dataset)]
     except ImportError:
         raise ValueError("Unknown dataset %s" % ds)
-    seqs = [seq_io.read_dataset_genomes(dataset)]
 
     if (args.limit_target_genomes and
             args.limit_target_genomes_randomly_with_replacement):
