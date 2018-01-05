@@ -497,7 +497,8 @@ def _total_probe_count_without_interp(params, probe_counts):
 
 
 def _round_params(params, probe_counts, max_total_count,
-        mismatches_eps=0.01, cover_extension_eps=0.1):
+        mismatches_eps=0.01, cover_extension_eps=0.1,
+        mismatches_round=1, cover_extension_round=1):
     """Round parameter values while satisfying the constraint on total count.
 
     Parameter values found by the search are floats. We want the mismatches
@@ -533,8 +534,10 @@ def _round_params(params, probe_counts, max_total_count,
         probe_counts: dict giving number of probes for each dataset and
             choice of parameters
         max_total_count: upper bound on the number of total probes
-        mismatches_epis/cover_extension_eps: eps as defined above for
+        mismatches_eps/cover_extension_eps: eps as defined above for
             mismatches and cover_extension
+        mismatches_round/cover_extension_round: round mismatches and
+            cover_extension to the nearest multiple of this
 
     Returns:
         list in which index i corresponds to the parameter given in
@@ -545,19 +548,19 @@ def _round_params(params, probe_counts, max_total_count,
     for i, dataset in enumerate(sorted(probe_counts.keys())):
         mismatches, cover_extension = params[2 * i], params[2 * i + 1]
 
-        if mismatches - _round_down(mismatches, 1) < mismatches_eps:
+        if mismatches - _round_down(mismatches, mismatches_round) < mismatches_eps:
             # Round mismatches down
-            mismatches = _round_down(mismatches, 1)
+            mismatches = _round_down(mismatches, mismatches_round)
         else:
             # Round mismatches up
-            mismatches = _round_up(mismatches, 1)
+            mismatches = _round_up(mismatches, mismatches_round)
 
-        if cover_extension - _round_down(cover_extension, 10) < cover_extension_eps:
+        if cover_extension - _round_down(cover_extension, cover_extension_round) < cover_extension_eps:
             # Round cover_extension down
-            cover_extension = _round_down(cover_extension, 10)
+            cover_extension = _round_down(cover_extension, cover_extension_round)
         else:
             # Round cover_extension up
-            cover_extension = _round_up(cover_extension, 10)
+            cover_extension = _round_up(cover_extension, cover_extension_round)
 
         params_rounded += [mismatches, cover_extension]
 
@@ -583,11 +586,11 @@ def _round_params(params, probe_counts, max_total_count,
                 # This cannot be decreased
                 continue
             if i % 2 == 0:
-                # This is a mismatch, so decrease by 1
-                params_tmp[i] -= 1
+                # This is a mismatch; decrease by the rounding multiple
+                params_tmp[i] -= mismatches_round
             else:
-                # This is a cover_extension, so decrease by 10
-                params_tmp[i] -= 10
+                # This is a cover_extension; decrease by the rounding multiple
+                params_tmp[i] -= cover_extension_round
             if total_probe_count(params_tmp) >= max_total_count:
                 # This change yields too many probes, so skip it
                 continue
@@ -630,7 +633,9 @@ def _log_params_by_dataset(params, probe_counts, type="float"):
             raise ValueError("Unknown type %s", type)
 
 
-def standard_search(probe_counts, max_total_count, verify_without_interp=False):
+def standard_search(probe_counts, max_total_count,
+        verify_without_interp=False, mismatches_round=1,
+        cover_extension_round=1):
     """Search over mismatches and cover extension only.
 
     This performs the standard search, which finds optimal values of
@@ -647,6 +652,9 @@ def standard_search(probe_counts, max_total_count, verify_without_interp=False):
         verify_without_interp: if True, check that the total probe count
             calculated without interpolation is the same as that calculated
             after rounding parameter values
+        mismatches_round/cover_extension_round: round mismatches and
+            cover_extension parameter to the nearest multiple of this
+            int
 
     Returns:
         tuple (x, y, z) where:
@@ -674,7 +682,9 @@ def standard_search(probe_counts, max_total_count, verify_without_interp=False):
     logger.info("##############################")
 
     # Round the interpolated parameter values
-    opt_params = _round_params(x_sol, probe_counts, max_total_count)
+    opt_params = _round_params(x_sol, probe_counts, max_total_count,
+        mismatches_round=mismatches_round,
+        cover_extension_round=cover_extension_round)
 
     # Log the rounded parameter values, the total probe count, and the
     # loss on the rounded values

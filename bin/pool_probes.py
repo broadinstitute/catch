@@ -27,7 +27,9 @@ def main(args):
 
     # Perform a standard search for optimal values of mismatches and
     # cover extension
-    ss = param_search.standard_search(probe_counts, args.target_probe_count)
+    ss = param_search.standard_search(probe_counts, args.target_probe_count,
+        mismatches_round=args.round_params[0],
+        cover_extension_round=args.round_params[1])
     opt_params, opt_params_count, opt_params_loss = ss
 
     # Write a table of the optimal parameter values
@@ -56,6 +58,11 @@ if __name__ == "__main__":
     parser.add_argument('param_vals_tsv',
         help=("Path to TSV file in which to output optimal parameter "
               "values"))
+    parser.add_argument('--round-params', dest='round_params',
+        nargs=2, type=int, default=[1, 1],
+        help=("<m> <e>; round mismatches parameter to the nearest "
+              "multiple of m and cover_extension parameter to the "
+              "nearest multiple of e"))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",

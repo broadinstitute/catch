@@ -58,11 +58,21 @@ class TestStandardSearch(unittest.TestCase):
     def test_round_params(self):
         pc = {'d1': {(1, 0): 6000, (1, 10): 5500, (1, 20): 5400, (2, 10): 5000,
                 (2, 20): 4500, (4, 10): 4000, (4, 20): 3000, (4, 30): 2500},
-              'd2': {(4, 10): 1000, (3, 20): 900, (4, 20): 10}}
-        params = [2.5, 12, 4, 15]
-        rounded = param_search._round_params(params, pc, 4560)
+              'd2': {(2, 10): 10000, (3, 10): 1100, (4, 10): 1000,
+                (2, 20): 9000, (3, 20): 900, (4, 20): 10}}
 
+        # Test rounding cover_extension to 10
+        params = [2.5, 12, 4, 15]
+        rounded = param_search._round_params(params, pc, 4560,
+            mismatches_round=1, cover_extension_round=10)
         self.assertEqual(rounded, [2, 20, 4, 20])
+
+        # Test rounding cover_extension to 1
+        params = [2.5, 12.3, 4, 14.2]
+        rounded = param_search._round_params(params, pc, 5500,
+            mismatches_round=1, cover_extension_round=1)
+        for i in range(len(rounded)):
+            self.assertEqual(rounded[i], int(rounded[i]))
 
     def test_standard_search_vwafr_typical_counts(self):
         """Integration test with the V-WAfr probe set data."""
