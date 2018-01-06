@@ -10,7 +10,7 @@ python:
 
 install:
  - pip install -r requirements.txt
- - pip install coveralls nose-cov
+ - pip install coveralls[yaml] nose-cov
  - python setup.py install --force
 
 script:
