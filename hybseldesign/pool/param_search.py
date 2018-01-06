@@ -15,6 +15,7 @@ import logging
 import math
 
 import numpy as np
+from scipy import interpolate
 from scipy import optimize
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -32,8 +33,10 @@ def _round_down(x, b):
     return int(math.floor(float(x) / b)) * b
 
 
-def _make_interp_probe_count_for_dataset_fn(probe_counts):
+def _make_interp_probe_count_for_dataset_standard_fn(probe_counts):
     """Generate and return a function that interpolates probe count for a dataset.
+
+    This operates only on the mismatches and cover_extension parameters.
 
     Args:
         probe_counts: dict giving number of probes for each dataset and
@@ -149,13 +152,14 @@ def _make_interp_probe_count_for_dataset_fn(probe_counts):
                             min_area = area
         return min_rectangle
 
-    def interp_probe_count_for_dataset(dataset, mismatches, cover_extension):
+    def interp_probe_count_for_dataset(dataset, param_vals):
         """
         Using the given probe counts at particular parameter values, interpolate
-        the number of probes for 'dataset' and 'mismatches' mismatches and
-        at a cover extension of 'cover_extension', where each of these may be
-        floats
+        the number of probes for 'dataset' and given mismatches (param_vals[0])
+        and cover_extension (param_vals[1]), where each of these may be floats
         """
+        mismatches, cover_extension = param_vals
+
         immediate_bb = immediate_bounding_box(mismatches, cover_extension)
         if immediate_bb in memoized_bounding_boxes[dataset]:
             # The bounding box for (mismatches, cover_extension) has been
@@ -222,42 +226,107 @@ def _make_interp_probe_count_for_dataset_fn(probe_counts):
     return interp_probe_count_for_dataset
 
 
-def _make_total_probe_count_across_datasets_fn(probe_counts):
-    """Generate and return a function that interpolates probe count.
+_interp_nd_fn_memoized = {}
+def _make_interp_probe_count_for_dataset_nd_fn(probe_counts):
+    """Generate and return a function that interpolates probe count for a dataset.
+
+    This uses a function from scipy's interpolate package to operate on
+    an arbitrary number of parameters.
 
     Args:
         probe_counts: dict giving number of probes for each dataset and
             choice of parameters
 
     Returns:
-        function whose input is choices of mismatches and cover extension
-        parameter values for all datasets. The function interpolates the
-        number of probes required for each dataset, and sums across all
-        datasets to determine a total number of probes.
+        function whose input is a dataset and values for arbitrary
+        parameters. The function linearly interpolates the number of
+        probes required in that dataset for those parameter values, based
+        on the values (which were explicitly calculated) in probe_counts.
     """
-    interp_probe_count_for_dataset = _make_interp_probe_count_for_dataset_fn(
-        probe_counts)
+    # Reset the memoized dict for a new call (this is useful for unit tests,
+    # which may call this function multiple times with different inputs --
+    # i.e., values in probe_counts)
+    _interp_nd_fn_memoized = {}
+
+    def interp_probe_count_for_dataset(dataset, param_vals):
+        """
+        Using the given probe counts at particular parameter values, interpolate
+        the number of probes for 'dataset' and the parameter values given
+        in 'param_vals', where each of these may be floats.
+        """
+        if dataset in _interp_nd_fn_memoized:
+            nd_fn = _interp_nd_fn_memoized[dataset]
+        else:
+            points = []
+            values = []
+            for p in probe_counts[dataset].keys():
+                points += [p]
+                values += [probe_counts[dataset][p]]
+            points = np.array(points)
+            values = np.array(values)
+
+            nd_fn = interpolate.LinearNDInterpolator(points, values,
+                rescale=True)
+            _interp_nd_fn_memoized[dataset] = nd_fn
+
+        try:
+            return nd_fn(np.array(param_vals))[0]
+        except ValueError:
+            raise ValueError(param_vals, dataset, probe_counts[dataset])
+
+    return interp_probe_count_for_dataset
+
+
+def _make_total_probe_count_across_datasets_fn(probe_counts,
+        interp_fn_type='standard'):
+    """Generate and return a function that interpolates probe count.
+
+    Args:
+        probe_counts: dict giving number of probes for each dataset and
+            choice of parameters
+        interp_fn_type: 'standard' (only perform interpolation on mismatches
+            and cover_extension parameters) or 'nd' (use scipy's interpolate
+            package to interpolate over n-dimensions)
+
+    Returns:
+        function whose input is choices of parameter values for all datasets.
+        The function interpolates the number of probes required for each
+        dataset, and sums across all datasets to determine a total number
+        of probes.
+    """
+    assert interp_fn_type in ['standard', 'nd']
+    if interp_fn_type == 'standard':
+        interp_fn = _make_interp_probe_count_for_dataset_standard_fn
+    elif interp_fn_type == 'nd':
+        interp_fn = _make_interp_probe_count_for_dataset_nd_fn
+    interp_probe_count_for_dataset = interp_fn(probe_counts)
 
     def total_probe_count_across_datasets(x):
         """
         Sum the (interpolated) probe counts across datasets.
 
+        Let the number of datasets (len(probe_counts)) be N.
         x is a list giving all the parameter values across datasets,
-        such that for even i, x_i gives the number of mismatches for the
-        (i/2)'th dataset and x_{i+1} gives the cover extension for the
-        (i/2)'th dataset
+        such that x_i is the (i % N)'th parameter of the (i/N)'th dataset,
+        for i=0,1,2,...
         """
+        num_datasets = len(probe_counts)
+        # The number of parameter values must be a multiple of the number
+        # of datasets
+        assert len(x) % num_datasets == 0
+
+        num_params = int(len(x) / num_datasets)
+
         s = 0
         for i, dataset in enumerate(sorted(probe_counts.keys())):
-            mismatches, cover_extension = x[2 * i], x[2 * i + 1]
-            s += interp_probe_count_for_dataset(dataset, mismatches,
-                                                cover_extension)
+            param_vals = [x[num_params * i + j] for j in range(num_params)]
+            s += interp_probe_count_for_dataset(dataset, param_vals)
         return s
 
     return total_probe_count_across_datasets
 
 
-def _make_loss_fn(probe_counts, max_total_count):
+def _make_loss_fn(probe_counts, max_total_count, interp_fn_type='standard'):
     """Generate and return a loss function.
 
     The function calculates a loss over the parameters and adds onto
@@ -265,15 +334,16 @@ def _make_loss_fn(probe_counts, max_total_count):
     uses a logarithmic barrier function to enforce the constraint that
     the total probe count be <= max_total_count.
 
-    The loss over the parameters is the sum, over datasets d, of
-        (m_d)^2 + (e_d / 10.0)^2
-    where m_d is the value of the mismatches parameter for d and e_d
-    is the value of the cover extension parameter for d.
+    The loss over the parameters is the sum, over datasets d, of the
+    sum of (v_{di})^2 for each parameter i in dataset d.
 
     Args:
         probe_counts: dict giving number of probes required for each
             dataset and choice of parameters
         max_total_count: upper bound on the number of total probes
+        interp_fn_type: 'standard' (only perform interpolation on mismatches
+            and cover_extension parameters) or 'nd' (use scipy's interpolate
+            package to interpolate over n-dimensions)
 
     Returns:
         a function that is the sum of a loss defined over the parameters
@@ -281,24 +351,39 @@ def _make_loss_fn(probe_counts, max_total_count):
         of probes
     """
     total_probe_count_across_datasets = _make_total_probe_count_across_datasets_fn(
-        probe_counts)
+        probe_counts, interp_fn_type=interp_fn_type)
 
     def loss(x, *func_args):
         """
         Compute a loss.
 
+        Let the number of datasets (len(probe_counts)) be N.
         x is a list giving all the parameter values across datasets,
-        such that for even i, x_i gives the number of mismatches for the
-        (i/2)'th dataset and x_{i+1} gives the cover extension for the
-        (i/2)'th dataset
+        such that x_i is the (i % N)'th parameter of the (i/N)'th dataset,
+        for i=0,1,2,...
         """
+        num_datasets = len(probe_counts)
+        # The number of parameter values must be a multiple of the number
+        # of datasets
+        assert len(x) % num_datasets == 0
+
+        num_params = int(len(x) / num_datasets)
+
         # First compute a loss over the parameters by taking their L2-norm (and
         # down-weighting cover_extension by a factor of 10.0)
         # This is the function we really want to minimize
         opt_val = 0
         for i, dataset in enumerate(sorted(probe_counts.keys())):
-            mismatches, cover_extension = x[2 * i], x[2 * i + 1]
-            opt_val += np.power(mismatches, 2.0) + np.power(cover_extension / 10.0, 2.0)
+            param_vals = [x[num_params * i + j] for j in range(num_params)]
+            # Assume (perhaps incorrectly) that if there are just 2
+            # parameters, these are mismatches and cover_extension; this
+            # will be fixed later by allowing custom coefficients
+            if num_params == 2:
+                mismatches, cover_extension = x[2 * i], x[2 * i + 1]
+                opt_val += np.power(mismatches, 2.0) + np.power(cover_extension / 10.0, 2.0)
+            else:
+                for v in param_vals:
+                    opt_val += np.power(v, 2.0)
 
         # We also have the constraint that the total probe count be less than
         # max_total_count
@@ -306,7 +391,14 @@ def _make_loss_fn(probe_counts, max_total_count):
         # barrier by eps
         eps = func_args[0]
         total_probe_count = total_probe_count_across_datasets(x)
-        if total_probe_count >= max_total_count:
+        if np.isnan(total_probe_count):
+            # If the interp_fn_type is 'nd' and the parameter values are
+            # outside the convex hull of computed points (from probe_counts)
+            # for a dataset, scipy's interpolator will be unable to
+            # interpolate a probe count and will return nan; here, make
+            # the loss (through the barrier) high to reflect this
+            barrier_val = 10000000
+        elif total_probe_count >= max_total_count:
             # Since the count is beyond the barrier, we should in theory
             # return infinity. But if the optimizer does indeed try parameters
             # that put the probe count here, it would be unable to compute
@@ -331,8 +423,8 @@ def _make_loss_fn(probe_counts, max_total_count):
     return loss
 
 
-def _make_param_bounds(probe_counts, step_size=0.001):
-    """Calculate bounds on parameter values.
+def _make_param_bounds_standard(probe_counts, step_size=0.001):
+    """Calculate bounds on parameter values for only mismatches and cover_extension.
 
     For each dataset d, this calculates bounds on the values of the
     mismatches and cover extension parameters based on which values
@@ -344,7 +436,8 @@ def _make_param_bounds(probe_counts, step_size=0.001):
     Args:
         probe_counts: dict giving the number of probes for each dataset
             and choice of parameters
-        step_size: small value subtracted from each upper bound
+        step_size: small value subtracted from each upper bound so
+            that the minimizer does not exceed it
 
     Returns:
         [m_1, e_1, m_2, e_2, ...] where m_i is a tuple (lo, hi) that
@@ -354,6 +447,11 @@ def _make_param_bounds(probe_counts, step_size=0.001):
     bounds = []
     for dataset in sorted(probe_counts.keys()):
         params = probe_counts[dataset].keys()
+
+        # This requires that mismatches and cover_extension be the
+        # only two parameters
+        for p in params:
+            assert len(p) == 2
 
         # Bound cover_extensions by the lowest and highest value for
         # which we have a probe count result
@@ -378,49 +476,95 @@ def _make_param_bounds(probe_counts, step_size=0.001):
     return bounds
 
 
-def _make_initial_guess(probe_counts, bounds, max_total_count):
+def _make_param_bounds_nd(probe_counts, step_size=0.001):
+    """Calculate bounds on parameter values in n dimensions.
+
+    For each dataset d, this calculates bounds on the values of each
+    parameter based only on the min/max of what has been computed
+    (i.e., is in probe_counts). Note that a point that satisfies these
+    bounds may not necessarily be within the convex hull of all the
+    computed points.
+
+    Args:
+        probe_counts: dict giving the number of probes for each dataset
+            and choice of parameters
+        step_size: small value subtracted from each upper bound so that
+            the minimizer does not exceed it
+
+    Returns:
+        list x giving all the parameter values across datasets,
+        such that x_i corresponds to the (i % N)'th parameter of the
+        (i/N)'th dataset, for i=0,1,2,... where N is the number of datasets;
+        x_i is a tuple (lo, hi) giving bounds on the parameter
+    """
+    bounds = []
+    for dataset in sorted(probe_counts.keys()):
+        params = list(probe_counts[dataset].keys())
+        num_params = len(params[0])
+
+        for j in range(num_params):
+            lo = min(params[i][j] for i in range(len(params)))
+            hi = max(params[i][j] for i in range(len(params))) - step_size
+            bounds += [(lo, hi)]
+    return bounds
+            
+
+def _make_initial_guess(probe_counts, bounds, num_params):
     """Make initial guess for optimal parameter values.
 
-    This guesses a value for mismatches and cover extension separately
+    This guesses a value for each parameter separately
     for each dataset, choosing uniformly from within the provided
-    bounds. It allows a guess that exceeds the constraint on the
-    total number of probes, but outputs a warning if this occurs.
+    bounds. (If bounds is None, it chooses an already computed
+    point (a parameter in probe_counts) uniformly at random.) It allows
+    a guess that exceeds the constraint on the total number of probes,
+    but outputs a warning if this occurs.
 
     Args:
         probe_counts: dict giving number of probes required for each
             dataset and choice of parameters
-        bounds: lower/upper bounds on mismatches and cover extension
-            for each dataset
-        max_total_count: upper bound on the number of total probes
+        bounds: lower/upper bounds on each parameter for each dataset
+            (bounds[i] is a tuple (lo, hi) giving the bounds for
+            the (i % N)'th parameter of the (i/N)'th dataset for
+            i=0,1,2... where N is the number of datasets; if None,
+            rather than picking a guess uniformly at random from
+            within the bounds, this picks an already computed
+            point (a paramter value in probe_counts) uniformly
+            at random, which ensures the guess is within the convex
+            hull of the computed points
+        num_params: number of parameters
 
     Returns:
-        list of length 2*(number of datasets) in which the value at
-        index 2*i is a guess for the mismatches of the i'th dataset
-        and the value at index 2*i+1 is a guess for the cover
-        extension of the i'th dataset
+        list x giving all the initial guesses across datasets,
+        such that x_i corresponds to the (i % N)'th parameter of the
+        (i/N)'th dataset, for i=0,1,2,... where N is the number of datasets
     """
-    # Guess uniformly within bounds for each dataset
-    x0 = np.zeros(2 * len(probe_counts))
-    for i, dataset in enumerate(sorted(probe_counts.keys())):
-        mismatches_lo, mismatches_hi = bounds[2 * i]
-        x0[2 * i] = np.random.uniform(mismatches_lo, mismatches_hi)
-        cover_extension_lo, cover_extension_hi = bounds[2 * i + 1]
-        x0[2 * i + 1] = np.random.uniform(cover_extension_lo,
-                                          cover_extension_hi)
+    num_datasets = len(probe_counts)
+    if bounds is not None:
+        # The number of bounds should be a multiple of the number of datasets
+        assert len(bounds) % num_datasets == 0
+        assert num_params == int(len(bounds) / num_datasets)
 
-    # Verify that this yields fewer probes than the maximum allowed
-    # (i.e., is not beyond the barrier)
-    guess_probe_count = _make_total_probe_count_across_datasets_fn(probe_counts)(x0)
-    if guess_probe_count >= max_total_count:
-        logger.warning(("WARNING: Initial guess is beyond the probe barrier "
-                "(%d, but the max is %d)"), guess_probe_count, max_total_count)
-        logger.warning("         ...continuing anyway")
+    x0 = np.zeros(num_datasets * num_params)
+    for i, dataset in enumerate(sorted(probe_counts.keys())):
+        if bounds is not None:
+            # For each parameter, pick a value uniformly at random
+            # from within the bounds
+            for j in range(num_params):
+                lo, hi = bounds[num_params * i + j]
+                x0[num_params * i + j] = np.random.uniform(lo, hi)
+        else:
+            # Pick one of the already computed points
+            param_vals = list(probe_counts[dataset])
+            guess = param_vals[np.random.randint(len(param_vals))]
+            for j in range(num_params):
+                x0[num_params * i + j] = guess[j]
 
     return x0
 
 
 def _optimize_loss(probe_counts, loss_fn, bounds, x0,
-                   initial_eps=10.0, step_size=0.001):
+                   initial_eps=10.0, step_size=0.001,
+                   interp_fn_type='standard'):
     """Optimize loss function with barrier.
 
     This uses scipy's optimize.fmin_tnc to minimize the loss function
@@ -433,20 +577,23 @@ def _optimize_loss(probe_counts, loss_fn, bounds, x0,
         probe_counts: dict giving number of probes required for each
             dataset and choice of parameters
         loss_fn: the loss function provided by _make_loss_fn
-        bounds: bounds on the parameter values provided by _make_param_bounds
+        bounds: bounds on the parameter values provided by _make_param_bounds_*
         x0: the initial guess of parameter values (i.e., starting position)
         initial_eps: weight of the barrier on the first iteration
         step_size: epsilon value provided to optimize.fmin_tnc
+        interp_fn_type: 'standard' (only perform interpolation on mismatches
+            and cover_extension parameters) or 'nd' (use scipy's interpolate
+            package to interpolate over n-dimensions)
 
     Returns:
-        list of length 2*(number of datasets) where the value at index
-        2*i is the mismatches parameter for the i'th dataset and the
-        value at 2*i+1 is the cover extension parameter for the i'th
-        dataset
+        list of length (number of datasets)*(number of parameters) where
+        x_i is the (i % N)'th parameter of the (i/N)'th dataset,
+        for i=0,1,2,... where N=(number of datasets)
     """
     eps = initial_eps
     while eps >= 0.01:
-        x0_probe_count = _make_total_probe_count_across_datasets_fn(probe_counts)(x0)
+        x0_probe_count = _make_total_probe_count_across_datasets_fn(
+            probe_counts, interp_fn_type=interp_fn_type)(x0)
         logger.info(("Starting an iteration with eps=%f, with x0 yielding %f "
                 "probes"), eps, x0_probe_count)
 
@@ -480,8 +627,8 @@ def _total_probe_count_without_interp(params, probe_counts):
 
     Args:
         params: parameter values to use when determining probe counts;
-            params[2*i] is the number of mismatches of the i'th dataset
-            and params[2*i+1] is the cover extension of the i'th dataset
+            params[i] is the (i % N)'th parameter of the (i/N)'th dataset,
+            where N is the number of datasets
         probe_counts: dict giving number of probes for each dataset and
             choice of parameters
 
@@ -489,10 +636,17 @@ def _total_probe_count_without_interp(params, probe_counts):
         total number of probes across all datasets, according to the
         given values of params
     """
+    num_datasets = len(probe_counts)
+    # The total number of parameters must be a multiple of the number
+    # of datasets
+    assert len(params) % num_datasets == 0
+
+    num_params = int(len(params) / num_datasets)
+
     s = 0
     for i, dataset in enumerate(sorted(probe_counts.keys())):
-        mismatches, cover_extension = params[2 * i], params[2 * i + 1]
-        s += probe_counts[dataset][(mismatches, cover_extension)]
+        p = tuple(params[num_params * i + j] for j in range(num_params))
+        s += probe_counts[dataset][p]
     return s
 
 
@@ -500,6 +654,8 @@ def _round_params(params, probe_counts, max_total_count,
         mismatches_eps=0.01, cover_extension_eps=0.1,
         mismatches_round=1, cover_extension_round=1):
     """Round parameter values while satisfying the constraint on total count.
+
+    This is only applied to the mismatches and cover_extension parameters.
 
     Parameter values found by the search are floats. We want the mismatches
     and cover_extension parameters to be integers, or to fit on a specified
@@ -543,6 +699,10 @@ def _round_params(params, probe_counts, max_total_count,
         list in which index i corresponds to the parameter given in
         params[i], but rounded
     """
+    # This requires that the only two parameters be mismatches and
+    # cover_extension
+    num_datasets = len(probe_counts)
+    assert len(params) == 2*num_datasets
 
     params_rounded = []
     for i, dataset in enumerate(sorted(probe_counts.keys())):
@@ -564,7 +724,8 @@ def _round_params(params, probe_counts, max_total_count,
 
         params_rounded += [mismatches, cover_extension]
 
-    total_probe_count = _make_total_probe_count_across_datasets_fn(probe_counts)
+    total_probe_count = _make_total_probe_count_across_datasets_fn(
+        probe_counts, interp_fn_type='standard')
     # Verify that the probe count satisfies the constraint
     # Note that this assertion may fail if we are dealing with datasets
     # for which few actual probe counts have been computed; in these
@@ -575,7 +736,8 @@ def _round_params(params, probe_counts, max_total_count,
     # Keep decreasing parameters while satisfying the constraint.
     # In particular, choose to decrease the parameter whose reduction
     # yields the smallest loss while still satisfying the constraint.
-    loss_fn = _make_loss_fn(probe_counts, max_total_count)
+    loss_fn = _make_loss_fn(probe_counts, max_total_count,
+        interp_fn_type='standard')
     while True:
         curr_loss = loss_fn(params_rounded, 0)
         # Find a parameter to decrease
@@ -613,6 +775,8 @@ def _round_params(params, probe_counts, max_total_count,
 
 def _log_params_by_dataset(params, probe_counts, type="float"):
     """Log optimal parameter values for each dataset.
+
+    This only logs mismatches and cover_extension parameters.
 
     Args:
         params: parameter values to log; params[2*i] is the number of
@@ -665,19 +829,22 @@ def standard_search(probe_counts, max_total_count,
             z is the loss for the parameter values in x
     """
     # Setup the loss function, parameter bounds, and make an initial guess
-    loss_fn = _make_loss_fn(probe_counts, max_total_count)
-    bounds = _make_param_bounds(probe_counts)
-    x0 = _make_initial_guess(probe_counts, bounds, max_total_count)
+    loss_fn = _make_loss_fn(probe_counts, max_total_count,
+        interp_fn_type='standard')
+    bounds = _make_param_bounds_standard(probe_counts)
+    x0 = _make_initial_guess(probe_counts, bounds, 2)
 
     # Find the optimal parameter values, interpolating probe counts
     # for parameter values between what have been explicitly calculated
-    x_sol = _optimize_loss(probe_counts, loss_fn, bounds, x0)
+    x_sol = _optimize_loss(probe_counts, loss_fn, bounds, x0,
+        interp_fn_type='standard')
 
     # Log the parameter values for each dataset, and the total probe count
     logger.info("##############################")
     logger.info("Continuous parameter values:")
     _log_params_by_dataset(x_sol, probe_counts, "float")
-    x_sol_count = _make_total_probe_count_across_datasets_fn(probe_counts)(x_sol)
+    x_sol_count = _make_total_probe_count_across_datasets_fn(
+        probe_counts, interp_fn_type='standard')(x_sol)
     logger.info("TOTAL INTERPOLATED PROBE COUNT: %f", x_sol_count)
     logger.info("##############################")
 
@@ -691,7 +858,8 @@ def standard_search(probe_counts, max_total_count,
     logger.info("##############################")
     logger.info("Rounded parameter values:")
     _log_params_by_dataset(opt_params, probe_counts, "int")
-    opt_params_count = _make_total_probe_count_across_datasets_fn(probe_counts)(opt_params)
+    opt_params_count = _make_total_probe_count_across_datasets_fn(
+        probe_counts, interp_fn_type='standard')(opt_params)
     opt_params_loss = loss_fn(opt_params, 0)
     logger.info("TOTAL PROBE COUNT: %d", opt_params_count)
     logger.info("TOTAL PARAMS LOSS: %f", opt_params_loss)
@@ -715,3 +883,53 @@ def standard_search(probe_counts, max_total_count,
         opt_params_dict[dataset] = (mismatches, cover_extension)
 
     return (opt_params_dict, opt_params_count, opt_params_loss)
+
+
+def higher_dimensional_search(param_names, probe_counts, max_total_count):
+    """Search over multiple arbitrary parameters.
+
+    Unlike the standard search, this can search over any number of
+    provided parameters. It interpolates linearly using a function
+    from scipy for unstructured data of an arbitrary dimension. Unlike
+    the standard search, this does not round values (e.g., they may
+    remain fractional even if the parameter is integral).
+
+    Args:
+        param_names: tuple giving names of parameters
+        probe_counts: dict giving number of probes required for each
+            dataset and choice of parameters (the tuple specifying
+            a choice of parameter values is ordered such that parameters
+            correspond to those in param_names)
+        max_total_count: upper bound on the number of total probes
+
+    Returns:
+        tuple (x, y, z) where:
+            x is a dict {dataset: p} where p is a tuple giving optimal
+                values for parameters, corresponding to the order in
+                param_names
+            y is the total number of probes required with the parameters in x
+            z is the loss for the parameter values in x
+    """
+    num_params = len(param_names)
+
+    # Setup the loss function, parameter bounds, and make an initial guess
+    loss_fn = _make_loss_fn(probe_counts, max_total_count,
+        interp_fn_type='nd')
+    x0 = _make_initial_guess(probe_counts, None, num_params)
+
+    # Find the optimal parameter values, interpolating probe counts
+    # for parameter values between what have been explicitly calculated
+    bounds = _make_param_bounds_nd(probe_counts)
+    x_sol = _optimize_loss(probe_counts, loss_fn, bounds, x0,
+        interp_fn_type='nd')
+
+    x_sol_dict = {}
+    for i, dataset in enumerate(sorted(probe_counts.keys())):
+        x_sol_dict[dataset] = tuple(x_sol[num_params * i + j]
+            for j in range(num_params))
+
+    x_sol_count = _make_total_probe_count_across_datasets_fn(
+        probe_counts, interp_fn_type='nd')(x_sol)
+    x_sol_loss = loss_fn(x_sol, 0)
+
+    return (x_sol_dict, x_sol_count, x_sol_loss)
