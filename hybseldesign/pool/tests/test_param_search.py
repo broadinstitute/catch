@@ -25,38 +25,6 @@ class TestHelperFunctions(unittest.TestCase):
         # guess is always the same
         np.random.seed(1)
 
-    def test_round(self):
-        self.assertEqual(param_search._round_up(16.2, 5), 20)
-        self.assertEqual(param_search._round_up(19.2, 5), 20)
-        self.assertEqual(param_search._round_down(16.2, 5), 15)
-        self.assertEqual(param_search._round_down(19.2, 5), 15)
-
-    def test_interp_probe_count_standard(self):
-        pc = {'d1': {(1, 0): 6000, (2, 10): 5000, (2, 20): 4500,
-                (4, 10): 4000, (4, 20): 3000, (4, 30): 2500}}
-        interp_fn = param_search._make_interp_probe_count_for_dataset_standard_fn(pc)
-
-        # Test known exact count
-        self.assertEqual(interp_fn('d1', [4, 20]), 3000)
-
-        # Test interpolation
-        num_probes = interp_fn('d1', [3, 15])
-        self.assertGreater(num_probes, 3000)
-        self.assertLess(num_probes, 5000)
-
-    def test_interp_probe_count_nd(self):
-        pc = {'d1': {(1, 0): 6000, (2, 10): 5000, (2, 20): 4500,
-                (4, 10): 4000, (4, 20): 3000, (4, 30): 2500}}
-        interp_fn = param_search._make_interp_probe_count_for_dataset_nd_fn(pc)
-
-        # Test known exact count
-        self.assertEqual(interp_fn('d1', [4, 20]), 3000)
-
-        # Test interpolation
-        num_probes = interp_fn('d1', [3, 15])
-        self.assertGreater(num_probes, 3000)
-        self.assertLess(num_probes, 5000)
-
     def test_bounds_and_initial_guess_standard(self):
         pc = {'d1': {(1, 10): 6000, (2, 10): 5000, (2, 20): 4500,
                 (4, 10): 4000, (4, 20): 3000, (5, 20): 2500}}
@@ -209,6 +177,7 @@ class TestSearchFunctions(unittest.TestCase):
 
         ss = param_search.higher_dimensional_search(param_names, pc, 150000)
         opt_params, opt_params_count, opt_params_loss = ss
+        print(opt_params, opt_params_count)
 
         self.assertLess(opt_params_count, 150000)
 
