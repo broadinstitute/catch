@@ -1,0 +1,20 @@
+[run]
+branch = True
+
+[report]
+# Exclude lines that are not executed in tests
+# (as suggested in sample config files)
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+
+# Omit dataset files from coverage reports; these
+# are automatically generated (and they collectively
+# encompass a lot of code) but they are not executed
+# in tests
+omit =
+    hybseldesign/datasets/*
