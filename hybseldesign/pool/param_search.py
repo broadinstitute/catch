@@ -494,8 +494,7 @@ def _log_params_by_dataset(params, probe_counts, type="float"):
 
 
 def standard_search(probe_counts, max_total_count,
-        verify_without_interp=False, mismatches_round=1,
-        cover_extension_round=1):
+        verify_without_interp=False, round_params=None):
     """Search over mismatches and cover extension only.
 
     This performs the standard search, which finds optimal values of
@@ -512,9 +511,10 @@ def standard_search(probe_counts, max_total_count,
         verify_without_interp: if True, check that the total probe count
             calculated without interpolation is the same as that calculated
             after rounding parameter values
-        mismatches_round/cover_extension_round: round mismatches and
-            cover_extension parameter to the nearest multiple of this
-            int
+        round_params: tuple (m, e); round mismatches to the nearest
+            multiple of m and cover_extension to the nearest multiple
+            of e (both m and e are int). If not set, default is
+            (m, e) = (1, 1).
 
     Returns:
         tuple (x, y, z) where:
@@ -545,6 +545,8 @@ def standard_search(probe_counts, max_total_count,
     logger.info("##############################")
 
     # Round the interpolated parameter values
+    mismatches_round, cover_extension_round = (round_params
+        if round_params else (1, 1))
     opt_params = _round_params(x_sol, probe_counts, max_total_count,
         mismatches_round=mismatches_round,
         cover_extension_round=cover_extension_round)

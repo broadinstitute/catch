@@ -40,17 +40,11 @@ def main(args):
                 "'cover_extension'. Consider using the '--use-nd' argument "
                 "to search over additional parameters."))
 
-        if args.round_params:
-            mismatches_round, cover_extension_round = args.round_params
-        else:
-            mismatches_round, cover_extension_round = 1, 1
-
         # Perform a standard search for optimal values of mismatches and
         # cover extension
         s_results = param_search.standard_search(
             probe_counts, args.target_probe_count,
-            mismatches_round=mismatches_round,
-            cover_extension_round=cover_extension_round)
+            round_params=args.round_params)
         write_type = 'int'
 
     opt_params, opt_params_count, opt_params_loss = s_results
