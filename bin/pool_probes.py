@@ -81,12 +81,11 @@ if __name__ == "__main__":
     parser.add_argument('param_vals_tsv',
         help=("Path to TSV file in which to output optimal parameter "
               "values"))
-    parser.add_argument('--round-params', dest='round_params',
-        nargs=2, type=int,
+    parser.add_argument('--round-params', nargs=2, type=int,
         help=("<m> <e>; round mismatches parameter to the nearest "
               "multiple of m and cover_extension parameter to the "
               "nearest multiple of e"))
-    parser.add_argument('--use-nd', dest='use_nd', action='store_true',
+    parser.add_argument('--use-nd', action='store_true',
         help=("Use the higher dimensional (n > 2) interpolation and "
               "search functions for optimizing parameters. This is "
               "required if the input table of probe counts contains "
