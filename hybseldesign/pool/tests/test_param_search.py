@@ -54,19 +54,19 @@ class TestHelperFunctions(unittest.TestCase):
     def test_round_params(self):
         pc = {'d1': {(1, 0): 6000, (1, 10): 5500, (1, 20): 5400, (2, 10): 5000,
                 (2, 20): 4500, (4, 10): 4000, (4, 20): 3000, (4, 30): 2500},
-              'd2': {(2, 10): 10000, (3, 10): 1100, (4, 10): 1000,
-                (2, 20): 9000, (3, 20): 900, (4, 20): 10}}
+              'd2': {(2, 10): 10000, (3, 0): 2000, (3, 10): 1100,
+                (4, 10): 1000, (2, 20): 9000, (3, 20): 900, (4, 20): 10}}
 
         # Test rounding cover_extension to 10
         params = [2.5, 12, 4, 15]
         rounded = param_search._round_params(params, pc, 4560,
-            mismatches_round=1, cover_extension_round=10)
+            (1.0, 1.0/100.0), mismatches_round=1, cover_extension_round=10)
         self.assertEqual(rounded, [2, 20, 4, 20])
 
         # Test rounding cover_extension to 1
         params = [2.5, 12.3, 4, 14.2]
         rounded = param_search._round_params(params, pc, 5500,
-            mismatches_round=1, cover_extension_round=1)
+            (1.0, 1.0/100.0), mismatches_round=1, cover_extension_round=1)
         for i in range(len(rounded)):
             self.assertEqual(rounded[i], int(rounded[i]))
 
@@ -80,8 +80,8 @@ class TestSearchFunctions(unittest.TestCase):
     """
 
     def setUp(self):
-        # Disable logging
-        logging.disable(logging.INFO)
+        # Disable logging (up to the WARNING level)
+        logging.disable(logging.WARNING)
 
         # Set a seed for numpy's random generator so the initial
         # guess is always the same
@@ -110,16 +110,17 @@ class TestSearchFunctions(unittest.TestCase):
             self.assertGreater(opt_params_count, 0.9*max_total_count)
 
             # Parameter values for a relatively conserved dataset, like
-            # ebola_zaire-with-2014, should not be too high
+            # ebola_zaire-with-2014, should not be too high; check that
+            # both of them are low
             ebov_mismatches, ebov_cover_extension = opt_params['ebola_zaire-with-2014']
             self.assertLessEqual(ebov_mismatches, 3)
             self.assertLessEqual(ebov_cover_extension, 20)
 
             # Parameter values for a relatively diverse dataset, like
-            # hiv1_without_ltr, should not be too low
+            # hiv1_without_ltr, should not be too low; check that
+            # at least one of them is high
             hiv1_mismatches, hiv1_cover_extension = opt_params['hiv1_without_ltr']
-            self.assertGreaterEqual(hiv1_mismatches, 2)
-            self.assertGreaterEqual(hiv1_cover_extension, 20)
+            self.assertTrue(hiv1_mismatches > 3 or hiv1_cover_extension > 20)
 
     def test_standard_search_vwafr_typical_counts(self):
         """Integration test with the V-WAfr probe set data."""
@@ -148,7 +149,7 @@ class TestSearchFunctions(unittest.TestCase):
         def search_fn(max_total_count):
             return param_search.higher_dimensional_search(
                 self.param_names_vwafr, self.probe_counts_vwafr,
-                max_total_count)
+                max_total_count, loss_coeffs=(1.0, 1.0/100.0))
         self._search_vwafr_typical_counts(search_fn)
 
     def test_higher_dimensional_search_vwafr_with_third_param(self):
@@ -175,9 +176,9 @@ class TestSearchFunctions(unittest.TestCase):
                     param_vals_with_k = tuple(list(param_vals) + [k])
                     pc[dataset][param_vals_with_k] = new_count
 
-        ss = param_search.higher_dimensional_search(param_names, pc, 150000)
+        ss = param_search.higher_dimensional_search(param_names, pc, 150000,
+            loss_coeffs=(1.0, 1.0, 1.0))
         opt_params, opt_params_count, opt_params_loss = ss
-        print(opt_params, opt_params_count)
 
         self.assertLess(opt_params_count, 150000)
 
@@ -186,6 +187,27 @@ class TestSearchFunctions(unittest.TestCase):
         for dataset, param_vals in opt_params.items():
             mismatches, cover_extension, p3 = param_vals
             self.assertTrue(18 <= p3 <= 22)
+
+    def test_standard_search_vwafr_with_coefficients(self):
+        """Integration test with the V-WAfr probe set data.
+
+        This sets the coefficients in the loss function such that
+        mismatches has little impact on loss and cover_extension
+        dominates. This should drive the mismatches parameter high
+        because that will be yield with smaller probe counts.
+        """
+        # Note that, by default, loss_coeffs is (1.0, 0.01)
+        loss_coeffs = (0.01, 1.0)
+
+        # Test the standard search
+        ss = param_search.standard_search(self.probe_counts_vwafr,
+            50000, loss_coeffs=loss_coeffs)
+        opt_params, opt_params_count, opt_params_loss = ss
+        self.assertLess(opt_params_count, 50000)
+        for dataset, param_vals in opt_params.items():
+            mismatches, cover_extension = param_vals
+            # Mismatches should be high
+            self.assertGreater(mismatches, 5)
 
     def tearDown(self):
         # Re-enable logging

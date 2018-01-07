@@ -30,7 +30,8 @@ def _round_down(x, b):
     return int(math.floor(float(x) / b)) * b
 
 
-def _make_interp_probe_count_for_dataset_standard_fn(probe_counts):
+def _make_interp_probe_count_for_dataset_standard_fn(probe_counts,
+        cover_extension_scale=1.0/10):
     """Generate and return a function that interpolates probe count for a dataset.
 
     This operates only on the mismatches and cover_extension parameters.
@@ -38,6 +39,9 @@ def _make_interp_probe_count_for_dataset_standard_fn(probe_counts):
     Args:
         probe_counts: dict giving number of probes for each dataset and
             choice of parameters
+        cover_extension_scale: scale the cover_extension parameter by this
+            amount relative to the mismatches parameter when calculating
+            the area of a bounding box
 
     Returns:
         function whose input is a dataset, value for the mismatches parameter,
@@ -139,7 +143,8 @@ def _make_interp_probe_count_for_dataset_standard_fn(probe_counts):
                     if p_bottomright in points_bottomright:
                         # we found a valid rectangle; now compute its 'area'
                         width = p_topright_m - p_topleft_m
-                        height = (p_topright_ce - p_bottomleft_ce) / 10.0
+                        height = ((p_topright_ce - p_bottomleft_ce) *
+                            cover_extension_scale)
                         # add pseudocounts to width and height because if
                         # width or height is 0, we still want the other
                         # dimension to be accounted for

@@ -22,7 +22,8 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 logger = logging.getLogger(__name__)
 
 
-def _make_loss_fn(probe_counts, max_total_count, interp_fn_type='standard'):
+def _make_loss_fn(probe_counts, max_total_count, coeffs,
+        interp_fn_type='standard'):
     """Generate and return a loss function.
 
     The function calculates a loss over the parameters and adds onto
@@ -30,13 +31,17 @@ def _make_loss_fn(probe_counts, max_total_count, interp_fn_type='standard'):
     uses a logarithmic barrier function to enforce the constraint that
     the total probe count be <= max_total_count.
 
-    The loss over the parameters is the sum, over datasets d, of the
-    sum of (v_{di})^2 for each parameter i in dataset d.
+    The loss over the parameters is:
+        sum_{datasets d} (sum_{param j} (c_j * (v_{dj})^2))
+    where v_{dj} is the value of the j'th parameter for dataset d
+    and c_j is the coefficient for the j'th parameter
 
     Args:
         probe_counts: dict giving number of probes required for each
             dataset and choice of parameters
         max_total_count: upper bound on the number of total probes
+        coeffs: coefficient in the loss function for each parameter, in
+            the same order as the parameters are given
         interp_fn_type: 'standard' (only perform interpolation on mismatches
             and cover_extension parameters) or 'nd' (use scipy's interpolate
             package to interpolate over n-dimensions)
@@ -65,21 +70,16 @@ def _make_loss_fn(probe_counts, max_total_count, interp_fn_type='standard'):
 
         num_params = int(len(x) / num_datasets)
 
-        # First compute a loss over the parameters by taking their L2-norm (and
-        # down-weighting cover_extension by a factor of 10.0)
+        # There must be a coefficient for each parameter
+        assert len(coeffs) == num_params
+
+        # First compute a loss over the parameters by taking their L2-norm
         # This is the function we really want to minimize
         opt_val = 0
         for i, dataset in enumerate(sorted(probe_counts.keys())):
-            param_vals = [x[num_params * i + j] for j in range(num_params)]
-            # Assume (perhaps incorrectly) that if there are just 2
-            # parameters, these are mismatches and cover_extension; this
-            # will be fixed later by allowing custom coefficients
-            if num_params == 2:
-                mismatches, cover_extension = x[2 * i], x[2 * i + 1]
-                opt_val += np.power(mismatches, 2.0) + np.power(cover_extension / 10.0, 2.0)
-            else:
-                for v in param_vals:
-                    opt_val += np.power(v, 2.0)
+            for j in range(num_params):
+                v = x[num_params * i + j]
+                opt_val += coeffs[j] * np.power(v, 2.0)
 
         # We also have the constraint that the total probe count be less than
         # max_total_count
@@ -93,6 +93,9 @@ def _make_loss_fn(probe_counts, max_total_count, interp_fn_type='standard'):
             # for a dataset, scipy's interpolator will be unable to
             # interpolate a probe count and will return nan; here, make
             # the loss (through the barrier) high to reflect this
+            logger.warning(("Parameter values being searched are outside "
+                "the convex hull of computed points; unable to interpolate "
+                "a probe count"))
             barrier_val = 10000000
         elif total_probe_count >= max_total_count:
             # Since the count is beyond the barrier, we should in theory
@@ -346,7 +349,7 @@ def _total_probe_count_without_interp(params, probe_counts):
     return s
 
 
-def _round_params(params, probe_counts, max_total_count,
+def _round_params(params, probe_counts, max_total_count, loss_coeffs,
         mismatches_eps=0.01, cover_extension_eps=0.1,
         mismatches_round=1, cover_extension_round=1):
     """Round parameter values while satisfying the constraint on total count.
@@ -386,6 +389,9 @@ def _round_params(params, probe_counts, max_total_count,
         probe_counts: dict giving number of probes for each dataset and
             choice of parameters
         max_total_count: upper bound on the number of total probes
+        loss_coeffs: tuple (m, e) giving the coefficients for the
+            mismatches (m) and cover_extension (e) parameters in the
+            loss function
         mismatches_eps/cover_extension_eps: eps as defined above for
             mismatches and cover_extension
         mismatches_round/cover_extension_round: round mismatches and
@@ -399,6 +405,7 @@ def _round_params(params, probe_counts, max_total_count,
     # cover_extension
     num_datasets = len(probe_counts)
     assert len(params) == 2*num_datasets
+    assert len(loss_coeffs) == 2
 
     params_rounded = []
     for i, dataset in enumerate(sorted(probe_counts.keys())):
@@ -432,7 +439,7 @@ def _round_params(params, probe_counts, max_total_count,
     # Keep decreasing parameters while satisfying the constraint.
     # In particular, choose to decrease the parameter whose reduction
     # yields the smallest loss while still satisfying the constraint.
-    loss_fn = _make_loss_fn(probe_counts, max_total_count,
+    loss_fn = _make_loss_fn(probe_counts, max_total_count, loss_coeffs,
         interp_fn_type='standard')
     while True:
         curr_loss = loss_fn(params_rounded, 0)
@@ -494,7 +501,8 @@ def _log_params_by_dataset(params, probe_counts, type="float"):
 
 
 def standard_search(probe_counts, max_total_count,
-        verify_without_interp=False, round_params=None):
+        verify_without_interp=False, round_params=None,
+        loss_coeffs=None):
     """Search over mismatches and cover extension only.
 
     This performs the standard search, which finds optimal values of
@@ -515,6 +523,9 @@ def standard_search(probe_counts, max_total_count,
             multiple of m and cover_extension to the nearest multiple
             of e (both m and e are int). If not set, default is
             (m, e) = (1, 1).
+        loss_coeffs: tuple (m, e) giving the coefficients for the
+            mismatches (m) and cover_extension (e) parameters in the
+            loss function. If not set, default is (m, e) = (1, 1/100).
 
     Returns:
         tuple (x, y, z) where:
@@ -524,8 +535,13 @@ def standard_search(probe_counts, max_total_count,
             y is the total number of probes required with the parameters in x
             z is the loss for the parameter values in x
     """
+    # Set default values for arguments provided as None
+    loss_coeffs = tuple(loss_coeffs) if loss_coeffs else (1.0, 1.0/100.0)
+    mismatches_round, cover_extension_round = (round_params
+        if round_params else (1, 1))
+
     # Setup the loss function, parameter bounds, and make an initial guess
-    loss_fn = _make_loss_fn(probe_counts, max_total_count,
+    loss_fn = _make_loss_fn(probe_counts, max_total_count, loss_coeffs,
         interp_fn_type='standard')
     bounds = _make_param_bounds_standard(probe_counts)
     x0 = _make_initial_guess(probe_counts, bounds, 2)
@@ -545,9 +561,8 @@ def standard_search(probe_counts, max_total_count,
     logger.info("##############################")
 
     # Round the interpolated parameter values
-    mismatches_round, cover_extension_round = (round_params
-        if round_params else (1, 1))
     opt_params = _round_params(x_sol, probe_counts, max_total_count,
+        loss_coeffs,
         mismatches_round=mismatches_round,
         cover_extension_round=cover_extension_round)
 
@@ -583,7 +598,8 @@ def standard_search(probe_counts, max_total_count,
     return (opt_params_dict, opt_params_count, opt_params_loss)
 
 
-def higher_dimensional_search(param_names, probe_counts, max_total_count):
+def higher_dimensional_search(param_names, probe_counts, max_total_count,
+        loss_coeffs=None):
     """Search over multiple arbitrary parameters.
 
     Unlike the standard search, this can search over any number of
@@ -599,6 +615,8 @@ def higher_dimensional_search(param_names, probe_counts, max_total_count):
             a choice of parameter values is ordered such that parameters
             correspond to those in param_names)
         max_total_count: upper bound on the number of total probes
+        loss_coeffs: coefficient to use for each parameter in the loss
+            function. If not set, default is 1 for each parameter
 
     Returns:
         tuple (x, y, z) where:
@@ -610,8 +628,16 @@ def higher_dimensional_search(param_names, probe_counts, max_total_count):
     """
     num_params = len(param_names)
 
+    if loss_coeffs is None:
+        # The default coefficient is 1 for each parameter
+        loss_coeffs = tuple(1.0 for _ in range(num_params))
+    else:
+        # There must be a coefficient for each parameter
+        assert len(loss_coeffs) == num_params
+        loss_coeffs = tuple(loss_coeffs)
+
     # Setup the loss function, parameter bounds, and make an initial guess
-    loss_fn = _make_loss_fn(probe_counts, max_total_count,
+    loss_fn = _make_loss_fn(probe_counts, max_total_count, loss_coeffs,
         interp_fn_type='nd')
     x0 = _make_initial_guess(probe_counts, None, num_params)
 

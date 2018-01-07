@@ -18,6 +18,14 @@ def main(args):
     param_names, probe_counts = pool_probes_io.read_table_of_probe_counts(
         args.probe_count_tsv)
 
+    # Check that, if loss coefficients were provided, there are the
+    # same number of them as parameters
+    if args.loss_coeffs and len(args.loss_coeffs) != len(param_names):
+        raise Exception(("If using --loss-coeffs, the number of "
+            "coefficients (%d) must be the same as the number of "
+            "parameters provided in the input table (%d)") %
+            (len(args.loss_coeffs), len(param_names)))
+
     if args.use_nd:
         # This does not round parameters after searching over the
         # dimensional space
@@ -29,7 +37,8 @@ def main(args):
         # Perform a higher dimensional search for optimal values of
         # the parameters
         s_results = param_search.higher_dimensional_search(
-            param_names, probe_counts, args.target_probe_count)
+            param_names, probe_counts, args.target_probe_count,
+            loss_coeffs=args.loss_coeffs)
         write_type = 'float'
     else:
         # For the standard search, the only parameters must be (in order):
@@ -44,7 +53,8 @@ def main(args):
         # cover extension
         s_results = param_search.standard_search(
             probe_counts, args.target_probe_count,
-            round_params=args.round_params)
+            round_params=args.round_params,
+            loss_coeffs=args.loss_coeffs)
         write_type = 'int'
 
     opt_params, opt_params_count, opt_params_loss = s_results
@@ -87,6 +97,12 @@ if __name__ == "__main__":
               "to integers or to be placed on a grid -- i.e., they "
               "will be output as fractional values (from which probe "
               "counts were interpolated)."))
+    parser.add_argument('--loss-coeffs', nargs='+', type=float,
+        help=("Coefficients on parameters in the loss function. These "
+              "must be specified in the same order as the parameter "
+              "columns in the input table. Default is 1 for mismatches "
+              "and 1/100 for cover_extension (or, when --use-nd is "
+              "specified, 1 for all parameters)."))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",
