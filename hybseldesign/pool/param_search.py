@@ -536,9 +536,15 @@ def standard_search(probe_counts, max_total_count,
             z is the loss for the parameter values in x
     """
     # Set default values for arguments provided as None
-    loss_coeffs = tuple(loss_coeffs) if loss_coeffs else (1.0, 1.0/100.0)
-    mismatches_round, cover_extension_round = (round_params
-        if round_params else (1, 1))
+    if loss_coeffs:
+        assert len(loss_coeffs) == 2
+        loss_coeffs = tuple(loss_coeffs)
+    else:
+        loss_coeffs = (1.0, 1.0/100.0)
+    if round_params:
+        mismatches_round, cover_extension_round = round_params
+    else:
+        mismatches_round, cover_extension_round = 1, 1
 
     # Setup the loss function, parameter bounds, and make an initial guess
     loss_fn = _make_loss_fn(probe_counts, max_total_count, loss_coeffs,
