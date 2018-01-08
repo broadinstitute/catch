@@ -109,15 +109,38 @@ def main(args):
         probe.set_max_num_processes_for_probe_finding_pools(
             args.max_num_processes)
 
+    # Raise exceptions or warn based on use of adapter arguments
+    if args.add_adapters:
+        if not (args.adapter_a or args.adapter_b):
+            logger.warning(("Adapter sequences will be added, but default "
+                            "sequences will be used; to provide adapter "
+                            "sequences, use --adapter-a and --adapter-b"))
+    else:
+        if args.adapter_a or args.adapter_b:
+            raise Exception(("Adapter sequences were provided with "
+                "--adapter-a and --adapter-b, but --add-adapters is required "
+                "to add adapter sequences onto the ends of probes"))
+
     # Setup the filters
     # The filters we use are, in order:
-    #  1) Duplicate filter (df) -- condense all candidate probes that
+    filters = []
+
+    # [Optional]
+    # Fasta filter (ff) -- leave out candidate probes
+    if args.filter_from_fasta:
+        ff = fasta_filter.FastaFilter(args.filter_from_fasta,
+                                      skip_reverse_complements=True)
+        filters += [ff]
+
+    #  Duplicate filter (df) -- condense all candidate probes that
     #     are identical down to one; this is not necessary for
     #     correctness, as the set cover filter achieves the same task
     #     implicitly, but it does significantly lower runtime by
     #     decreasing the input size to the set cover filter
     df = duplicate_filter.DuplicateFilter()
-    #  2) Set cover filter (scf) -- solve the problem by treating it as
+    filters += [df]
+
+    #  Set cover filter (scf) -- solve the problem by treating it as
     #     an instance of the set cover problem
     scf = set_cover_filter.SetCoverFilter(
         mismatches=args.mismatches,
@@ -132,47 +155,47 @@ def main(args):
         cover_extension=args.cover_extension,
         cover_groupings_separately=args.cover_groupings_separately,
         kmer_probe_map_use_native_dict=args.use_native_dict_when_finding_tolerant_coverage)
-    #  3) Adapter filter (af) -- add adapters to both the 5' and 3' ends
-    #     of each probe
-    af = adapter_filter.AdapterFilter(tuple(args.adapter_a),
-                                      tuple(args.adapter_b),
-                                      mismatches=args.mismatches,
-                                      lcf_thres=args.lcf_thres,
-                                      island_of_exact_match=\
-                                        args.island_of_exact_match)
-    filters = [df, scf, af]
+    filters += [scf]
 
-    #  4) Reverse complement (rc) -- add the reverse complement of each
-    #     probe that remains (if requested)
+    # [Optional]
+    # Adapter filter (af) -- add adapters to both the 5' and 3' ends
+    #    of each probe
+    if args.add_adapters:
+        # Set default adapter sequences, if not provided
+        if args.adapter_a:
+            adapter_a = tuple(args.adapter_a)
+        else:
+            adapter_a = ('ATACGCCATGCTGGGTCTCC', 'CGTACTTGGGAGTCGGCCAT')
+        if args.adapter_b:
+            adapter_b = tuple(args.adapter_b)
+        else:
+            adapter_b = ('AGGCCCTGGCTGCTGATATG', 'GACCTTTTGGGACAGCGGTG')
+
+        af = adapter_filter.AdapterFilter(adapter_a,
+                                          adapter_b,
+                                          mismatches=args.mismatches,
+                                          lcf_thres=args.lcf_thres,
+                                          island_of_exact_match=\
+                                            args.island_of_exact_match)
+        filters += [af]
+
+    # [Optional]
+    # N expansion filter (nef) -- expand Ns in probe sequences
+    # to avoid ambiguity
+    if args.expand_n:
+        nef = n_expansion_filter.NExpansionFilter()
+        filters += [nef]
+
+    # [Optional]
+    # Reverse complement (rc) -- add the reverse complement of each
+    #    probe that remains
     if args.add_reverse_complements:
         rc = reverse_complement_filter.ReverseComplementFilter()
         filters += [rc]
 
-    # Add a FASTA filter to the beginning if desired
-    if args.filter_from_fasta:
-        ff = fasta_filter.FastaFilter(args.filter_from_fasta,
-                                      skip_reverse_complements=True)
-        filters.insert(0, ff)
-
-    # Add an N expansion filter just before the reverse complement
-    # filter if desired
-    if args.expand_n:
-        nef = n_expansion_filter.NExpansionFilter()
-        if args.add_reverse_complements:
-            rc_pos = filters.index(rc)
-            filters.insert(rc_pos, nef)
-        else:
-            # There is no reverse complement filter, so that it
-            # to the end
-            filters += [nef]
-
-    # Don't apply the set cover filter if desired
+    # If requested, don't apply the set cover filter
     if args.skip_set_cover:
         filters.remove(scf)
-
-    # Don't add adapters if desired
-    if args.skip_adapters:
-        filters.remove(af)
 
     # Design the probes
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
@@ -378,20 +401,19 @@ if __name__ == "__main__":
               "the effects of the set cover filter"))
 
     # Adding adapters
-    parser.add_argument('--skip-adapters',
-        dest="skip_adapters",
+    parser.add_argument('--add-adapters',
+        dest="add_adapters",
         action="store_true",
-        help=("Do not add adapters to the ends of probes"))
+        help=("Add adapters to the ends of probes; to specify adapter "
+              "sequences, use --adapter-a and --adapter-b"))
     parser.add_argument('--adapter-a',
         nargs=2,
-        default=['ATACGCCATGCTGGGTCTCC', 'CGTACTTGGGAGTCGGCCAT'],
         help=("(Optional) Args: <X> <Y>; Custom A adapter to use; two ordered "
               "where X is the A adapter sequence to place on the 5' end of "
               "a probe and Y is the A adapter sequence to place on the 3' "
               "end of a probe"))
     parser.add_argument('--adapter-b',
         nargs=2,
-        default=['AGGCCCTGGCTGCTGATATG', 'GACCTTTTGGGACAGCGGTG'],
         help=("(Optional) Args: <X> <Y>; Custom B adapter to use; two ordered "
               "where X is the B adapter sequence to place on the 5' end of "
               "a probe and Y is the B adapter sequence to place on the 3' "
