@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from hybseldesign.datasets import ebola_zaire_with_2014
+from hybseldesign.datasets import lassa
 from hybseldesign import genome
 from hybseldesign.utils import seq_io
 
@@ -87,6 +88,14 @@ class TestDatasetGenomeRead(unittest.TestCase):
                 values()
         ]
         self.assertEqual(genomes, desired_genomes)
+
+    def test_multi_chr_dataset(self):
+        """Tests that the lassa dataset can be read.
+
+        This does not test that the genomes are read correctly -- just
+        that they can be read without issues.
+        """
+        genomes = seq_io.read_dataset_genomes(lassa)
 
     def tearDown(self):
         # Re-enable logging
