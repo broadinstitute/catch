@@ -56,17 +56,19 @@ class TestHelperFunctions(unittest.TestCase):
                 (2, 20): 4500, (4, 10): 4000, (4, 20): 3000, (4, 30): 2500},
               'd2': {(2, 10): 10000, (3, 0): 2000, (3, 10): 1100,
                 (4, 10): 1000, (2, 20): 9000, (3, 20): 900, (4, 20): 10}}
+        loss_coeffs = (1.0, 1.0/100.0)
+        weights = {'d1': 1.0, 'd2': 1.0}
 
         # Test rounding cover_extension to 10
         params = [2.5, 12, 4, 15]
         rounded = param_search._round_params(params, pc, 4560,
-            (1.0, 1.0/100.0), mismatches_round=1, cover_extension_round=10)
+            loss_coeffs, weights, mismatches_round=1, cover_extension_round=10)
         self.assertEqual(rounded, [2, 20, 4, 20])
 
         # Test rounding cover_extension to 1
         params = [2.5, 12.3, 4, 14.2]
         rounded = param_search._round_params(params, pc, 5500,
-            (1.0, 1.0/100.0), mismatches_round=1, cover_extension_round=1)
+            loss_coeffs, weights, mismatches_round=1, cover_extension_round=1)
         for i in range(len(rounded)):
             self.assertEqual(rounded[i], int(rounded[i]))
 
@@ -183,10 +185,10 @@ class TestSearchFunctions(unittest.TestCase):
         self.assertLess(opt_params_count, 150000)
 
         # Verify that the optimal value of the third parameter is
-        # around 20 (namely, 18-22)
+        # around 20 (namely, 15-25)
         for dataset, param_vals in opt_params.items():
             mismatches, cover_extension, p3 = param_vals
-            self.assertTrue(18 <= p3 <= 22)
+            self.assertTrue(15 <= p3 <= 25)
 
     def test_standard_search_vwafr_with_coefficients(self):
         """Integration test with the V-WAfr probe set data.
@@ -208,6 +210,46 @@ class TestSearchFunctions(unittest.TestCase):
             mismatches, cover_extension = param_vals
             # Mismatches should be high
             self.assertGreater(mismatches, 5)
+
+    def test_standard_search_vwafr_with_dataset_weights(self):
+        """Integration test with the V-Wafr probe set data.
+
+        This sets the dataset weights in the loss function such that
+        all but two datasets have little impact on the loss. The
+        other two datasets should dominate the loss and they should
+        have small parameter values.
+        """
+        # Set two relatively diverse datasets (which would generally
+        # have high parameter values) to have relatively high weights
+        dataset_weights = {d: 1.0 for d in self.probe_counts_vwafr.keys()}
+        dataset_weights['hiv1_without_ltr'] = 1000.0
+        dataset_weights['hepatitis_c'] = 1000.0
+
+        # Test the standard search
+        ss = param_search.standard_search(self.probe_counts_vwafr,
+            420000, dataset_weights=dataset_weights)
+        opt_params, opt_params_count, opt_params_loss = ss
+        self.assertLess(opt_params_count, 420000)
+
+        # Check that both parameter values are small for these diverse
+        # datasets
+        for d in ['hiv1_without_ltr', 'hepatitis_c']:
+            mismatches, cover_extension = opt_params[d]
+            self.assertLessEqual(mismatches, 1)
+            self.assertLessEqual(cover_extension, 10)
+
+        # Check that at least one other dataset has larger parameter
+        # values for each of the 2 parameters
+        mismatches_num_large, cover_extension_num_large = 0, 0
+        for d in (dataset_weights.keys() -
+                set(['hiv1_without_ltr', 'hepatitis_c'])):
+            mismatches, cover_extension = opt_params[d]
+            if mismatches > 1:
+                mismatches_num_large += 1
+            if cover_extension > 10:
+                cover_extension_num_large += 1
+        self.assertGreater(mismatches_num_large, 0)
+        self.assertGreater(cover_extension_num_large, 0)
 
     def tearDown(self):
         # Re-enable logging

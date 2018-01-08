@@ -18,6 +18,12 @@ def main(args):
     param_names, probe_counts = pool_probes_io.read_table_of_probe_counts(
         args.probe_count_tsv)
 
+    if args.dataset_weights_tsv:
+        dataset_weights = pool_probes_io.read_table_of_dataset_weights(
+            args.dataset_weights_tsv, probe_counts.keys())
+    else:
+        dataset_weights = None
+
     # Check that, if loss coefficients were provided, there are the
     # same number of them as parameters
     if args.loss_coeffs and len(args.loss_coeffs) != len(param_names):
@@ -38,7 +44,8 @@ def main(args):
         # the parameters
         s_results = param_search.higher_dimensional_search(
             param_names, probe_counts, args.target_probe_count,
-            loss_coeffs=args.loss_coeffs)
+            loss_coeffs=args.loss_coeffs,
+            dataset_weights=dataset_weights)
         write_type = 'float'
     else:
         # For the standard search, the only parameters must be (in order):
@@ -54,7 +61,8 @@ def main(args):
         s_results = param_search.standard_search(
             probe_counts, args.target_probe_count,
             round_params=args.round_params,
-            loss_coeffs=args.loss_coeffs)
+            loss_coeffs=args.loss_coeffs,
+            dataset_weights=dataset_weights)
         write_type = 'int'
 
     opt_params, opt_params_count, opt_params_loss = s_results
@@ -103,6 +111,13 @@ if __name__ == "__main__":
               "columns in the input table. Default is 1 for mismatches "
               "and 1/100 for cover_extension (or, when --use-nd is "
               "specified, 1 for all parameters)."))
+    parser.add_argument('--dataset-weights', dest='dataset_weights_tsv',
+        help=("Path to TSV file that contains a weight for each dataset "
+             "to use in the loss function. The first row must be a "
+             "header, the first column must provide the dataset "
+             "('dataset') and the second column must provide the "
+             "weight of the dataset ('weight'). If not provided, the "
+             "default is a weight of 1 for each dataset."))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",

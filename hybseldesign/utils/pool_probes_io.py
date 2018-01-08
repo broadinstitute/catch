@@ -60,6 +60,61 @@ def read_table_of_probe_counts(fn):
     return (param_names, d)
 
 
+def read_table_of_dataset_weights(fn, datasets_to_check=None):
+    """Read a table listing a weight for each dataset.
+
+    In the input table, the first column must give the dataset (header:
+    'dataset') and the second column must give the weight (header:
+    'weight').
+
+    Args:
+        fn: path to tab-separated file to read, in the format described
+            above
+        datasets_to_check: if set, this verifies that each dataset
+            present in this collection has a weight in the input
+            table, and raises an Exception if one does not
+
+    Returns:
+        dict {dataset: weight}
+    """
+    d = {}
+    with open(fn) as f:
+        for i, line in enumerate(f):
+            ls = line.rstrip().split('\t')
+            if i == 0:
+                # Read the header and verify it meets the required
+                # order
+                header = ls
+                if header[0] != "dataset":
+                    raise Exception(("First column in dataset weights table "
+                        "must be 'dataset'"))
+                if header[1] != "weight":
+                    raise Exception(("Second column in dataset weights table "
+                        "must be 'weight'"))
+                if len(header) > 2:
+                    raise Exception(("There can only be two columns in "
+                        "the dataset weights table"))
+                continue
+
+            assert len(ls) == 2
+            dataset = ls[0]
+            weight = float(ls[1])
+
+            if dataset in d:
+                raise Exception(("The same dataset (%s) appears on more "
+                    "than one row in the dataset weights table") % dataset)
+
+            d[dataset] = weight
+
+    if datasets_to_check is not None:
+        for dataset in datasets_to_check:
+            if dataset not in d:
+                raise Exception(("dataset %s needs a weight, but one is "
+                    "not given in the dataset weights table") % dataset)
+
+    return d
+
+
 def write_param_values_across_datasets(param_names, param_vals, out_tsv,
                                        type='int'):
     """Write parameter values for each dataset.

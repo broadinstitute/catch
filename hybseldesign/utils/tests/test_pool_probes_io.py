@@ -53,3 +53,46 @@ class TestReadProbeCountTable(unittest.TestCase):
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
+
+
+class TestReadDatasetWeightsTable(unittest.TestCase):
+    """Tests reading a dataset weights table from a file.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+    def test_valid_file(self):
+        # Write a temporary tsv file
+        self.tsv = tempfile.NamedTemporaryFile(mode='w')
+        self.tsv.write("dataset\tweight\n")
+        self.tsv.write("ebola\t1.5\n")
+        self.tsv.write("zika\t1\n")
+        self.tsv.seek(0)
+
+        weights = pool_probes_io.read_table_of_dataset_weights(self.tsv.name,
+            set(['ebola', 'zika']))
+        self.assertEqual(weights, {'ebola': 1.5, 'zika': 1.0})
+
+        self.tsv.close()
+
+    def test_file_missing_dataset(self):
+        # Write a temporary tsv file
+        self.tsv = tempfile.NamedTemporaryFile(mode='w')
+        self.tsv.write("dataset\tweight\n")
+        self.tsv.write("ebola\t1.5\n")
+        self.tsv.write("zika\t1\n")
+        self.tsv.seek(0)
+
+        # We will check for 'lassa', which is not in the table, so
+        # reading it should raise an exception
+        with self.assertRaises(Exception):
+            weights = pool_probes_io.read_table_of_dataset_weights(self.tsv.name,
+                set('ebola', 'zika', 'lassa'))
+
+        self.tsv.close()
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
