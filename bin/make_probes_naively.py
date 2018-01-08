@@ -39,8 +39,8 @@ def main(args):
 
     if (args.limit_target_genomes and
             args.limit_target_genomes_randomly_with_replacement):
-        raise Exception(("Cannot --limit_target_genomes and "
-                         "--limit_target_genomes_randomly_with_replacement at "
+        raise Exception(("Cannot --limit-target-genomes and "
+                         "--limit-target-genomes-randomly-with-replacement at "
                          "the same time"))
     elif args.limit_target_genomes:
         seqs = [genomes[:args.limit_target_genomes] for genomes in seqs]

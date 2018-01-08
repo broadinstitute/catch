@@ -57,8 +57,8 @@ def main(args):
 
     if (args.limit_target_genomes and
             args.limit_target_genomes_randomly_with_replacement):
-        raise Exception(("Cannot --limit_target_genomes and "
-                         "--limit_target_genomes_randomly_with_replacement at "
+        raise Exception(("Cannot --limit-target-genomes and "
+                         "--limit-target-genomes-randomly-with-replacement at "
                          "the same time"))
     elif args.limit_target_genomes:
         genomes_grouped = [genomes[:args.limit_target_genomes]
@@ -89,18 +89,18 @@ def main(args):
     if not args.lcf_thres:
         args.lcf_thres = args.probe_length
     if args.probe_stride > args.probe_length:
-        logger.warning(("probe_stride (%d) is greater than probe_length "
+        logger.warning(("PROBE_STRIDE (%d) is greater than PROBE_LENGTH "
                         "(%d), which is usually undesirable and may lead "
                         "to undefined behavior"),
                         args.probe_stride, args.probe_length)
     if args.lcf_thres > args.probe_length:
-        logger.warning(("lcf_thres (%d) is greater than probe_length "
+        logger.warning(("LCF_THRES (%d) is greater than PROBE_LENGTH "
                         "(%d), which is usually undesirable and may lead "
                         "to undefined behavior"),
                         args.lcf_thres, args.probe_length)
     if args.island_of_exact_match > args.probe_length:
-        logger.warning(("island_of_exact_match (%d) is greater than "
-                        "probe_length (%d), which is usually undesirable "
+        logger.warning(("ISLAND_OF_EXACT_MATCH (%d) is greater than "
+                        "PROBE_LENGTH (%d), which is usually undesirable "
                         "and may lead to undefined behavior"),
                         args.island_of_exact_match, args.probe_length)
 
