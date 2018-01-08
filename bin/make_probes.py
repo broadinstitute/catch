@@ -41,18 +41,17 @@ def main(args):
             for name, dataset in collection.import_all():
                 genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
                 genomes_grouped_names += [name]
-        elif ds.startswith('custom:'):
+        elif os.path.isfile(ds):
             # Process a custom fasta file with sequences
-            fasta_path = ds[len('custom:'):]
-            genomes_grouped += [seq_io.read_genomes_from_fasta(fasta_path)]
-            genomes_grouped_names += [os.path.basename(fasta_path)]
+            genomes_grouped += [seq_io.read_genomes_from_fasta(ds)]
+            genomes_grouped_names += [os.path.basename(ds)]
         else:
             # Process an individual dataset
             try:
                 dataset = importlib.import_module(
                             'hybseldesign.datasets.' + ds)
             except ImportError:
-                raise ValueError("Unknown dataset %s" % ds)
+                raise ValueError("Unknown file or dataset '%s'" % ds)
             genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
             genomes_grouped_names += [ds]
 
@@ -73,17 +72,16 @@ def main(args):
     blacklisted_genomes_fasta = []
     if args.blacklist_genomes:
         for bg in args.blacklist_genomes:
-            if bg.startswith('custom:'):
+            if os.path.isfile(bg):
                 # Process a custom fasta file with sequences
-                fasta_path = bg[len('custom:'):]
-                blacklisted_genomes_fasta += [fasta_path]
+                blacklisted_genomes_fasta += [bg]
             else:
                 # Process an individual dataset
                 try:
                     dataset = importlib.import_module(
                         'hybseldesign.datasets.' + bg)
                 except ImportError:
-                    raise ValueError("Unknown dataset %s" % bg)
+                    raise ValueError("Unknown file or dataset '%s'" % bg)
                 for fp in dataset.fasta_paths:
                     blacklisted_genomes_fasta += [fp]
 
@@ -216,14 +214,13 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dataset',
         nargs='+',
         required=True,
-        help=("Labels for one or more target datasets (e.g., "
-              "one label per species); alternatively, "
-              "start with 'collection:' (e.g., "
-              "'collection:viruses_with_human_host') to "
-              "specify an available collection of datasets; "
-              "or specify 'custom:X' to read genomes "
-              "from a custom file, where X is a path to "
-              "a fasta file"))
+        help=("One or more target datasets (e.g., one per species). If "
+              "DATASET is a path to a file, then that file is treated as "
+              "a FASTA file and its sequences are read. Otherwise, it "
+              "is assumed that this is a label for a dataset included "
+              "in this package (e.g., 'zika'). If the label starts with "
+              "'collection:' (e.g., 'collection:viruses_with_human_host'), "
+              "then this reads from an available collection of datasets."))
 
     # Parameters on probe length and stride
     parser.add_argument('-pl', '--probe-length',
@@ -304,8 +301,11 @@ if __name__ == "__main__":
     parser.add_argument('--blacklist-genomes',
         nargs='+',
         help=("One or more blacklisted genomes; penalize probes based "
-              "on how much of each of these genomes they cover; the "
-              "label should be a dataset (e.g., 'hg19' or 'marburg')"))
+              "on how much of each of these genomes they cover. If "
+              "the value is a path to a file, then that file is treated "
+              "as a FASTA file and its sequences are read. Otherwise, "
+              "it is assumed that this is a label for a dataset included "
+              "in this package (e.g., 'zika')."))
     parser.add_argument('-mt', '--mismatches-tolerant',
         type=int,
         help=("(Optional) A more tolerant value for 'mismatches'; "

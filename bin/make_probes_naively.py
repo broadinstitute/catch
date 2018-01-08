@@ -9,6 +9,7 @@ by bin/make_probes.py.
 import argparse
 import importlib
 import logging
+import os
 import random
 
 from hybseldesign import coverage_analysis
@@ -26,16 +27,15 @@ def main(args):
     # Read the FASTA sequences
     ds = args.dataset
     try:
-        if ds.startswith('custom:'):
+        if os.path.isfile(ds):
             # Process a custom fasta file with sequences
-            fasta_path = ds[len('custom:'):]
-            seqs = [seq_io.read_genomes_from_fasta(fasta_path)]
+            seqs = [seq_io.read_genomes_from_fasta(ds)]
         else:
             dataset = importlib.import_module(
                 'hybseldesign.datasets.' + ds)
             seqs = [seq_io.read_dataset_genomes(dataset)]
     except ImportError:
-        raise ValueError("Unknown dataset %s" % ds)
+        raise ValueError("Unknown file or dataset '%s'" % ds)
 
     if (args.limit_target_genomes and
             args.limit_target_genomes_randomly_with_replacement):
