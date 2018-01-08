@@ -84,7 +84,7 @@ def main(args):
         filt = filt_class(redundant_fn)
         filters += [filt]
 
-    if not args.skip_reverse_complements:
+    if args.add_reverse_complements:
         # Reverse complement (rc) -- add the reverse complement of
         # each probe as a candidate
         rc = reverse_complement_filter.ReverseComplementFilter()
@@ -152,12 +152,11 @@ if __name__ == "__main__":
               "to another if the longest common substring between them, "
               "up to MISMATCHES mismatches, is >= LCF_THRES."))
 
-    # Leaving out reverse complements
-    parser.add_argument('--skip-reverse-complements',
-        dest="skip_reverse_complements",
+    # Add reverse complement probes
+    parser.add_argument('--add-reverse-complements',
+        dest="add_reverse_complements",
         action="store_true",
-        help=("Do not add to the output the reverse "
-              "complement of each probe"))
+        help=("Add to the output the reverse complement of each probe"))
 
     # Limiting input
     parser.add_argument('--limit-target-genomes',

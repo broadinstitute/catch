@@ -140,10 +140,13 @@ def main(args):
                                       lcf_thres=args.lcf_thres,
                                       island_of_exact_match=\
                                         args.island_of_exact_match)
+    filters = [df, scf, af]
+
     #  4) Reverse complement (rc) -- add the reverse complement of each
-    #     probe that remains
-    rc = reverse_complement_filter.ReverseComplementFilter()
-    filters = [df, scf, af, rc]
+    #     probe that remains (if requested)
+    if args.add_reverse_complements:
+        rc = reverse_complement_filter.ReverseComplementFilter()
+        filters += [rc]
 
     # Add a FASTA filter to the beginning if desired
     if args.filter_from_fasta:
@@ -154,9 +157,14 @@ def main(args):
     # Add an N expansion filter just before the reverse complement
     # filter if desired
     if args.expand_n:
-        rc_pos = filters.index(rc)
         nef = n_expansion_filter.NExpansionFilter()
-        filters.insert(rc_pos, nef)
+        if args.add_reverse_complements:
+            rc_pos = filters.index(rc)
+            filters.insert(rc_pos, nef)
+        else:
+            # There is no reverse complement filter, so that it
+            # to the end
+            filters += [nef]
 
     # Don't apply the set cover filter if desired
     if args.skip_set_cover:
@@ -165,10 +173,6 @@ def main(args):
     # Don't add adapters if desired
     if args.skip_adapters:
         filters.remove(af)
-
-    # Don't add reverse complements if desired
-    if args.skip_reverse_complements:
-        filters.remove(rc)
 
     # Design the probes
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
@@ -394,11 +398,10 @@ if __name__ == "__main__":
               "end of a probe"))
 
     # Adjusting probe output
-    parser.add_argument('--skip-reverse-complements',
-        dest="skip_reverse_complements",
+    parser.add_argument('--add-reverse-complements',
+        dest="add_reverse_complements",
         action="store_true",
-        help=("Do not add to the output the reverse "
-              "complement of each probe"))
+        help=("Add to the output the reverse complement of each probe"))
     parser.add_argument('--expand-n',
         dest="expand_n",
         action="store_true",
