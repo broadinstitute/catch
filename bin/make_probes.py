@@ -234,9 +234,9 @@ if __name__ == "__main__":
 
     # Parameters governing probe hybridization
     parser.add_argument('-m', '--mismatches',
-        required=True,
         type=int,
-        help=("Allow for MISMATCHES mismatches when determining "
+        default=0,
+        help=("(Optional) Allow for MISMATCHES mismatches when determining "
               "whether a probe covers a sequence"))
     parser.add_argument('-l', '--lcf-thres',
         type=int,
