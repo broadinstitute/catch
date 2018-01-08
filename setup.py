@@ -16,7 +16,8 @@ setup(name='hybseldesign',
       packages=find_packages(),
       install_requires=['numpy', 'scipy'],
       scripts=[
-          'bin/make_probes.py',
           'bin/analyze_probe_coverage.py',
+          'bin/make_probes.py',
           'bin/make_probes_naively.py',
+          'bin/pool_probes.py',
       ])
