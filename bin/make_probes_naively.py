@@ -117,8 +117,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Input data
-    parser.add_argument('-d', '--dataset',
-        required=True,
+    parser.add_argument('dataset',
         help="Label for the target dataset")
 
     # Probe parameters

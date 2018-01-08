@@ -211,9 +211,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Input data
-    parser.add_argument('-d', '--dataset',
+    parser.add_argument('dataset',
         nargs='+',
-        required=True,
         help=("One or more target datasets (e.g., one per species). If "
               "DATASET is a path to a file, then that file is treated as "
               "a FASTA file and its sequences are read. Otherwise, it "
