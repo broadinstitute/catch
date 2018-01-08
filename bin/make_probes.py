@@ -212,79 +212,79 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-pl", "--probe_length",
+        "-pl", "--probe-length",
         type=int,
         default=100,
-        help=("(Optional) The number of bp in each probe"))
+        help=("(Optional) Make probes be PROBE_LENGTH nt long"))
     parser.add_argument(
-        "-ps", "--probe_stride",
+        "-ps", "--probe-stride",
         type=int,
         default=50,
         help=("(Optional) Generate candidate probes from the input "
-              "that are separated by this number of bp"))
+              "that are separated by PROBE_STRIDE nt"))
     parser.add_argument(
         "-m", "--mismatches",
         required=True,
         type=int,
-        help=("Allow for this number of mismatches when determining "
+        help=("Allow for MISMATCHES mismatches when determining "
               "whether a probe covers a sequence"))
     parser.add_argument(
-        "-l", "--lcf_thres",
+        "-l", "--lcf-thres",
         type=int,
         help=("(Optional) Say that a portion of a probe covers a portion "
               "of a sequence if the two share a substring with at most "
-              "'mismatches' mismatches that has length >= 'lcf_thres' "
-              "bp; if unspecified, this is set to probe_length"))
+              "MISMATCHES mismatches that has length >= LCF_THRES "
+              "nt; if unspecified, this is set to PROBE_LENGTH"))
     parser.add_argument(
-        "--island_of_exact_match",
+        "--island-of-exact-match",
         type=int,
         default=0,
         help=("(Optional) When determining whether a probe covers a "
               "sequence, require that there be an exact match (i.e., "
-              "no mismatches) of length at least 'island_of_exact_"
-              "match' bp between a portion of the probe and a portion "
+              "no mismatches) of length at least ISLAND_OF_EXACT_"
+              "MATCH nt between a portion of the probe and a portion "
               "of the sequence"))
     parser.add_argument(
-        "--small_seq_min",
+        "--small-seq-min",
         type=int,
         help=("(Optional) If set, allow sequences as input that are "
-              "shorter than 'probe_length' (when not set, the program will "
-              "error on such input). The value of this argument is the "
+              "shorter than PROBE_LENGTH (when not set, the program will "
+              "error on such input). SMALL_SEQ_MIN is the "
               "minimum sequence length that should be accepted as input. "
-              "When a sequence is less than 'probe_length', a candidate "
+              "When a sequence is less than PROBE_LENGTH, a candidate "
               "probe is created that is equal to the sequence; thus, "
               "the output probes may have different lengths. Note that, "
               "when this is set, it might be a good idea to also set "
-              "'lcf_thres' to be a value smaller than 'probe_length' -- "
+              "LCF_THRES to be a value smaller than PROBE_LENGTH -- "
               "e.g., the length of the shortest input sequence; otherwise, "
               "when a probe of length p_l is mapped to a sequence of length "
-              "s_l, then lcf_thres is treated as being min(lcf_thres, p_l, "
+              "s_l, then lcf_thres is treated as being min(LCF_THRES, p_l, "
               "s_l) so that a probe is able to 'cover' a sequence shorter "
-              "than the probe and so that a probe shorter than 'lcf_thres' "
+              "than the probe and so that a probe shorter than lcf_thres "
               "is able to 'cover' a sequence"))
     parser.add_argument(
-        "-mt", "--mismatches_tolerant",
+        "-mt", "--mismatches-tolerant",
         type=int,
-        help=("(Optional) A more tolerant value for '--mismatches'; "
-              "this should be greater than the value of '--mismatches'. "
+        help=("(Optional) A more tolerant value for 'mismatches'; "
+              "this should be greater than the value of MISMATCHES. "
               "Allows for capturing more possible hybridizations "
               "(i.e., more sensitivity) when designing probes for "
               "identification or when genomes are blacklisted."))
     parser.add_argument(
-        "-lt", "--lcf_thres_tolerant",
+        "-lt", "--lcf-thres-tolerant",
         type=int,
-        help=("(Optional) A more tolerant value for '--lcf_thres'; "
-              "this should be less than the value of '--lcf_thres'. "
+        help=("(Optional) A more tolerant value for 'lcf_thres'; "
+              "this should be less than LCF_THRES. "
               "Allows for capturing more possible hybridizations "
               "(i.e., more sensitivity) when designing probes for "
               "identification or when genomes are blacklisted."))
     parser.add_argument(
-        "--island_of_exact_match_tolerant",
+        "--island-of-exact-match-tolerant",
         type=int,
         default=0,
-        help=("(Optional) A more tolerant value for '--island_of_"
-              "exact_match'; this should be less than the value of "
-              "'--island_of_exact_match'. Allows for capturing more "
+        help=("(Optional) A more tolerant value for 'island_of_"
+              "exact_match'; this should be less than ISLAND_OF_ "
+              "EXACT_MATCH. Allows for capturing more "
               "possible hybridizations (i.e., more sensitivity) "
               "when designing probes for identification or when "
               "genomes are blacklisted."))
@@ -320,37 +320,37 @@ if __name__ == "__main__":
               "bp of each target genome that must be covered by the "
               "selected probes"))
     parser.add_argument(
-        "-e", "--cover_extension",
+        "-e", "--cover-extension",
         type=int,
         default=0,
-        help=("Extend the coverage of each side of a probe by this number "
-              "of bp. That is, a probe covers a region that consists of the "
+        help=("Extend the coverage of each side of a probe by COVER_EXTENSION "
+              "nt. That is, a probe covers a region that consists of the "
               "portion of a sequence it hybridizes to, as well as this "
-              "number of bp on each side of that portion. This is useful "
+              "number of nt on each side of that portion. This is useful "
               "in modeling hybrid selection, where a probe hybridizes to"
               "a fragment that includes the region targeted by the probe, "
               "along with surrounding portions of the sequence. Increasing "
               "its value should reduce the number of probes required to "
               "achieve the desired coverage."))
     parser.add_argument(
-        "--skip_set_cover",
+        "--skip-set-cover",
         dest="skip_set_cover",
         action="store_true",
         help=("Skip the set cover filter; this is useful when we "
               "wish to see the probes generated from only the "
               "duplicate and reverse complement filters, to gauge "
               "the effects of the set cover filter"))
-    parser.add_argument("--skip_adapters",
+    parser.add_argument("--skip-adapters",
                         dest="skip_adapters",
                         action="store_true",
                         help=("Do not add adapters to the ends of probes"))
-    parser.add_argument("--skip_reverse_complements",
+    parser.add_argument("--skip-reverse-complements",
                         dest="skip_reverse_complements",
                         action="store_true",
                         help=("Do not add to the output the reverse "
                               "complement of each probe"))
     parser.add_argument(
-        "--expand_n",
+        "--expand-n",
         dest="expand_n",
         action="store_true",
         help=("Expand each probe so that 'N' bases are replaced by real "
@@ -360,7 +360,7 @@ if __name__ == "__main__":
               "thus the number of new probes grows exponentially with the "
               "number of 'N' bases in a probe"))
     parser.add_argument(
-        "--filter_from_fasta",
+        "--filter-from-fasta",
         help=("(Optional) A FASTA file from which to select candidate probes. "
               "Before running any other filters, keep only the candidate "
               "probes that are equal to sequences in the file and remove "
@@ -376,16 +376,16 @@ if __name__ == "__main__":
               "run the time-consuming set cover filter and have a FASTA "
               "containing those probes, we can provide a path to that "
               "FASTA file for this argument, and also provide the "
-              "'--skip_set_cover' argument, in order to add adapters to "
+              "--skip-set-cover argument, in order to add adapters to "
               "those probes without having to re-run the set cover filter."))
     parser.add_argument(
-        "--blacklist_genomes",
+        "--blacklist-genomes",
         nargs='+',
         help=("One or more blacklisted genomes; penalize probes based "
               "on how much of each of these genomes they cover; the "
               "label should be a dataset (e.g., 'hg19' or 'marburg')"))
     parser.add_argument(
-        "--cover_groupings_separately",
+        "--cover-groupings-separately",
         dest="cover_groupings_separately",
         action="store_true",
         help=("Run a separate instance of set cover with the target genomes "
@@ -404,66 +404,67 @@ if __name__ == "__main__":
                               "from a custom file, where X is a path to "
                               "a fasta file"))
     parser.add_argument(
-        "--limit_target_genomes",
+        "--limit-target-genomes",
         type=int,
-        help=("(Optional) Use only the first N target genomes in the "
-              "dataset"))
+        help=("(Optional) Use only the first LIMIT_TARGET_GENOMES target "
+              "genomes in the dataset"))
     parser.add_argument(
-        "--limit_target_genomes_randomly_with_replacement",
+        "--limit-target-genomes-randomly-with-replacement",
         type=int,
-        help=("(Optional) Randomly select N target genomes in the "
-              "dataset with replacement"))
+        help=("(Optional) Randomly select LIMIT_TARGET_GENOMES_RANDOMLY_"
+              "WITH_REPLACMENT target genomes in the dataset with "
+              "replacement"))
     parser.add_argument(
-        "--adapter_a",
+        "--adapter-a",
         nargs=2,
         default=['ATACGCCATGCTGGGTCTCC', 'CGTACTTGGGAGTCGGCCAT'],
-        help=("(Optional) Custom A adapter to use; two ordered arguments x "
-              "and y such that x is the A adapter sequence to place on the "
-              "5' end of a probe and y is the A adapter sequence to place "
-              "on the 3' end of a probe"))
+        help=("(Optional) Args: <X> <Y>; Custom A adapter to use; two ordered "
+              "where X is the A adapter sequence to place on the 5' end of "
+              "a probe and Y is the A adapter sequence to place on the 3' "
+              "end of a probe"))
     parser.add_argument(
-        "--adapter_b",
+        "--adapter-b",
         nargs=2,
         default=['AGGCCCTGGCTGCTGATATG', 'GACCTTTTGGGACAGCGGTG'],
-        help=("(Optional) Custom B adapter to use; two ordered arguments x "
-              "and y such that x is the B adapter sequence to place on the "
-              "5' end of a probe and y is the B adapter sequence to place "
-              "on the 3' end of a probe"))
+        help=("(Optional) Args: <X> <Y>; Custom B adapter to use; two ordered "
+              "where X is the B adapter sequence to place on the 5' end of "
+              "a probe and Y is the B adapter sequence to place on the 3' "
+              "end of a probe"))
     parser.add_argument(
-        "-o", "--output_probes",
+        "-o", "--output-probes",
         help=("(Optional) The file to which all final probes should be "
               "written; if not specified, the final probes are not "
               "written to a file"))
-    parser.add_argument("--print_analysis",
+    parser.add_argument("--print-analysis",
                         dest="print_analysis",
                         action="store_true",
                         help="Print analysis of the probe set's coverage")
     parser.add_argument(
-        "--write_analysis_to_tsv",
-        help=("The file to which to write a TSV-formatted matrix of the "
-              "probe set's coverage analysis"))
+        "--write-analysis-to-tsv",
+        help=("(Optional) The file to which to write a TSV-formatted matrix "
+              "of the probe set's coverage analysis"))
     parser.add_argument(
-        "--write_sliding_window_coverage",
-        help=("The file to which to write the average coverage achieved "
-              "by the probe set within sliding windows of each target "
-              "genome"))
+        "--write-sliding-window-coverage",
+        help=("(Optional) The file to which to write the average coverage "
+              "achieved by the probe set within sliding windows of each "
+              "target genome"))
 
     def check_max_num_processes(val):
         ival = int(val)
         if ival >= 1:
             return ival
         else:
-            raise argparse.ArgumentTypeError(("max_num_processes must be "
+            raise argparse.ArgumentTypeError(("MAX_NUM_PROCESSES must be "
                                               "an int >= 1"))
 
     parser.add_argument(
-        "--max_num_processes",
+        "--max-num-processes",
         type=check_max_num_processes,
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
-              "of CPUs in the system, max_num_processes) processes"))
+              "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
     parser.add_argument(
-        "--use_native_dict_when_finding_tolerant_coverage",
+        "--use-native-dict-when-finding-tolerant-coverage",
         dest="use_native_dict_when_finding_tolerant_coverage",
         action="store_true",
         help=("When finding probe coverage for blacklisting and "

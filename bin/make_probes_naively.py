@@ -116,12 +116,12 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-pl", "--probe_length",
+        "-pl", "--probe-length",
         type=int,
         default=100,
         help=("(Optional) The number of bp in each probe"))
     parser.add_argument(
-        "-ps", "--probe_stride",
+        "-ps", "--probe-stride",
         type=int,
         default=50,
         help=("(Optional) Generate candidate probes from the input "
@@ -130,41 +130,41 @@ if __name__ == "__main__":
                         required=True,
                         help="Label for the target dataset")
     parser.add_argument(
-        "-nrf", "--naive_redundant_filter",
+        "-nrf", "--naive-redundant-filter",
         nargs=2,
         type=int,
-        help=("Args: <mismatches> <lcf_thres>. Use the 'naive redundant "
+        help=("Args: <MISMATCHES> <LCF_THRES>. Use the 'naive redundant "
               "filter' -- i.e., iterate through a list of probes and, "
               "for each probe p, remove the following probes that are "
               "redundant to p. Deem one probe redundant to another if "
               "the longest common substring between them, up to "
-              "'mismatches' mismatches, is >= 'lcf_thres'."))
+              "MISMATCHES mismatches, is >= LCF_THRES."))
     parser.add_argument(
-        "-dsf", "--dominating_set_filter",
+        "-dsf", "--dominating-set-filter",
         nargs=2,
         type=int,
-        help=("Args: <mismatches> <lcf_thres>. Use the 'dominating set "
+        help=("Args: <MISMATCHES> <LCF_THRES>. Use the 'dominating set "
               "filter' -- i.e., filter redundant probes by constructing "
               "a graph connecting redundant probes and approximating "
               "the smallest dominating set. Deem one probe redundant "
               "to another if the longest common substring between them, "
-              "up to 'mismatches' mismatches, is >= 'lcf_thres'."))
-    parser.add_argument("--skip_reverse_complements",
+              "up to MISMATCHES mismatches, is >= LCF_THRES."))
+    parser.add_argument("--skip-reverse-complements",
                         dest="skip_reverse_complements",
                         action="store_true",
                         help=("Do not add to the output the reverse "
                               "complement of each probe"))
     parser.add_argument(
-        "--limit_target_genomes",
+        "--limit-target-genomes",
         type=int,
         help=("(Optional) Use only the first N target genomes in the "
               "dataset"))
     parser.add_argument(
-        "--limit_target_genomes_randomly_with_replacement",
+        "--limit-target-genomes-randomly-with-replacement",
         type=int,
         help=("(Optional) Randomly select N target genomes in the "
               "dataset with replacement"))
-    parser.add_argument("--print_analysis",
+    parser.add_argument("--print-analysis",
                         dest="print_analysis",
                         action="store_true",
                         help="Print analysis of the probe set's coverage")

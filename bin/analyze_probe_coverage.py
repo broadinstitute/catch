@@ -66,24 +66,24 @@ if __name__ == "__main__":
         help=("Allow for this number of mismatches when determining "
               "whether a probe covers a sequence"))
     parser.add_argument(
-        "-l", "--lcf_thres",
+        "-l", "--lcf-thres",
         required=True,
         type=int,
         help=("Say that a portion of a probe covers a portion of a "
               "sequence if the two share a substring with at most "
-              "'mismatches' mismatches that has length >= 'lcf_thres' "
+              "MISMATCHES mismatches that has length >= LCF_THRES "
               "bp"))
     parser.add_argument(
-        "--island_of_exact_match",
+        "--island-of-exact-match",
         type=int,
         default=0,
         help=("(Optional) When determining whether a probe covers a "
               "sequence, require that there be an exact match (i.e., "
-              "no mismatches) of length at least 'island_of_exact_"
-              "match' bp between a portion of the probe and a portion "
+              "no mismatches) of length at least ISLAND_OF_EXACT_"
+              "MATCH bp between a portion of the probe and a portion "
               "of the sequence"))
     parser.add_argument(
-        "-e", "--cover_extension",
+        "-e", "--cover-extension",
         type=int,
         default=0,
         help=("Extend the coverage of each side of a probe by this number "
@@ -96,7 +96,7 @@ if __name__ == "__main__":
               "its value should reduce the number of probes required to "
               "achieve the desired coverage."))
     parser.add_argument(
-        '-f', '--probes_fasta',
+        '-f', '--probes-fasta',
         required=True,
         help=("Path to a FASTA file that provides the probes (one per "
               "sequence) whose coverage should be analyzed against the "
@@ -107,20 +107,20 @@ if __name__ == "__main__":
                         help=("Labels for one or more target datasets (e.g., "
                               "one label per species)"))
     parser.add_argument(
-        "--limit_target_genomes",
+        "--limit-target-genomes",
         type=int,
         help=("(Optional) Use only the first N target genomes in the "
               "dataset"))
-    parser.add_argument("--print_analysis",
+    parser.add_argument("--print-analysis",
                         dest="print_analysis",
                         action="store_true",
                         help="Print analysis of the probe set's coverage")
     parser.add_argument(
-        "--write_analysis_to_tsv",
+        "--write-analysis-to-tsv",
         help=("The file to which to write a TSV-formatted matrix of the "
               "probe set's coverage analysis"))
     parser.add_argument(
-        "--write_sliding_window_coverage",
+        "--write-sliding-window-coverage",
         help=("The file to which to write the average coverage achieved "
               "by the probe set within sliding windows of each target "
               "genome"))
@@ -130,15 +130,15 @@ if __name__ == "__main__":
         if ival >= 1:
             return ival
         else:
-            raise argparse.ArgumentTypeError(("max_num_processes must be "
+            raise argparse.ArgumentTypeError(("MAX_NUM_PROCESSES must be "
                                               "an int >= 1"))
 
     parser.add_argument(
-        "--max_num_processes",
+        "--max-num-processes",
         type=check_max_num_processes,
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
-              "of CPUs in the system, max_num_processes) processes"))
+              "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
     parser.add_argument("--debug",
                         dest="log_level",
                         action="store_const",
