@@ -59,22 +59,33 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-m", "--mismatches",
+
+    # Input data
+    parser.add_argument('-d', '--dataset',
+        nargs='+',
+        required=True,
+        help=("Labels for one or more target datasets (e.g., "
+              "one label per species)"))
+    parser.add_argument('-f', '--probes-fasta',
+        required=True,
+        help=("Path to a FASTA file that provides the probes (one per "
+              "sequence) whose coverage should be analyzed against the "
+              "genomes in the given datasets"))
+
+    # Parameters governing hybridization
+    parser.add_argument('-m', '--mismatches',
         required=True,
         type=int,
         help=("Allow for this number of mismatches when determining "
               "whether a probe covers a sequence"))
-    parser.add_argument(
-        "-l", "--lcf-thres",
+    parser.add_argument('-l', '--lcf-thres',
         required=True,
         type=int,
         help=("Say that a portion of a probe covers a portion of a "
               "sequence if the two share a substring with at most "
               "MISMATCHES mismatches that has length >= LCF_THRES "
               "bp"))
-    parser.add_argument(
-        "--island-of-exact-match",
+    parser.add_argument('--island-of-exact-match',
         type=int,
         default=0,
         help=("(Optional) When determining whether a probe covers a "
@@ -82,8 +93,7 @@ if __name__ == "__main__":
               "no mismatches) of length at least ISLAND_OF_EXACT_"
               "MATCH bp between a portion of the probe and a portion "
               "of the sequence"))
-    parser.add_argument(
-        "-e", "--cover-extension",
+    parser.add_argument('-e', '--cover-extension',
         type=int,
         default=0,
         help=("Extend the coverage of each side of a probe by this number "
@@ -95,36 +105,27 @@ if __name__ == "__main__":
               "along with surrounding portions of the sequence. Increasing "
               "its value should reduce the number of probes required to "
               "achieve the desired coverage."))
-    parser.add_argument(
-        '-f', '--probes-fasta',
-        required=True,
-        help=("Path to a FASTA file that provides the probes (one per "
-              "sequence) whose coverage should be analyzed against the "
-              "genomes in the given datasets"))
-    parser.add_argument("-d", "--dataset",
-                        nargs='+',
-                        required=True,
-                        help=("Labels for one or more target datasets (e.g., "
-                              "one label per species)"))
-    parser.add_argument(
-        "--limit-target-genomes",
+
+    # Limiting input
+    parser.add_argument('--limit-target-genomes',
         type=int,
         help=("(Optional) Use only the first N target genomes in the "
               "dataset"))
-    parser.add_argument("--print-analysis",
+
+    # Analysis output
+    parser.add_argument('--print-analysis',
                         dest="print_analysis",
                         action="store_true",
                         help="Print analysis of the probe set's coverage")
-    parser.add_argument(
-        "--write-analysis-to-tsv",
+    parser.add_argument('--write-analysis-to-tsv',
         help=("The file to which to write a TSV-formatted matrix of the "
               "probe set's coverage analysis"))
-    parser.add_argument(
-        "--write-sliding-window-coverage",
+    parser.add_argument('--write-sliding-window-coverage',
         help=("The file to which to write the average coverage achieved "
               "by the probe set within sliding windows of each target "
               "genome"))
 
+    # Number of processes to use
     def check_max_num_processes(val):
         ival = int(val)
         if ival >= 1:
@@ -132,27 +133,28 @@ if __name__ == "__main__":
         else:
             raise argparse.ArgumentTypeError(("MAX_NUM_PROCESSES must be "
                                               "an int >= 1"))
-
-    parser.add_argument(
-        "--max-num-processes",
+    parser.add_argument('--max-num-processes',
         type=check_max_num_processes,
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
               "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
-    parser.add_argument("--debug",
-                        dest="log_level",
-                        action="store_const",
-                        const=logging.DEBUG,
-                        default=logging.WARNING,
-                        help=("Debug output"))
-    parser.add_argument("--verbose",
-                        dest="log_level",
-                        action="store_const",
-                        const=logging.INFO,
-                        help=("Verbose output"))
-    parser.add_argument('--version', '-V',
-                        action='version',
-                        version=version.get_version())
+
+    # Logging levels and version
+    parser.add_argument('--debug',
+        dest="log_level",
+        action="store_const",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+        help=("Debug output"))
+    parser.add_argument('--verbose',
+        dest="log_level",
+        action="store_const",
+        const=logging.INFO,
+        help=("Verbose output"))
+    parser.add_argument('-V', '--version',
+        action='version',
+        version=version.get_version())
+
     args = parser.parse_args()
 
     log.configure_logging(args.log_level)

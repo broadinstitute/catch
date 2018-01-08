@@ -211,32 +211,44 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-pl", "--probe-length",
+
+    # Input data
+    parser.add_argument('-d', '--dataset',
+        nargs='+',
+        required=True,
+        help=("Labels for one or more target datasets (e.g., "
+              "one label per species); alternatively, "
+              "start with 'collection:' (e.g., "
+              "'collection:viruses_with_human_host') to "
+              "specify an available collection of datasets; "
+              "or specify 'custom:X' to read genomes "
+              "from a custom file, where X is a path to "
+              "a fasta file"))
+
+    # Parameters on probe length and stride
+    parser.add_argument('-pl', '--probe-length',
         type=int,
         default=100,
         help=("(Optional) Make probes be PROBE_LENGTH nt long"))
-    parser.add_argument(
-        "-ps", "--probe-stride",
+    parser.add_argument('-ps', '--probe-stride',
         type=int,
         default=50,
         help=("(Optional) Generate candidate probes from the input "
               "that are separated by PROBE_STRIDE nt"))
-    parser.add_argument(
-        "-m", "--mismatches",
+
+    # Parameters governing probe hybridization
+    parser.add_argument('-m', '--mismatches',
         required=True,
         type=int,
         help=("Allow for MISMATCHES mismatches when determining "
               "whether a probe covers a sequence"))
-    parser.add_argument(
-        "-l", "--lcf-thres",
+    parser.add_argument('-l', '--lcf-thres',
         type=int,
         help=("(Optional) Say that a portion of a probe covers a portion "
               "of a sequence if the two share a substring with at most "
               "MISMATCHES mismatches that has length >= LCF_THRES "
               "nt; if unspecified, this is set to PROBE_LENGTH"))
-    parser.add_argument(
-        "--island-of-exact-match",
+    parser.add_argument('--island-of-exact-match',
         type=int,
         default=0,
         help=("(Optional) When determining whether a probe covers a "
@@ -244,59 +256,8 @@ if __name__ == "__main__":
               "no mismatches) of length at least ISLAND_OF_EXACT_"
               "MATCH nt between a portion of the probe and a portion "
               "of the sequence"))
-    parser.add_argument(
-        "--small-seq-min",
-        type=int,
-        help=("(Optional) If set, allow sequences as input that are "
-              "shorter than PROBE_LENGTH (when not set, the program will "
-              "error on such input). SMALL_SEQ_MIN is the "
-              "minimum sequence length that should be accepted as input. "
-              "When a sequence is less than PROBE_LENGTH, a candidate "
-              "probe is created that is equal to the sequence; thus, "
-              "the output probes may have different lengths. Note that, "
-              "when this is set, it might be a good idea to also set "
-              "LCF_THRES to be a value smaller than PROBE_LENGTH -- "
-              "e.g., the length of the shortest input sequence; otherwise, "
-              "when a probe of length p_l is mapped to a sequence of length "
-              "s_l, then lcf_thres is treated as being min(LCF_THRES, p_l, "
-              "s_l) so that a probe is able to 'cover' a sequence shorter "
-              "than the probe and so that a probe shorter than lcf_thres "
-              "is able to 'cover' a sequence"))
-    parser.add_argument(
-        "-mt", "--mismatches-tolerant",
-        type=int,
-        help=("(Optional) A more tolerant value for 'mismatches'; "
-              "this should be greater than the value of MISMATCHES. "
-              "Allows for capturing more possible hybridizations "
-              "(i.e., more sensitivity) when designing probes for "
-              "identification or when genomes are blacklisted."))
-    parser.add_argument(
-        "-lt", "--lcf-thres-tolerant",
-        type=int,
-        help=("(Optional) A more tolerant value for 'lcf_thres'; "
-              "this should be less than LCF_THRES. "
-              "Allows for capturing more possible hybridizations "
-              "(i.e., more sensitivity) when designing probes for "
-              "identification or when genomes are blacklisted."))
-    parser.add_argument(
-        "--island-of-exact-match-tolerant",
-        type=int,
-        default=0,
-        help=("(Optional) A more tolerant value for 'island_of_"
-              "exact_match'; this should be less than ISLAND_OF_ "
-              "EXACT_MATCH. Allows for capturing more "
-              "possible hybridizations (i.e., more sensitivity) "
-              "when designing probes for identification or when "
-              "genomes are blacklisted."))
-    parser.add_argument(
-        "-i", "--identify",
-        dest="identify",
-        action="store_true",
-        help=("Design probes meant to make it possible to identify "
-              "nucleic acid from a particular input dataset against "
-              "the other datasets; when set, the coverage should "
-              "generally be small"))
 
+    # Desired coverage of target genomes
     def check_coverage(val):
         fval = float(val)
         ival = int(fval)
@@ -309,9 +270,7 @@ if __name__ == "__main__":
         else:
             raise argparse.ArgumentTypeError(("%s is an invalid coverage "
                                               "value") % val)
-
-    parser.add_argument(
-        "-c", "--coverage",
+    parser.add_argument('-c', '--coverage',
         type=check_coverage,
         default=1.0,
         help=("If this is a float in [0,1], it gives the fraction of "
@@ -319,8 +278,9 @@ if __name__ == "__main__":
               "probes; if this is an int > 1, it gives the number of "
               "bp of each target genome that must be covered by the "
               "selected probes"))
-    parser.add_argument(
-        "-e", "--cover-extension",
+
+    # Amount of cover extension to assume
+    parser.add_argument('-e', '--cover-extension',
         type=int,
         default=0,
         help=("Extend the coverage of each side of a probe by COVER_EXTENSION "
@@ -332,35 +292,63 @@ if __name__ == "__main__":
               "along with surrounding portions of the sequence. Increasing "
               "its value should reduce the number of probes required to "
               "achieve the desired coverage."))
-    parser.add_argument(
-        "--skip-set-cover",
-        dest="skip_set_cover",
+
+    # Differential identification and blacklisting
+    parser.add_argument('-i', '--identify',
+        dest="identify",
         action="store_true",
-        help=("Skip the set cover filter; this is useful when we "
-              "wish to see the probes generated from only the "
-              "duplicate and reverse complement filters, to gauge "
-              "the effects of the set cover filter"))
-    parser.add_argument("--skip-adapters",
-                        dest="skip_adapters",
-                        action="store_true",
-                        help=("Do not add adapters to the ends of probes"))
-    parser.add_argument("--skip-reverse-complements",
-                        dest="skip_reverse_complements",
-                        action="store_true",
-                        help=("Do not add to the output the reverse "
-                              "complement of each probe"))
-    parser.add_argument(
-        "--expand-n",
-        dest="expand_n",
+        help=("Design probes meant to make it possible to identify "
+              "nucleic acid from a particular input dataset against "
+              "the other datasets; when set, the coverage should "
+              "generally be small"))
+    parser.add_argument('--blacklist-genomes',
+        nargs='+',
+        help=("One or more blacklisted genomes; penalize probes based "
+              "on how much of each of these genomes they cover; the "
+              "label should be a dataset (e.g., 'hg19' or 'marburg')"))
+    parser.add_argument('-mt', '--mismatches-tolerant',
+        type=int,
+        help=("(Optional) A more tolerant value for 'mismatches'; "
+              "this should be greater than the value of MISMATCHES. "
+              "Allows for capturing more possible hybridizations "
+              "(i.e., more sensitivity) when designing probes for "
+              "identification or when genomes are blacklisted."))
+    parser.add_argument('-lt', '--lcf-thres-tolerant',
+        type=int,
+        help=("(Optional) A more tolerant value for 'lcf_thres'; "
+              "this should be less than LCF_THRES. "
+              "Allows for capturing more possible hybridizations "
+              "(i.e., more sensitivity) when designing probes for "
+              "identification or when genomes are blacklisted."))
+    parser.add_argument('--island-of-exact-match-tolerant',
+        type=int,
+        default=0,
+        help=("(Optional) A more tolerant value for 'island_of_"
+              "exact_match'; this should be less than ISLAND_OF_ "
+              "EXACT_MATCH. Allows for capturing more "
+              "possible hybridizations (i.e., more sensitivity) "
+              "when designing probes for identification or when "
+              "genomes are blacklisted."))
+
+    # Outputting probe sequences and coverage analyses
+    parser.add_argument('-o', '--output-probes',
+        help=("(Optional) The file to which all final probes should be "
+              "written; if not specified, the final probes are not "
+              "written to a file"))
+    parser.add_argument('--print-analysis',
+        dest="print_analysis",
         action="store_true",
-        help=("Expand each probe so that 'N' bases are replaced by real "
-              "bases; for example, the probe 'ANA' would be replaced "
-              "with the probes 'AAA', 'ATA', 'ACA', and 'AGA'; this is "
-              "done combinatorially across all 'N' bases in a probe, and "
-              "thus the number of new probes grows exponentially with the "
-              "number of 'N' bases in a probe"))
-    parser.add_argument(
-        "--filter-from-fasta",
+        help="Print analysis of the probe set's coverage")
+    parser.add_argument('--write-analysis-to-tsv',
+        help=("(Optional) The file to which to write a TSV-formatted matrix "
+              "of the probe set's coverage analysis"))
+    parser.add_argument('--write-sliding-window-coverage',
+        help=("(Optional) The file to which to write the average coverage "
+              "achieved by the probe set within sliding windows of each "
+              "target genome"))
+
+    # Accepting probes as input and skipping set cover process
+    parser.add_argument('--filter-from-fasta',
         help=("(Optional) A FASTA file from which to select candidate probes. "
               "Before running any other filters, keep only the candidate "
               "probes that are equal to sequences in the file and remove "
@@ -378,77 +366,86 @@ if __name__ == "__main__":
               "FASTA file for this argument, and also provide the "
               "--skip-set-cover argument, in order to add adapters to "
               "those probes without having to re-run the set cover filter."))
-    parser.add_argument(
-        "--blacklist-genomes",
-        nargs='+',
-        help=("One or more blacklisted genomes; penalize probes based "
-              "on how much of each of these genomes they cover; the "
-              "label should be a dataset (e.g., 'hg19' or 'marburg')"))
-    parser.add_argument(
-        "--cover-groupings-separately",
-        dest="cover_groupings_separately",
+    parser.add_argument('--skip-set-cover',
+        dest="skip_set_cover",
         action="store_true",
-        help=("Run a separate instance of set cover with the target genomes "
-              "from each grouping and pool (union) the resulting probes. "
-              "When set, the software will run faster than when not set, but "
-              "it may yield more probes than when it is not set."))
-    parser.add_argument("-d", "--dataset",
-                        nargs='+',
-                        required=True,
-                        help=("Labels for one or more target datasets (e.g., "
-                              "one label per species); alternatively, "
-                              "start with 'collection:' (e.g., "
-                              "'collection:viruses_with_human_host') to "
-                              "specify an available collection of datasets; "
-                              "or specify 'custom:X' to read genomes "
-                              "from a custom file, where X is a path to "
-                              "a fasta file"))
-    parser.add_argument(
-        "--limit-target-genomes",
-        type=int,
-        help=("(Optional) Use only the first LIMIT_TARGET_GENOMES target "
-              "genomes in the dataset"))
-    parser.add_argument(
-        "--limit-target-genomes-randomly-with-replacement",
-        type=int,
-        help=("(Optional) Randomly select LIMIT_TARGET_GENOMES_RANDOMLY_"
-              "WITH_REPLACMENT target genomes in the dataset with "
-              "replacement"))
-    parser.add_argument(
-        "--adapter-a",
+        help=("Skip the set cover filter; this is useful when we "
+              "wish to see the probes generated from only the "
+              "duplicate and reverse complement filters, to gauge "
+              "the effects of the set cover filter"))
+
+    # Adding adapters
+    parser.add_argument('--skip-adapters',
+        dest="skip_adapters",
+        action="store_true",
+        help=("Do not add adapters to the ends of probes"))
+    parser.add_argument('--adapter-a',
         nargs=2,
         default=['ATACGCCATGCTGGGTCTCC', 'CGTACTTGGGAGTCGGCCAT'],
         help=("(Optional) Args: <X> <Y>; Custom A adapter to use; two ordered "
               "where X is the A adapter sequence to place on the 5' end of "
               "a probe and Y is the A adapter sequence to place on the 3' "
               "end of a probe"))
-    parser.add_argument(
-        "--adapter-b",
+    parser.add_argument('--adapter-b',
         nargs=2,
         default=['AGGCCCTGGCTGCTGATATG', 'GACCTTTTGGGACAGCGGTG'],
         help=("(Optional) Args: <X> <Y>; Custom B adapter to use; two ordered "
               "where X is the B adapter sequence to place on the 5' end of "
               "a probe and Y is the B adapter sequence to place on the 3' "
               "end of a probe"))
-    parser.add_argument(
-        "-o", "--output-probes",
-        help=("(Optional) The file to which all final probes should be "
-              "written; if not specified, the final probes are not "
-              "written to a file"))
-    parser.add_argument("--print-analysis",
-                        dest="print_analysis",
-                        action="store_true",
-                        help="Print analysis of the probe set's coverage")
-    parser.add_argument(
-        "--write-analysis-to-tsv",
-        help=("(Optional) The file to which to write a TSV-formatted matrix "
-              "of the probe set's coverage analysis"))
-    parser.add_argument(
-        "--write-sliding-window-coverage",
-        help=("(Optional) The file to which to write the average coverage "
-              "achieved by the probe set within sliding windows of each "
-              "target genome"))
 
+    # Adjusting probe output
+    parser.add_argument('--skip-reverse-complements',
+        dest="skip_reverse_complements",
+        action="store_true",
+        help=("Do not add to the output the reverse "
+              "complement of each probe"))
+    parser.add_argument('--expand-n',
+        dest="expand_n",
+        action="store_true",
+        help=("Expand each probe so that 'N' bases are replaced by real "
+              "bases; for example, the probe 'ANA' would be replaced "
+              "with the probes 'AAA', 'ATA', 'ACA', and 'AGA'; this is "
+              "done combinatorially across all 'N' bases in a probe, and "
+              "thus the number of new probes grows exponentially with the "
+              "number of 'N' bases in a probe"))
+
+    # Limiting input
+    parser.add_argument('--limit-target-genomes',
+        type=int,
+        help=("(Optional) Use only the first LIMIT_TARGET_GENOMES target "
+              "genomes in the dataset"))
+    parser.add_argument('--limit-target-genomes-randomly-with-replacement',
+        type=int,
+        help=("(Optional) Randomly select LIMIT_TARGET_GENOMES_RANDOMLY_"
+              "WITH_REPLACMENT target genomes in the dataset with "
+              "replacement"))
+
+    # Technical adjustments
+    parser.add_argument('--cover-groupings-separately',
+        dest="cover_groupings_separately",
+        action="store_true",
+        help=("Run a separate instance of set cover with the target genomes "
+              "from each grouping and pool (union) the resulting probes. "
+              "When set, the software will run faster than when not set, but "
+              "it may yield more probes than when it is not set."))
+    parser.add_argument('--small-seq-min',
+        type=int,
+        help=("(Optional) If set, allow sequences as input that are "
+              "shorter than PROBE_LENGTH (when not set, the program will "
+              "error on such input). SMALL_SEQ_MIN is the "
+              "minimum sequence length that should be accepted as input. "
+              "When a sequence is less than PROBE_LENGTH, a candidate "
+              "probe is created that is equal to the sequence; thus, "
+              "the output probes may have different lengths. Note that, "
+              "when this is set, it might be a good idea to also set "
+              "LCF_THRES to be a value smaller than PROBE_LENGTH -- "
+              "e.g., the length of the shortest input sequence; otherwise, "
+              "when a probe of length p_l is mapped to a sequence of length "
+              "s_l, then lcf_thres is treated as being min(LCF_THRES, p_l, "
+              "s_l) so that a probe is able to 'cover' a sequence shorter "
+              "than the probe and so that a probe shorter than lcf_thres "
+              "is able to 'cover' a sequence"))
     def check_max_num_processes(val):
         ival = int(val)
         if ival >= 1:
@@ -456,15 +453,12 @@ if __name__ == "__main__":
         else:
             raise argparse.ArgumentTypeError(("MAX_NUM_PROCESSES must be "
                                               "an int >= 1"))
-
-    parser.add_argument(
-        "--max-num-processes",
+    parser.add_argument('--max-num-processes',
         type=check_max_num_processes,
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
               "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
-    parser.add_argument(
-        "--use-native-dict-when-finding-tolerant-coverage",
+    parser.add_argument('--use-native-dict-when-finding-tolerant-coverage',
         dest="use_native_dict_when_finding_tolerant_coverage",
         action="store_true",
         help=("When finding probe coverage for blacklisting and "
@@ -476,20 +470,23 @@ if __name__ == "__main__":
               "this may result in substantial memory usage; but it may provide "
               "an improvement in runtime when there are relatively few "
               "candidate probes and a very large blacklisted input"))
-    parser.add_argument("--debug",
-                        dest="log_level",
-                        action="store_const",
-                        const=logging.DEBUG,
-                        default=logging.WARNING,
-                        help=("Debug output"))
-    parser.add_argument("--verbose",
-                        dest="log_level",
-                        action="store_const",
-                        const=logging.INFO,
-                        help=("Verbose output"))
-    parser.add_argument('--version', '-V',
-                        action='version',
-                        version=version.get_version())
+
+    # Log levels and version
+    parser.add_argument('--debug',
+        dest="log_level",
+        action="store_const",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+        help=("Debug output"))
+    parser.add_argument('--verbose',
+        dest="log_level",
+        action="store_const",
+        const=logging.INFO,
+        help=("Verbose output"))
+    parser.add_argument('-V', '--version',
+        action='version',
+        version=version.get_version())
+
     args = parser.parse_args()
 
     log.configure_logging(args.log_level)

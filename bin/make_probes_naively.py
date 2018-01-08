@@ -115,22 +115,26 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-pl", "--probe-length",
+
+    # Input data
+    parser.add_argument('-d', '--dataset',
+        required=True,
+        help="Label for the target dataset")
+
+    # Probe parameters
+    parser.add_argument('-pl', '--probe-length',
         type=int,
         default=100,
         help=("(Optional) The number of bp in each probe"))
-    parser.add_argument(
-        "-ps", "--probe-stride",
+    parser.add_argument('-ps', '--probe-stride',
         type=int,
         default=50,
         help=("(Optional) Generate candidate probes from the input "
               "that are separated by this number of bp"))
-    parser.add_argument("-d", "--dataset",
-                        required=True,
-                        help="Label for the target dataset")
-    parser.add_argument(
-        "-nrf", "--naive-redundant-filter",
+
+    # Method for designing probes, and parameters governing their
+    # hybridization
+    parser.add_argument('-nrf', '--naive-redundant-filter',
         nargs=2,
         type=int,
         help=("Args: <MISMATCHES> <LCF_THRES>. Use the 'naive redundant "
@@ -139,8 +143,7 @@ if __name__ == "__main__":
               "redundant to p. Deem one probe redundant to another if "
               "the longest common substring between them, up to "
               "MISMATCHES mismatches, is >= LCF_THRES."))
-    parser.add_argument(
-        "-dsf", "--dominating-set-filter",
+    parser.add_argument('-dsf', '--dominating-set-filter',
         nargs=2,
         type=int,
         help=("Args: <MISMATCHES> <LCF_THRES>. Use the 'dominating set "
@@ -149,39 +152,46 @@ if __name__ == "__main__":
               "the smallest dominating set. Deem one probe redundant "
               "to another if the longest common substring between them, "
               "up to MISMATCHES mismatches, is >= LCF_THRES."))
-    parser.add_argument("--skip-reverse-complements",
-                        dest="skip_reverse_complements",
-                        action="store_true",
-                        help=("Do not add to the output the reverse "
-                              "complement of each probe"))
-    parser.add_argument(
-        "--limit-target-genomes",
+
+    # Leaving out reverse complements
+    parser.add_argument('--skip-reverse-complements',
+        dest="skip_reverse_complements",
+        action="store_true",
+        help=("Do not add to the output the reverse "
+              "complement of each probe"))
+
+    # Limiting input
+    parser.add_argument('--limit-target-genomes',
         type=int,
         help=("(Optional) Use only the first N target genomes in the "
               "dataset"))
-    parser.add_argument(
-        "--limit-target-genomes-randomly-with-replacement",
+    parser.add_argument('--limit-target-genomes-randomly-with-replacement',
         type=int,
         help=("(Optional) Randomly select N target genomes in the "
               "dataset with replacement"))
-    parser.add_argument("--print-analysis",
-                        dest="print_analysis",
-                        action="store_true",
-                        help="Print analysis of the probe set's coverage")
-    parser.add_argument("--debug",
-                        dest="log_level",
-                        action="store_const",
-                        const=logging.DEBUG,
-                        default=logging.WARNING,
-                        help=("Debug output"))
-    parser.add_argument("--verbose",
-                        dest="log_level",
-                        action="store_const",
-                        const=logging.INFO,
-                        help=("Verbose output"))
-    parser.add_argument('--version', '-V',
-                        action='version',
-                        version=version.get_version())
+
+    # Adding analysis to output
+    parser.add_argument('--print-analysis',
+        dest="print_analysis",
+        action="store_true",
+        help="Print analysis of the probe set's coverage")
+
+    # Log levels and version
+    parser.add_argument('--debug',
+        dest="log_level",
+        action="store_const",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+        help=("Debug output"))
+    parser.add_argument('--verbose',
+        dest="log_level",
+        action="store_const",
+        const=logging.INFO,
+        help=("Verbose output"))
+    parser.add_argument('-V', '--version',
+        action='version',
+        version=version.get_version())
+
     args = parser.parse_args()
 
     log.configure_logging(args.log_level)
