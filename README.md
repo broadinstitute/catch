@@ -8,7 +8,7 @@ It designs oligo sequences that guarantee coverage of this diversity, enabling r
 It searches a space of probe sets, which may pool many species, to find an optimal design.
 This allows its designs to scale well with known genetic diversity, and also supports cost-effective experiments.
 * **Flexibllity**: hybsel_design supports applications beyond whole genome enrichment, such as differential identification of species.
-It allows blacklisting sequence from the design (e.g., background in microbial enrichment), supports customized models of hybridization, enables weighting the senstivity for different species, and more.
+It allows blacklisting sequence from the design (e.g., background in microbial enrichment), supports customized models of hybridization, enables weighting the sensitivity for different species, and more.
 
 &nbsp;
 
