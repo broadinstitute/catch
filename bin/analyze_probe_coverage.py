@@ -5,9 +5,9 @@ import argparse
 import importlib
 import logging
 
-from hybseldesign import coverage_analysis
-from hybseldesign import probe
-from hybseldesign.utils import seq_io, version, log
+from catch import coverage_analysis
+from catch import probe
+from catch.utils import seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -18,7 +18,7 @@ def main(args):
     genomes_grouped_names = []
     for ds in args.dataset:
         try:
-            dataset = importlib.import_module('hybseldesign.datasets.' + ds)
+            dataset = importlib.import_module('catch.datasets.' + ds)
         except ImportError:
             raise ValueError("Unknown dataset %s" % ds)
         genomes_grouped += [seq_io.read_dataset_genomes(dataset)]

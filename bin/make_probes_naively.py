@@ -12,13 +12,13 @@ import logging
 import os
 import random
 
-from hybseldesign import coverage_analysis
-from hybseldesign.filter import duplicate_filter
-from hybseldesign.filter import naive_redundant_filter
-from hybseldesign.filter import dominating_set_filter
-from hybseldesign.filter import probe_designer
-from hybseldesign.filter import reverse_complement_filter
-from hybseldesign.utils import seq_io, version, log
+from catch import coverage_analysis
+from catch.filter import duplicate_filter
+from catch.filter import naive_redundant_filter
+from catch.filter import dominating_set_filter
+from catch.filter import probe_designer
+from catch.filter import reverse_complement_filter
+from catch.utils import seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -32,7 +32,7 @@ def main(args):
             seqs = [seq_io.read_genomes_from_fasta(ds)]
         else:
             dataset = importlib.import_module(
-                'hybseldesign.datasets.' + ds)
+                'catch.datasets.' + ds)
             seqs = [seq_io.read_dataset_genomes(dataset)]
     except ImportError:
         raise ValueError("Unknown file or dataset '%s'" % ds)
