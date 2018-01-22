@@ -1,25 +1,25 @@
-# hybsel_design &nbsp;&middot;&nbsp; [![Build Status](https://magnum.travis-ci.com/broadinstitute/hybsel_design.svg?token=1e54w9HsqGg5ZQzQ9ruW&branch=master)](https://magnum.travis-ci.com/broadinstitute/hybsel_design) [![Coverage Status](https://coveralls.io/repos/broadinstitute/hybsel_design/badge.svg?branch=master&t=b06RAq)](https://coveralls.io/r/broadinstitute/hybsel_design?branch=master) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/broadinstitute/hybsel_design/pulls) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+# CATCH &nbsp;&middot;&nbsp; [![Build Status](https://magnum.travis-ci.com/broadinstitute/catch.svg?token=1e54w9HsqGg5ZQzQ9ruW&branch=master)](https://magnum.travis-ci.com/broadinstitute/catch) [![Coverage Status](https://coveralls.io/repos/broadinstitute/catch/badge.svg?branch=master&t=b06RAq)](https://coveralls.io/r/broadinstitute/catch?branch=master) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/broadinstitute/catch/pulls) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+#### Compact Aggregation of Targets for Comprehensive Hybridization
 
-hybsel_design is a Python package for designing probe sets to use in hybrid capture experiments.
+CATCH is a Python package for designing probe sets to use in hybrid capture experiments.
 
-* **Comprehensive coverage**: hybsel_design accepts any collection of unaligned sequences &mdash; typically whole genomes of all known genetic diversity of one or more microbial species.
+* **Comprehensive coverage**: CATCH accepts any collection of unaligned sequences &mdash; typically whole genomes of all known genetic diversity of one or more microbial species.
 It designs oligo sequences that guarantee coverage of this diversity, enabling rapid design of exhaustive probe sets for customizable targets.
-* **Compact designs**: hybsel_design can design with a specified constraint on the number of oligos (e.g., array size).
+* **Compact designs**: CATCH can design with a specified constraint on the number of oligos (e.g., array size).
 It searches a space of probe sets, which may pool many species, to find an optimal design.
 This allows its designs to scale well with known genetic diversity, and also supports cost-effective experiments.
-* **Flexibllity**: hybsel_design supports applications beyond whole genome enrichment, such as differential identification of species.
+* **Flexibility**: CATCH supports applications beyond whole genome enrichment, such as differential identification of species.
 It allows blacklisting sequence from the design (e.g., background in microbial enrichment), supports customized models of hybridization, enables weighting the sensitivity for different species, and more.
-
-&nbsp;
+<br/>
 
 ### Table of contents
 
-* [Setting up hybsel_design](#setting-up-hybsel_design)
+* [Setting up CATCH](#setting-up-catch)
   * [Python dependencies](#python-dependencies)
   * [Downloading and installing](#downloading-and-installing)
   * [Downloading viral sequence data](#downloading-viral-sequence-data)
   * [Testing](#testing)
-* [Using hybsel_design](#using-hybsel_design)
+* [Using CATCH](#using-catch)
   * [Designing with one choice of parameteters](#designing-with-one-choice-of-parameters-make_probespy)
   * [Pooling across many runs](#pooling-across-many-runs-pool_probespy)
 * [Examples](#examples)
@@ -27,31 +27,32 @@ It allows blacklisting sequence from the design (e.g., background in microbial e
   * [Example of running pool_probes.py](#example-of-running-pool_probespy)
 * [Contributing](#contributing)
 * [License](#license)
+<br/>
 
-## Setting up hybsel_design
+## Setting up CATCH
 
 ### Python dependencies
 
-hybsel_design requires:
+CATCH requires:
 * [Python](https://www.python.org) &gt;= 3.5
 * [NumPy](http://www.numpy.org) &gt;= 1.9.0
 * [SciPy](https://www.scipy.org) &gt;= 1.0.0
 
-Installing hybsel_design with `pip`, as described below, will install NumPy and SciPy if they are not already installed.
+Installing CATCH with `pip`, as described below, will install NumPy and SciPy if they are not already installed.
 
 ### Downloading and installing
 
-The easiest way to setup hybsel_design is with `pip`:
+The easiest way to setup CATCH is with `pip`:
 
 ```bash
-git clone git@github.com:broadinstitute/hybsel_design.git
-cd hybsel_design
+git clone git@github.com:broadinstitute/catch.git
+cd catch
 pip install --user -e .
 ```
 
 ### Downloading viral sequence data
 
-We distribute viral sequence data with hybsel_design, which can be used as input to probe design.
+We distribute viral sequence data with CATCH, which can be used as input to probe design.
 We use [Git LFS](https://git-lfs.github.com) to version and store this data.
 If you wish to use this data, you'll need to install [Git LFS](https://git-lfs.github.com).
 After installing it, you can download the viral sequence data by running:
@@ -61,11 +62,11 @@ git lfs install
 git lfs pull
 ```
 
-from inside the `hybsel_design` project directory.
+from inside the `catch` project directory.
 
 ### Testing
 
-hybsel_design uses Python's `unittest` framework.
+CATCH uses Python's `unittest` framework.
 Some of these tests require you to have [downloaded](#downloading-viral-sequence-data) viral sequence data.
 To execute all unit tests, run:
 
@@ -73,7 +74,7 @@ To execute all unit tests, run:
 python -m unittest discover
 ```
 
-## Using hybsel_design
+## Using CATCH
 
 ### Designing with one choice of parameters ([`make_probes.py`](./bin/make_probes.py))
 
@@ -166,7 +167,7 @@ This will design probes that:
 and will save them to `zika-probes.fasta`.
 
 It yields about 500 probes.
-Note that the `zika` dataset distributed with hybsel_design contains 379 genomes, but the input can also be a path to any custom FASTA file.
+Note that the `zika` dataset distributed with CATCH contains 379 genomes, but the input can also be a path to any custom FASTA file.
 
 ### Example of running [`pool_probes.py`](./bin/pool_probes.py)
 
@@ -184,9 +185,9 @@ The pooled design yields about 89,950 probes, depending on the initial guess.
 
 ## Contributing
 
-We welcome contributions to hybsel_design. This can be in the form of an [issue](https://github.com/broadinstitute/hybsel_design/issues)  or [pull request](https://github.com/broadinstitute/hybsel_design/pulls). If you have questions, please create an [issue](https://github.com/broadinstitute/hybsel_design/issues) or email **Hayden Metsky** &lt;hayden@mit.edu&gt;.
+We welcome contributions to CATCH. This can be in the form of an [issue](https://github.com/broadinstitute/catch/issues)  or [pull request](https://github.com/broadinstitute/catch/pulls). If you have questions, please create an [issue](https://github.com/broadinstitute/catch/issues) or email **Hayden Metsky** &lt;hayden@mit.edu&gt;.
 
 ## License
 
-hybsel_design is licensed under the terms of the [MIT license](./LICENSE).
+CATCH is licensed under the terms of the [MIT license](./LICENSE).
 
