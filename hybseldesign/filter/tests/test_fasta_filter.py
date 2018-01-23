@@ -5,8 +5,8 @@ import logging
 import tempfile
 import unittest
 
-from hybseldesign.filter import fasta_filter as ff
-from hybseldesign import probe
+from catch.filter import fasta_filter as ff
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

@@ -3,9 +3,9 @@
 
 import unittest
 
-from hybseldesign.datasets import ebola_zaire_with_2014
-from hybseldesign.filter import candidate_probes
-from hybseldesign.utils import seq_io
+from catch.datasets import ebola_zaire_with_2014
+from catch.filter import candidate_probes
+from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

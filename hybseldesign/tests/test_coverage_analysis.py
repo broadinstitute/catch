@@ -5,9 +5,9 @@ from collections import OrderedDict
 import logging
 import unittest
 
-from hybseldesign import coverage_analysis as ca
-from hybseldesign import genome
-from hybseldesign import probe
+from catch import coverage_analysis as ca
+from catch import genome
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

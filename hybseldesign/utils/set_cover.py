@@ -4,7 +4,7 @@
 from collections import defaultdict
 import logging
 
-from hybseldesign.utils import interval
+from catch.utils import interval
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

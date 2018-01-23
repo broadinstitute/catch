@@ -5,7 +5,7 @@ import logging
 import tempfile
 import unittest
 
-from hybseldesign.utils import pool_probes_io
+from catch.utils import pool_probes_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

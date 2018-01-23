@@ -3,7 +3,7 @@
 
 import unittest
 
-from hybseldesign.utils import longest_common_substring as lcf
+from catch.utils import longest_common_substring as lcf
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

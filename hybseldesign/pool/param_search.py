@@ -12,7 +12,7 @@ to minimize the sum of the loss and barrier function.
 
 import logging
 
-from hybseldesign.pool import interpolate_count as ic
+from catch.pool import interpolate_count as ic
 
 import numpy as np
 from scipy import optimize

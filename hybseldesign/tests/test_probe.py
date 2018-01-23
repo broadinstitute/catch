@@ -9,7 +9,7 @@ import unittest
 
 import numpy as np
 
-from hybseldesign import probe
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

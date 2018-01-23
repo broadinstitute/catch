@@ -8,8 +8,8 @@ import unittest
 
 import numpy as np
 
-from hybseldesign.utils import interval
-from hybseldesign.utils import set_cover as sc
+from catch.utils import interval
+from catch.utils import set_cover as sc
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

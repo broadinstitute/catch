@@ -4,10 +4,10 @@
 import logging
 import unittest
 
-from hybseldesign.filter import duplicate_filter
-from hybseldesign.filter import probe_designer
-from hybseldesign import genome
-from hybseldesign import probe
+from catch.filter import duplicate_filter
+from catch.filter import probe_designer
+from catch import genome
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

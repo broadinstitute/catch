@@ -8,7 +8,7 @@ the input.
 
 from collections import OrderedDict
 
-from hybseldesign.filter.base_filter import BaseFilter
+from catch.filter.base_filter import BaseFilter
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

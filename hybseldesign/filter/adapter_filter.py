@@ -107,9 +107,9 @@ proven by induction on the number of target genomes.
 
 import logging
 
-from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign import probe
-from hybseldesign.utils import interval
+from catch.filter.base_filter import BaseFilter
+from catch import probe
+from catch.utils import interval
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

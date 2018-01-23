@@ -4,7 +4,7 @@
 import logging
 import unittest
 
-from hybseldesign.pool import interpolate_count as ic
+from catch.pool import interpolate_count as ic
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

@@ -3,7 +3,7 @@
 
 import unittest
 
-from hybseldesign.utils import pretty_print as pp
+from catch.utils import pretty_print as pp
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

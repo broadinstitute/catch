@@ -59,9 +59,9 @@ import logging
 
 import numpy as np
 
-from hybseldesign import probe
-from hybseldesign.utils import interval
-from hybseldesign.utils import pretty_print
+from catch import probe
+from catch.utils import interval
+from catch.utils import pretty_print
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

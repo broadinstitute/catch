@@ -3,8 +3,8 @@
 
 import unittest
 
-from hybseldesign.utils import interval
-from hybseldesign.utils.interval import IntervalSet
+from catch.utils import interval
+from catch.utils.interval import IntervalSet
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

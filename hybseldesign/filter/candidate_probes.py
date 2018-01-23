@@ -9,8 +9,8 @@ import sys
 
 import numpy as np
 
-from hybseldesign import probe
-from hybseldesign.utils import seq_io
+from catch import probe
+from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

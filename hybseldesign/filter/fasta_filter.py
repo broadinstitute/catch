@@ -10,8 +10,8 @@ probes are re-arranged to match their order in the file.
 
 from collections import OrderedDict
 
-from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign.utils import seq_io
+from catch.filter.base_filter import BaseFilter
+from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

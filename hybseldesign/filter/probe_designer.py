@@ -3,7 +3,7 @@
 
 import logging
 
-from hybseldesign.filter import candidate_probes
+from catch.filter import candidate_probes
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

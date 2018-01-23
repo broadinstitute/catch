@@ -4,7 +4,7 @@
 from collections import OrderedDict
 import unittest
 
-from hybseldesign import genome
+from catch import genome
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

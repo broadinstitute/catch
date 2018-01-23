@@ -10,7 +10,7 @@ the original input probes --- i.e., if the input probes are
 Pnr is the reverse complement of Pn.
 """
 
-from hybseldesign.filter.base_filter import BaseFilter
+from catch.filter.base_filter import BaseFilter
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

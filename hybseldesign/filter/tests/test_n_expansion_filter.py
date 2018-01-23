@@ -4,8 +4,8 @@
 import random
 import unittest
 
-from hybseldesign.filter import n_expansion_filter
-from hybseldesign import probe
+from catch.filter import n_expansion_filter
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

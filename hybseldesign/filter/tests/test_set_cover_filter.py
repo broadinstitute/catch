@@ -6,10 +6,10 @@ import logging
 import tempfile
 import unittest
 
-from hybseldesign.filter import set_cover_filter as scf
-from hybseldesign import genome
-from hybseldesign import probe
-from hybseldesign.utils import interval
+from catch.filter import set_cover_filter as scf
+from catch import genome
+from catch import probe
+from catch.utils import interval
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

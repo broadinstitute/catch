@@ -6,8 +6,8 @@ import unittest
 
 import numpy as np
 
-from hybseldesign.filter import naive_redundant_filter as nrf
-from hybseldesign import probe
+from catch.filter import naive_redundant_filter as nrf
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

@@ -14,9 +14,9 @@ from multiprocessing import sharedctypes
 
 import numpy as np
 
-from hybseldesign.utils import interval
-from hybseldesign.utils import longest_common_substring
-from hybseldesign.utils import timeout
+from catch.utils import interval
+from catch.utils import longest_common_substring
+from catch.utils import timeout
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

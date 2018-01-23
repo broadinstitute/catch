@@ -29,8 +29,8 @@ by self.are_redundant_fn.
 from collections import defaultdict
 import logging
 
-from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign.utils import set_cover
+from catch.filter.base_filter import BaseFilter
+from catch.utils import set_cover
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

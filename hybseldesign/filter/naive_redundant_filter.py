@@ -15,8 +15,8 @@ designing probes for hybrid selection.
 
 import logging
 
-from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign.utils import longest_common_substring
+from catch.filter.base_filter import BaseFilter
+from catch.utils import longest_common_substring
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

@@ -4,11 +4,11 @@
 import logging
 import unittest
 
-from hybseldesign.filter import adapter_filter as af
-from hybseldesign.filter import candidate_probes as cp
-from hybseldesign import genome
-from hybseldesign import probe
-from hybseldesign.utils import interval
+from catch.filter import adapter_filter as af
+from catch.filter import candidate_probes as cp
+from catch import genome
+from catch import probe
+from catch.utils import interval
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

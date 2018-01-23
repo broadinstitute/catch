@@ -33,8 +33,8 @@ When set to None, all 'N' bases are expanded.
 
 import random
 
-from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign import probe
+from catch.filter.base_filter import BaseFilter
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

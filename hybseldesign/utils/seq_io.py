@@ -9,7 +9,7 @@ import re
 
 import numpy as np
 
-from hybseldesign import genome
+from catch import genome
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

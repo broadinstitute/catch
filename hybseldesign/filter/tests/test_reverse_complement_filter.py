@@ -3,8 +3,8 @@
 
 import unittest
 
-from hybseldesign.filter import reverse_complement_filter
-from hybseldesign import probe
+from catch.filter import reverse_complement_filter
+from catch import probe
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

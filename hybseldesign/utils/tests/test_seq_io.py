@@ -6,10 +6,10 @@ import logging
 import tempfile
 import unittest
 
-from hybseldesign.datasets import ebola_zaire_with_2014
-from hybseldesign.datasets import lassa
-from hybseldesign import genome
-from hybseldesign.utils import seq_io
+from catch.datasets import ebola_zaire_with_2014
+from catch.datasets import lassa
+from catch import genome
+from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

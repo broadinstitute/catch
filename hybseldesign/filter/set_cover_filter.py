@@ -47,11 +47,11 @@ import gc
 import logging
 import re
 
-from hybseldesign.filter.base_filter import BaseFilter
-from hybseldesign import probe
-from hybseldesign.utils import interval
-from hybseldesign.utils import seq_io
-from hybseldesign.utils import set_cover
+from catch.filter.base_filter import BaseFilter
+from catch import probe
+from catch.utils import interval
+from catch.utils import seq_io
+from catch.utils import set_cover
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
