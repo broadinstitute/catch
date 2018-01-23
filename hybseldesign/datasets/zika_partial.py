@@ -25,7 +25,7 @@ capture the desired fragment.
 
 import sys
 
-from hybseldesign.datasets import GenomesDatasetSingleChrom
+from catch.datasets import GenomesDatasetSingleChrom
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

@@ -154,7 +154,7 @@ class DatasetCollection:
         for name in self.dataset_names:
             try:
                 dataset = importlib.import_module(
-                                'hybseldesign.datasets.' + name)
+                                'catch.datasets.' + name)
             except ImportError:
                 raise ValueError(("Unknown dataset %s; cannot import into "
                                   "collection") % name)

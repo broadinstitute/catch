@@ -7,7 +7,7 @@ sequences are based on the sequences in the 'hiv2' dataset.
 
 import sys
 
-from hybseldesign.datasets import GenomesDatasetSingleChrom
+from catch.datasets import GenomesDatasetSingleChrom
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

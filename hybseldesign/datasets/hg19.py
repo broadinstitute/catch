@@ -3,7 +3,7 @@
 
 import sys
 
-from hybseldesign.datasets import GenomesDatasetMultiChrom
+from catch.datasets import GenomesDatasetMultiChrom
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

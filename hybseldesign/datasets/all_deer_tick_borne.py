@@ -7,7 +7,7 @@ per bacteria (i.e., a sample of n=1 for each pathogen).
 
 import sys
 
-from hybseldesign.datasets import GenomesDatasetSingleChrom
+from catch.datasets import GenomesDatasetSingleChrom
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

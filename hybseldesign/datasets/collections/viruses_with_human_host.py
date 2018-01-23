@@ -12,7 +12,7 @@ the 'hiv1' and 'hiv2' datasets.
 
 import sys
 
-from hybseldesign.datasets import DatasetCollection
+from catch.datasets import DatasetCollection
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
