@@ -14,7 +14,7 @@ install:
  - python setup.py install --force
 
 script:
- - nosetests -v --with-xunit --with-coverage --cover-inclusive --cover-branches --cover-package hybseldesign
+ - nosetests -v --with-xunit --with-coverage --cover-inclusive --cover-branches --cover-package catch
 
 after_success:
  - coveralls

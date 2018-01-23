@@ -4,9 +4,9 @@
 import argparse
 import logging
 
-from hybseldesign.pool import param_search
-from hybseldesign.utils import log, version
-from hybseldesign.utils import pool_probes_io
+from catch.pool import param_search
+from catch.utils import log, version
+from catch.utils import pool_probes_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 

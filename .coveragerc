@@ -17,4 +17,4 @@ exclude_lines =
 # encompass a lot of code) but they are not executed
 # in tests
 omit =
-    hybseldesign/datasets/*
+    catch/datasets/*

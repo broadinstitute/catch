@@ -91,7 +91,7 @@ make_probes.py -h
 make_probes.py [dataset] [dataset ...]
 ```
 
-Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [350+ viral datasets](./hybseldesign/datasets/README.md) (e.g., `hiv1` or `zika`) distributed as part of this package.
+Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [350+ viral datasets](./catch/datasets/README.md) (e.g., `hiv1` or `zika`) distributed as part of this package.
 Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) that have human as a host, for one or more species, as of Sep. 2017.
 
 Below are some commonly used arguments to `make_probes.py`:
@@ -129,7 +129,7 @@ pool_probes.py -h
 ```
 
 You need to run [`make_probes.py`](./bin/make_probes.py) on each dataset over a grid of parameters values that spans a reasonable domain.
-Then, create a table that provides a probe count for each dataset and choice of parameters (TSV, in a format like [this](./hybseldesign/pool/tests/input/num-probes.V-WAfr.201506.tsv)).
+Then, create a table that provides a probe count for each dataset and choice of parameters (TSV, in a format like [this](./catch/pool/tests/input/num-probes.V-WAfr.201506.tsv)).
 Now, you can use this table as input:
 
 ```bash
@@ -171,7 +171,7 @@ Note that the `zika` dataset distributed with CATCH contains 379 genomes, but th
 
 ### Example of running [`pool_probes.py`](./bin/pool_probes.py)
 
-[Here](./hybseldesign/pool/tests/input/num-probes.V-WAfr.201506.tsv) is a table listing probe counts used in the design of the [V-WAfr probe set](./probe-designs).
+[Here](./catch/pool/tests/input/num-probes.V-WAfr.201506.tsv) is a table listing probe counts used in the design of the [V-WAfr probe set](./probe-designs).
 It provides counts for each dataset and combination of two parameters (mismatches and cover extension) that were varied in the design.
 Below is an example of designing that probe set using this table as input.
 

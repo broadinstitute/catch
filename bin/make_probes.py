@@ -7,17 +7,17 @@ import logging
 import os
 import random
 
-from hybseldesign import coverage_analysis
-from hybseldesign import probe
-from hybseldesign.datasets import hg19
-from hybseldesign.filter import adapter_filter
-from hybseldesign.filter import duplicate_filter
-from hybseldesign.filter import fasta_filter
-from hybseldesign.filter import n_expansion_filter
-from hybseldesign.filter import probe_designer
-from hybseldesign.filter import reverse_complement_filter
-from hybseldesign.filter import set_cover_filter
-from hybseldesign.utils import seq_io, version, log
+from catch import coverage_analysis
+from catch import probe
+from catch.datasets import hg19
+from catch.filter import adapter_filter
+from catch.filter import duplicate_filter
+from catch.filter import fasta_filter
+from catch.filter import n_expansion_filter
+from catch.filter import probe_designer
+from catch.filter import reverse_complement_filter
+from catch.filter import set_cover_filter
+from catch.utils import seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -34,7 +34,7 @@ def main(args):
             collection_name = ds[len('collection:'):]
             try:
                 collection = importlib.import_module(
-                    'hybseldesign.datasets.collections.' + collection_name)
+                    'catch.datasets.collections.' + collection_name)
             except ImportError:
                 raise ValueError("Unknown dataset collection %s" %
                                  collection_name)
@@ -49,7 +49,7 @@ def main(args):
             # Process an individual dataset
             try:
                 dataset = importlib.import_module(
-                            'hybseldesign.datasets.' + ds)
+                            'catch.datasets.' + ds)
             except ImportError:
                 raise ValueError("Unknown file or dataset '%s'" % ds)
             genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
@@ -79,7 +79,7 @@ def main(args):
                 # Process an individual dataset
                 try:
                     dataset = importlib.import_module(
-                        'hybseldesign.datasets.' + bg)
+                        'catch.datasets.' + bg)
                 except ImportError:
                     raise ValueError("Unknown file or dataset '%s'" % bg)
                 for fp in dataset.fasta_paths:
