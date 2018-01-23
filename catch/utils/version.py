@@ -65,8 +65,8 @@ def approx_version_number():
         In the event that git is unavailable and the VERSION file is not present
         this returns a "version number" in the following precedence:
             - version number from path
-                downloads of viral-ngs from GitHub tagged releases
-                are likely to be extracted into directories containing
+                downloads from GitHub tagged releases
+                might be extracted into directories containing
                 the version number. If they contain a version number
                 in the form d.d.d, we can use it
             - modification time of this file (unix timestamp)
@@ -84,8 +84,8 @@ def approx_version_number():
     # path relative to version.py
     viral_ngs_path = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    # for tagged releases, it is likely the version number is part of
-    # the viral-ngs root directory name
+    # for tagged releases, the version number might be part of
+    # the root directory name
     matches = version_re.search(viral_ngs_path)
 
     if matches and len([n for n in matches.groups() if n]) == 3:
