@@ -9,7 +9,6 @@ import subprocess
 import os
 import re
 import time, datetime
-import os.path
 
 
 def get_project_path():
@@ -75,29 +74,22 @@ def approx_version_number():
             - the current time (unix timestamp)
                 the current time is better than not having any version number
     """
-    version = ""
-
     version_re = re.compile(r"(?:(\d+)\.)?(?:(\d+)\.)?(?:(\d+))")
     # path relative to version.py
-    viral_ngs_path = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    relative_path = os.path.basename(get_project_path())
 
     # for tagged releases, the version number might be part of
     # the root directory name
-    matches = version_re.search(viral_ngs_path)
+    matches = version_re.search(relative_path)
 
     if matches and len([n for n in matches.groups() if n]) == 3:
-        version = ".".join( map(str,matches.groups()) )
+        version = ".".join(map(str, matches.groups()))
     else:
         try:
-            mtime = os.path.getmtime(__file__)
+            # Try to use modification time of the current file
+            version = str(int(os.path.getmtime(__file__)))
         except OSError:
-            mtime = 0
-
-        if mtime > 0:
-            # if we could get the modification time of the current file, use it
-            version = str(int(mtime))
-        else:
-            # just use the current time
+            # Just use the current time
             version = str(int(time.time()))
 
     return version
@@ -117,7 +109,6 @@ def get_version():
 
         if __version__ is None:
             __version__ = approx_version_number()
-            #raise ValueError("Cannot find the version number!")
 
     return __version__
 
