@@ -3,7 +3,7 @@
 
 This offers a few options to design probes using naive methods.
 This is mainly used for comparison with the probes generated
-by bin/make_probes.py.
+by bin/design.py.
 """
 
 import argparse

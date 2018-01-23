@@ -20,11 +20,11 @@ It allows blacklisting sequence from the design (e.g., background in microbial e
   * [Downloading viral sequence data](#downloading-viral-sequence-data)
   * [Testing](#testing)
 * [Using CATCH](#using-catch)
-  * [Designing with one choice of parameteters](#designing-with-one-choice-of-parameters-make_probespy)
-  * [Pooling across many runs](#pooling-across-many-runs-pool_probespy)
+  * [Designing with one choice of parameteters](#designing-with-one-choice-of-parameters-designpy)
+  * [Pooling across many runs](#pooling-across-many-runs-poolpy)
 * [Examples](#examples)
-  * [Example of running make_probes.py](#example-of-running-make_probespy)
-  * [Example of running pool_probes.py](#example-of-running-pool_probespy)
+  * [Example of running design.py](#example-of-running-designpy)
+  * [Example of running pool.py](#example-of-running-poolpy)
 * [Contributing](#contributing)
 * [License](#license)
 <br/>
@@ -76,25 +76,25 @@ python -m unittest discover
 
 ## Using CATCH
 
-### Designing with one choice of parameters ([`make_probes.py`](./bin/make_probes.py))
+### Designing with one choice of parameters ([`design.py`](./bin/design.py))
 
-The main program to design probes is [`make_probes.py`](./bin/make_probes.py).
+The main program to design probes is [`design.py`](./bin/design.py).
 To see details on all the arguments that the program accepts, run:
 
 ```bash
-make_probes.py -h
+design.py -h
 ```
 
-[`make_probes.py`](./bin/make_probes.py) requires one or more `dataset`s that specify input sequence data to target:
+[`design.py`](./bin/design.py) requires one or more `dataset`s that specify input sequence data to target:
 
 ```bash
-make_probes.py [dataset] [dataset ...]
+design.py [dataset] [dataset ...]
 ```
 
 Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [350+ viral datasets](./catch/datasets/README.md) (e.g., `hiv1` or `zika`) distributed as part of this package.
 Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) that have human as a host, for one or more species, as of Sep. 2017.
 
-Below are some commonly used arguments to `make_probes.py`:
+Below are some commonly used arguments to `design.py`:
 
 * `-pl PROBE_LENGTH`/`-ps PROBE_STRIDE`: Design probes to be PROBE_LENGTH nt long, and generate candidate probes using a stride of PROBE_STRIDE nt.
 (Default: 100 and 50.)
@@ -118,22 +118,22 @@ This selects adapters to add to probe sequences so as to minimize overlap among 
 (See `--adapter-a` and `--adapter-b` too.)
 * `-o OUTPUT`: Write probe sequences in FASTA format to OUTPUT.
 
-### Pooling across many runs ([`pool_probes.py`](./bin/pool_probes.py))
+### Pooling across many runs ([`pool.py`](./bin/pool.py))
 
-While [`make_probes.py`](./bin/make_probes.py) requires particular choices of parameter values, [`pool_probes.py`](./bin/pool_probes.py) is a program to find optimal hybridization parameters that can vary across many input, under a specified limit on the total number of probes (e.g., synthesis array size).
+While [`design.py`](./bin/design.py) requires particular choices of parameter values, [`pool.py`](./bin/pool.py) is a program to find optimal hybridization parameters that can vary across many input, under a specified limit on the total number of probes (e.g., synthesis array size).
 It does this by searching over a space of probe sets to solve a constrained optimization problem.
 To see details on all the arguments that the program accepts, run:
 
 ```bash
-pool_probes.py -h
+pool.py -h
 ```
 
-You need to run [`make_probes.py`](./bin/make_probes.py) on each dataset over a grid of parameters values that spans a reasonable domain.
+You need to run [`design.py`](./bin/design.py) on each dataset over a grid of parameters values that spans a reasonable domain.
 Then, create a table that provides a probe count for each dataset and choice of parameters (TSV, in a format like [this](./catch/pool/tests/input/num-probes.V-WAfr.201506.tsv)).
 Now, you can use this table as input:
 
 ```bash
-pool_probes.py INPUT_TSV TARGET_PROBE_COUNT OUTPUT_TSV
+pool.py INPUT_TSV TARGET_PROBE_COUNT OUTPUT_TSV
 ```
 where INPUT_TSV is a path to the table described above, TARGET_PROBE_COUNT is a constraint on the number of probes to allow in the pool, and OUTPUT_TSV is a path to a file to which the program will write the optimal parameter values.
 
@@ -145,17 +145,17 @@ This allows you to adjust how conservative each parameter is treated relative to
 This allows you to seek that probes in the pooled design be more sensitive for some taxa than others.
 (Default: 1 for all datasets.)
 
-Each run of [`pool_probes.py`](./bin/pool_probes.py) may yield a different output based on the (random) initial guess.
+Each run of [`pool.py`](./bin/pool.py) may yield a different output based on the (random) initial guess.
 We recommend running this multiple times and selecting the output that has the smallest loss, which is written to standard output at the end of the program.
 
 ## Examples
 
-### Example of running [`make_probes.py`](./bin/make_probes.py)
+### Example of running [`design.py`](./bin/design.py)
 
 Below is an example of designing probes to target a single taxon.
 
 ```bash
-make_probes.py zika -pl 75 -m 2 -l 60 -e 50 -o zika-probes.fasta
+design.py zika -pl 75 -m 2 -l 60 -e 50 -o zika-probes.fasta
 ```
 
 This will design probes that:
@@ -169,14 +169,14 @@ and will save them to `zika-probes.fasta`.
 It yields about 500 probes.
 Note that the `zika` dataset distributed with CATCH contains 379 genomes, but the input can also be a path to any custom FASTA file.
 
-### Example of running [`pool_probes.py`](./bin/pool_probes.py)
+### Example of running [`pool.py`](./bin/pool.py)
 
 [Here](./catch/pool/tests/input/num-probes.V-WAfr.201506.tsv) is a table listing probe counts used in the design of the [V-WAfr probe set](./probe-designs).
 It provides counts for each dataset and combination of two parameters (mismatches and cover extension) that were varied in the design.
 Below is an example of designing that probe set using this table as input.
 
 ```bash
-pool_probes.py num-probes.V-WAfr.201506.tsv 90000 params.V-Wafr.201506.tsv --round-params 1 10
+pool.py num-probes.V-WAfr.201506.tsv 90000 params.V-Wafr.201506.tsv --round-params 1 10
 ```
 
 This will search for parameters that yield at most 90,000 probes across the datasets, and will output those to `params.V-Wafr.201506.tsv`.

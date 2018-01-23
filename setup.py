@@ -17,7 +17,7 @@ setup(name='catch',
       install_requires=['numpy>=1.9.0', 'scipy>=1.0.0'],
       scripts=[
           'bin/analyze_probe_coverage.py',
-          'bin/make_probes.py',
-          'bin/make_probes_naively.py',
-          'bin/pool_probes.py',
+          'bin/design.py',
+          'bin/design_naively.py',
+          'bin/pool.py',
       ])
