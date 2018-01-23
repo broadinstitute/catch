@@ -29,13 +29,10 @@ def call_git_describe():
     try:
         os.chdir(get_project_path())
         cmd = ['git', 'describe', '--tags', '--always', '--dirty']
-        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        ver = None
-        if result.returncode == 0:
-            out = result.stdout    
-            if not isinstance(out, str):
-                out = out.decode('utf-8')
-            ver = out.strip()
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+        if not isinstance(out, str):
+            out = out.decode('utf-8')
+        ver = out.strip()
     except Exception:
         ver = None
     os.chdir(cwd)
