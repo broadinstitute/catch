@@ -42,6 +42,8 @@ ds = GenomesDatasetMultiChrom(__name__, __file__, __spec__,
                               chrs, seq_header_to_chr,
                               seq_header_to_genome=seq_header_to_genome)
 
-ds.add_fasta_path("data/influenza_b.fasta.gz", relative=True)
+for seg in ['1', '2', '3', '4', '5', '6', '7', '8']:
+    ds.add_fasta_path("data/influenza_b_segment" + seg + ".fasta.gz",
+        relative=True)
 
 sys.modules[__name__] = ds
