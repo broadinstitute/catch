@@ -325,6 +325,12 @@ class Probe:
             # not equal the corresponding char in other.seq
             return cmp(self.seq[c[0]], other.seq[c[0]])
 
+    def __len__(self):
+        return len(self.seq)
+
+    def __getitem__(self, i):
+        return self.seq[i]
+
     def __str__(self):
         return self.seq_str
 
