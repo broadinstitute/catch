@@ -68,7 +68,7 @@ class TestHammingHashConcatenation(unittest.TestCase):
         random.seed(0)
 
         self.family = lsh.HammingDistanceFamily(20)
-        self.G = lsh.HashConcatenation(100, self.family)
+        self.G = lsh.HashConcatenation(self.family, 100)
 
     def test_identical(self):
         # Identical a and b should collide even with large k
@@ -98,4 +98,38 @@ class TestHammingHashConcatenation(unittest.TestCase):
             if self.G.g(a) == self.G.g(b):
                 collision_count += 1
         self.assertLess(collision_count, 2)
+
+
+class TestHammingNearNeighborLookup(unittest.TestCase):
+    """Tests approximate near neighbor lookups with Hamming distance."""
+
+    def setUp(self):
+        # Set a random seed so hash functions are always the same
+        random.seed(0)
+
+        self.family = lsh.HammingDistanceFamily(20)
+        self.dist_thres = 5
+        def f(a, b):
+            assert len(a) == len(b)
+            return sum(1 for i in range(len(a)) if a[i] != b[i])
+        self.dist_fn = f
+
+    def test_varied_k(self):
+        a = 'ATCGATATGGGCACTGCTAT'
+        b = str(a)  # identical to a
+        c = 'ATCGACATGGGCACTGGTAT'  # similar to a
+        d = 'AGTTGTCACCCTTGACGATA'  # not similar to a
+        e = 'AGTTGTCACCCTTGACGATA'  # similar to d
+
+        for k in [2, 5, 10]:
+            nnl = lsh.NearNeighborLookup(self.family, k, self.dist_thres,
+                self.dist_fn, 0.95)
+            nnl.add([a, b, c, d])
+
+            # b and c are within self.dist_thres of a, so only these
+            # should be returned (along with a)
+            self.assertCountEqual(nnl.query(a), {a, b, c})
+
+            # Although e was not added, a query for it should return d
+            self.assertCountEqual(nnl.query(e), {d})
 
