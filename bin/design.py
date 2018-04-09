@@ -210,7 +210,6 @@ def main(args):
 
     if (args.print_analysis or args.write_analysis_to_tsv or
             args.write_sliding_window_coverage):
-        rc_too = False if args.skip_reverse_complements else True
         analyzer = coverage_analysis.Analyzer(
             pb.final_probes,
             args.mismatches,
@@ -219,7 +218,7 @@ def main(args):
             genomes_grouped_names,
             island_of_exact_match=args.island_of_exact_match,
             cover_extension=args.cover_extension,
-            rc_too=rc_too)
+            rc_too=args.add_reverse_complements)
         analyzer.run()
         if args.write_analysis_to_tsv:
             analyzer.write_data_matrix_as_tsv(
