@@ -14,6 +14,7 @@ from catch.filter import adapter_filter
 from catch.filter import duplicate_filter
 from catch.filter import fasta_filter
 from catch.filter import n_expansion_filter
+from catch.filter import near_duplicate_filter
 from catch.filter import probe_designer
 from catch.filter import reverse_complement_filter
 from catch.filter import set_cover_filter
@@ -132,15 +133,25 @@ def main(args):
                                       skip_reverse_complements=True)
         filters += [ff]
 
-    #  Duplicate filter (df) -- condense all candidate probes that
+    # Duplicate filter (df) -- condense all candidate probes that
     #     are identical down to one; this is not necessary for
     #     correctness, as the set cover filter achieves the same task
     #     implicitly, but it does significantly lower runtime by
     #     decreasing the input size to the set cover filter
-    df = duplicate_filter.DuplicateFilter()
-    filters += [df]
+    # Near duplicate filter (ndf) -- condense candidate probes that
+    #     are near-duplicates down to one using locality-sensitive
+    #     hashing; like the duplicate filter, this is not necessary
+    #     but can significantly lower runtime and reduce memory usage
+    #     (even more than the duplicate filter)
+    if args.filter_with_lsh_hamming is not None:
+        ndf = near_duplicate_filter.NearDuplicateFilterWithHammingDistance(
+            args.filter_with_lsh_hamming, args.probe_length)
+        filters += [ndf]
+    else:
+        df = duplicate_filter.DuplicateFilter()
+        filters += [df]
 
-    #  Set cover filter (scf) -- solve the problem by treating it as
+    # Set cover filter (scf) -- solve the problem by treating it as
     #     an instance of the set cover problem
     scf = set_cover_filter.SetCoverFilter(
         mismatches=args.mismatches,
@@ -445,6 +456,23 @@ if __name__ == "__main__":
               "replacement"))
 
     # Technical adjustments
+    parser.add_argument('--filter-with-lsh-hamming',
+        type=int,
+        help=("(Optional) If set, filter candidate probes for near-"
+              "duplicates using LSH with a family of hash functions that "
+              "works with Hamming distance. FILTER_WITH_LSH_HAMMING gives "
+              "the maximum Hamming distance at which to call near-"
+              "duplicates; it should be commensurate with (but not greater "
+              "than) MISMATCHES. Using this may significantly improve "
+              "runtime and reduce memory usage by reducing the number of "
+              "candidate probes to consider, but may lead to a slightly "
+              "sub-optimal solution. It may also, particularly with "
+              "relatively high values of FILTER_WITH_LSH_HAMMING, cause "
+              "coverage obtained for each genome to be slightly less than "
+              "the desired coverage (COVERAGE) when that desired coverage "
+              "is the complete genome; it is recommended to also use "
+              "--print-analysis or --write-analysis-to-tsv with this "
+              "to see the coverage that is obtained."))
     parser.add_argument('--cover-groupings-separately',
         dest="cover_groupings_separately",
         action="store_true",
