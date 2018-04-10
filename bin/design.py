@@ -144,6 +144,11 @@ def main(args):
     #     but can significantly lower runtime and reduce memory usage
     #     (even more than the duplicate filter)
     if args.filter_with_lsh_hamming is not None:
+        if args.filter_with_lsh_hamming > args.mismatches:
+            logger.warning(("Setting FILTER_WITH_LSH_HAMMING (%d) to be greater "
+                "than MISMATCHES (%d) may cause the probes to achieve less "
+                "than the desired coverage"), args.filter_with_lsh_hamming,
+                args.mismatches)
         ndf = near_duplicate_filter.NearDuplicateFilterWithHammingDistance(
             args.filter_with_lsh_hamming, args.probe_length)
         filters += [ndf]
