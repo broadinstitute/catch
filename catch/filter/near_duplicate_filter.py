@@ -16,8 +16,8 @@ from catch.utils import lsh
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
-class NearDuplicateFilterWithHammingDistance(BaseFilter):
-    """Filter that removes near-duplicates according to Hamming distance.
+class NearDuplicateFilter(BaseFilter):
+    """Filter that removes near-duplicates using LSH.
 
     This constructs a concatenation of k hash functions, and does
     this multiple times so as to achieve a desired probability of
@@ -29,34 +29,27 @@ class NearDuplicateFilterWithHammingDistance(BaseFilter):
     duplicate filter should *not* be run before this.
     """
 
-    def __init__(self, dist_thres, probe_length, k=20, reporting_prob=0.95):
+    def __init__(self, k, reporting_prob=0.95):
         """
         Args:
-            dist_thres: only call two probes near-duplicates if their
-                Hamming distance is within this value; this should be
-                equal to or commensurate with (but not greater than)
-                the number of mismatches at/below which a probe is
-                considered to hybridize to a target sequence so that
-                candidate probes further apart than this value are not
-                collapsed as near-duplicates
-            probe_length: length of probes
             k: number of hash functions to draw from a family of
-                hash functions for the Hamming distance for amplification;
-                each hash function is then the concatenation
-                (h_1, h_2, ..., h_k)
+                hash functions for amplification; each hash function is then
+                the concatenation (h_1, h_2, ..., h_k)
             reporting_prob: ensure that any probe within dist_thres of
                 a queried probe is detected as such; this constructs
                 multiple hash functions (each of which is a concatenation
                 of k functions drawn from the family) to achieve this
                 probability
         """
-        self.lsh_family = lsh.HammingDistanceFamily(probe_length)
-        self.dist_thres = dist_thres
         self.k = k
         self.reporting_prob = reporting_prob
 
     def _filter(self, input):
-        """Filter with LSH using family that works with Hamming distance.
+        """Filter with an arbitrary LSH family.
+
+        This performs near neighbor lookups using self.lsh_family. It only
+        calls probes near-duplicates if their distance, according to
+        self.dist_fn, is within self.dist_thres.
 
         Args:
             input: collection of probes to filter
@@ -64,10 +57,6 @@ class NearDuplicateFilterWithHammingDistance(BaseFilter):
         Returns:
             subset of input
         """
-        def hamming_dist_fn(a, b):
-            # a and b are Probe objects
-            return a.mismatches(b)
-
         # Sort the probes by their mulitiplicity (descending)
         occurrences = defaultdict(int)
         for p in input:
@@ -82,7 +71,7 @@ class NearDuplicateFilterWithHammingDistance(BaseFilter):
         # Construct a collection of hash tables for looking up
         # near neighbors of each probe
         nnl = lsh.NearNeighborLookup(self.lsh_family, self.k, self.dist_thres,
-            hamming_dist_fn, self.reporting_prob)
+            self.dist_fn, self.reporting_prob)
         nnl.add(input)
 
         # Iterate through all probes in order; for each p, remove others
@@ -112,4 +101,81 @@ class NearDuplicateFilterWithHammingDistance(BaseFilter):
         assert len(to_include & to_exclude) == 0
 
         return list(to_include)
+
+
+class NearDuplicateFilterWithHammingDistance(NearDuplicateFilter):
+    """Filter that removes near-duplicates according to Hamming distance.
+    """
+
+    def __init__(self, dist_thres, probe_length):
+        """
+        Args:
+            dist_thres: only call two probes near-duplicates if their
+                Hamming distance is within this value; this should be
+                equal to or commensurate with (but not greater than)
+                the number of mismatches at/below which a probe is
+                considered to hybridize to a target sequence so that
+                candidate probes further apart than this value are not
+                collapsed as near-duplicates
+            probe_length: length of probes
+        """
+        super().__init__(k=20)
+        self.lsh_family = lsh.HammingDistanceFamily(probe_length)
+        self.dist_thres = dist_thres
+
+        def hamming_dist(a, b):
+            # a and b are probe.Probe objects
+            return a.mismatches(b)
+        self.dist_fn = hamming_dist
+
+    def _filter(self, input):
+        """Filter with LSH using family that works with Hamming distance.
+
+        Args:
+            input: collection of probes to filter
+
+        Returns:
+            subset of input
+        """
+        return NearDuplicateFilter._filter(self, input)
+
+
+class NearDuplicateFilterWithMinHash(NearDuplicateFilter):
+    """Filter that removes near-duplicates using MinHash.
+    """
+
+    def __init__(self, dist_thres, kmer_size=10):
+        """
+        Args:
+            dist_thres: only call two probes near-duplicates if their
+                Jaccard distance (1 minus Jaccard similarity) is within
+                this value; the Jaccard similarity is measured by treating
+                each probe sequence as a set of k-mers and measuring
+                the overlap of those k-mers
+            kmer_size: the length of each k-mer to use with MinHash; note
+                that this is *not* the same as self.k
+        """
+        super().__init__(k=3)
+        self.lsh_family = lsh.MinHashFamily(kmer_size)
+        self.dist_thres = dist_thres
+
+        def jaccard_dist(a, b):
+            a_kmers = [a[i:(i + kmer_size)] for i in range(len(a) - kmer_size + 1)]
+            b_kmers = [b[i:(i + kmer_size)] for i in range(len(b) - kmer_size + 1)]
+            a_kmers = set(a_kmers)
+            b_kmers = set(b_kmers)
+            jaccard_sim = float(len(a_kmers & b_kmers)) / len(a_kmers | b_kmers)
+            return 1.0 - jaccard_sim
+        self.dist_fn = jaccard_dist
+
+    def _filter(self, input):
+        """Filter with LSH using MinHash family.
+
+        Args:
+            input: collection of probes to filter
+
+        Returns:
+            subset of input
+        """
+        return NearDuplicateFilter._filter(self, input)
 

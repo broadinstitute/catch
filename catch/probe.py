@@ -329,7 +329,7 @@ class Probe:
         return len(self.seq)
 
     def __getitem__(self, i):
-        return self.seq[i]
+        return self.seq_str[i]
 
     def __str__(self):
         return self.seq_str
