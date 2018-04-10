@@ -101,7 +101,7 @@ class NearNeighborLookup:
             # satisfy the reporting probability
             self.num_tables = 1
         else:
-            self.num_tables = math.log(1.0 - reporting_prob, math.pow(P1, k))
+            self.num_tables = math.log(1.0 - reporting_prob, 1.0 - math.pow(P1, k))
             self.num_tables = int(math.ceil(self.num_tables))
 
         # Setup self.num_tables hash tables, each with a corresponding
