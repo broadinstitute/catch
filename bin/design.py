@@ -14,6 +14,7 @@ from catch.filter import adapter_filter
 from catch.filter import duplicate_filter
 from catch.filter import fasta_filter
 from catch.filter import n_expansion_filter
+from catch.filter import near_duplicate_filter
 from catch.filter import probe_designer
 from catch.filter import reverse_complement_filter
 from catch.filter import set_cover_filter
@@ -132,15 +133,38 @@ def main(args):
                                       skip_reverse_complements=True)
         filters += [ff]
 
-    #  Duplicate filter (df) -- condense all candidate probes that
+    # Duplicate filter (df) -- condense all candidate probes that
     #     are identical down to one; this is not necessary for
     #     correctness, as the set cover filter achieves the same task
     #     implicitly, but it does significantly lower runtime by
     #     decreasing the input size to the set cover filter
-    df = duplicate_filter.DuplicateFilter()
-    filters += [df]
+    # Near duplicate filter (ndf) -- condense candidate probes that
+    #     are near-duplicates down to one using locality-sensitive
+    #     hashing; like the duplicate filter, this is not necessary
+    #     but can significantly lower runtime and reduce memory usage
+    #     (even more than the duplicate filter)
+    if (args.filter_with_lsh_hamming is not None and
+            args.filter_with_lsh_minhash is not None):
+        raise Exception(("Cannot use both --filter-with-lsh-hamming "
+            "and --filter-with-lsh-minhash"))
+    if args.filter_with_lsh_hamming is not None:
+        if args.filter_with_lsh_hamming > args.mismatches:
+            logger.warning(("Setting FILTER_WITH_LSH_HAMMING (%d) to be greater "
+                "than MISMATCHES (%d) may cause the probes to achieve less "
+                "than the desired coverage"), args.filter_with_lsh_hamming,
+                args.mismatches)
+        ndf = near_duplicate_filter.NearDuplicateFilterWithHammingDistance(
+            args.filter_with_lsh_hamming, args.probe_length)
+        filters += [ndf]
+    elif args.filter_with_lsh_minhash is not None:
+        ndf = near_duplicate_filter.NearDuplicateFilterWithMinHash(
+            args.filter_with_lsh_minhash)
+        filters += [ndf]
+    else:
+        df = duplicate_filter.DuplicateFilter()
+        filters += [df]
 
-    #  Set cover filter (scf) -- solve the problem by treating it as
+    # Set cover filter (scf) -- solve the problem by treating it as
     #     an instance of the set cover problem
     scf = set_cover_filter.SetCoverFilter(
         mismatches=args.mismatches,
@@ -445,6 +469,49 @@ if __name__ == "__main__":
               "replacement"))
 
     # Technical adjustments
+    parser.add_argument('--filter-with-lsh-hamming',
+        type=int,
+        help=("(Optional) If set, filter candidate probes for near-"
+              "duplicates using LSH with a family of hash functions that "
+              "works with Hamming distance. FILTER_WITH_LSH_HAMMING gives "
+              "the maximum Hamming distance at which to call near-"
+              "duplicates; it should be commensurate with (but not greater "
+              "than) MISMATCHES. Using this may significantly improve "
+              "runtime and reduce memory usage by reducing the number of "
+              "candidate probes to consider, but may lead to a slightly "
+              "sub-optimal solution. It may also, particularly with "
+              "relatively high values of FILTER_WITH_LSH_HAMMING, cause "
+              "coverage obtained for each genome to be slightly less than "
+              "the desired coverage (COVERAGE) when that desired coverage "
+              "is the complete genome; it is recommended to also use "
+              "--print-analysis or --write-analysis-to-tsv with this "
+              "to see the coverage that is obtained."))
+    def check_filter_with_lsh_minhash(val):
+        fval = float(val)
+        if fval >= 0.0 and fval <= 1.0:
+            # a float in [0,1]
+            return fval
+        else:
+            raise argparse.ArgumentTypeError(("%s is an invalid Jaccard "
+                                              "distance") % val)
+    parser.add_argument('--filter-with-lsh-minhash',
+        type=check_filter_with_lsh_minhash,
+        help=("(Optional) If set, filter candidate probes for near-"
+              "duplicates using LSH with a MinHash family. "
+              "FILTER_WITH_LSH_MINHASH gives the maximum Jaccard distance "
+              "(1 minus Jaccard similarity) at which to call near-duplicates; "
+              "the Jaccard similarity is calculated by treating each probe "
+              "as a set of overlapping 10-mers. Its value should be "
+              "commensurate with parameter values determining whether a probe "
+              "hybridizes to a target sequence, but this can be difficult "
+              "to measure compared to the input for --filter-with-lsh-hamming. "
+              "However, this allows more sensitivity in near-duplicate "
+              "detection than --filter-with-lsh-hamming (e.g., if near-"
+              "duplicates should involve probes shifted relative to each "
+              "other). The same caveats mentioned in help for "
+              "--filter-with-lsh-hamming also apply here. Values of "
+              "FILTER_WITH_LSH_MINHASH above ~0.7 may start to require "
+              "significant memory and runtime for near-duplicate detection."))
     parser.add_argument('--cover-groupings-separately',
         dest="cover_groupings_separately",
         action="store_true",
