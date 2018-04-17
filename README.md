@@ -82,7 +82,7 @@ The main program to design probes is [`design.py`](./bin/design.py).
 To see details on all the arguments that the program accepts, run:
 
 ```bash
-design.py -h
+design.py --help
 ```
 
 [`design.py`](./bin/design.py) requires one or more `dataset`s that specify input sequence data to target:
@@ -116,6 +116,9 @@ Probes are designed such that each `dataset` should be captured by probes that a
 * `--add-adapters`: Add PCR adapters to the ends of each probe sequence.
 This selects adapters to add to probe sequences so as to minimize overlap among probes that share an adapter, allowing probes with the same adapter to be amplified together.
 (See `--adapter-a` and `--adapter-b` too.)
+* `--filter-with-lsh-hamming FILTER_WITH_LSH_HAMMING`/`--filter-with-lsh-minhash FILTER_WITH_LSH_MINHASH`: Use locality-sensitive hashing to reduce the space of candidate probes.
+This can significantly improve runtime and memory requirements when the input is especially large and diverse.
+See `design.py --help` for details on using these options and downsides.
 * `-o OUTPUT`: Write probe sequences in FASTA format to OUTPUT.
 
 ### Pooling across many runs ([`pool.py`](./bin/pool.py))
@@ -125,7 +128,7 @@ It does this by searching over a space of probe sets to solve a constrained opti
 To see details on all the arguments that the program accepts, run:
 
 ```bash
-pool.py -h
+pool.py --help
 ```
 
 You need to run [`design.py`](./bin/design.py) on each dataset over a grid of parameters values that spans a reasonable domain.
