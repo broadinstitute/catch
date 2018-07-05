@@ -49,6 +49,7 @@ import re
 
 from catch.filter.base_filter import BaseFilter
 from catch import probe
+from catch.utils import dynamic_load
 from catch.utils import interval
 from catch.utils import seq_io
 from catch.utils import set_cover
@@ -69,6 +70,8 @@ class SetCoverFilter(BaseFilter):
                  mismatches_tolerant=None,
                  lcf_thres_tolerant=None,
                  island_of_exact_match_tolerant=None,
+                 custom_cover_range_fn=None,
+                 custom_cover_range_tolerant_fn=None,
                  identify=False,
                  blacklisted_genomes=[],
                  coverage=1.0,
@@ -100,6 +103,21 @@ class SetCoverFilter(BaseFilter):
                 to 'island_of_exact_match'. It should generally be true
                 that this value is less than 'island_of_exact_match'. Used
                 when mismatches_tolerant/lcf_thres_tolerant are used.
+            custom_cover_range_fn: if set, tuple (path, fn) where path gives
+                a path to a Python module and fn gives the name of a function
+                in that module. This function is dynamically loaded and used
+                to determine whether a probe will hybridize to a region of
+                target sequence (and what portion will hybridize). The
+                function must accept the same arguments as the function
+                returned by
+                probe.probe_covers_sequence_by_longest_common_substring()
+                and return the same value. When set, the parameters
+                'mismatches', 'lcf_thres', and 'island_of_exact_match'
+                are ignored (even if their values are default values)
+                because they are only used in the default cover_range_fn.
+            custom_cover_range_tolerant_fn: same as custom_cover_range_fn,
+                but with more tolerance for hybridization; likewise, the
+                _tolerant parameters are ignored when this is set.
             identify: when True, indicates that probes should be designed
                 with the identification option enabled (default is False)
             blacklisted_genomes: list of paths to FASTA files of genomes
@@ -144,11 +162,25 @@ class SetCoverFilter(BaseFilter):
                 depending on the input this can result in considerably
                 more memory use but may give an improvement in runtime
         """
-        self.mismatches = mismatches
-        self.lcf_thres = lcf_thres
-        self.cover_range_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches, lcf_thres, island_of_exact_match)
+        if custom_cover_range_fn is not None:
+            # Use a custom function to determine whether a probe hybridizes
+            # to a region of target sequence (and what part hybridizes),
+            # rather than the default model. Ignore the given values for
+            # mismatches and lcf_thres (which may be default values) because
+            # these are only relevant for the default model
+            self.mismatches, self.lcf_thres = None, None
+
+            # Dynamically load the function
+            fn_path, fn_name = custom_cover_range_fn
+            self.cover_range_fn = dynamic_load.load_function_from_path(
+                fn_path, fn_name)
+        else:
+            self.mismatches = mismatches
+            self.lcf_thres = lcf_thres
+            # Construct a function using the default model of hybridization
+            self.cover_range_fn = \
+                probe.probe_covers_sequence_by_longest_common_substring(
+                    mismatches, lcf_thres, island_of_exact_match)
 
         if not mismatches_tolerant:
             mismatches_tolerant = mismatches
@@ -156,13 +188,27 @@ class SetCoverFilter(BaseFilter):
             lcf_thres_tolerant = lcf_thres
         if not island_of_exact_match_tolerant:
             island_of_exact_match_tolerant = island_of_exact_match
-        self.mismatches_tolerant = mismatches_tolerant
-        self.lcf_thres_tolerant = lcf_thres_tolerant
-        self.island_of_exact_match_tolerant = island_of_exact_match_tolerant
-        self.cover_range_tolerant_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches_tolerant, lcf_thres_tolerant,
-                island_of_exact_match_tolerant)
+        if custom_cover_range_tolerant_fn is not None:
+            # Use a custom function to determine, with more tolerance,
+            # whether a probe hybridizes to a region of target sequence (and
+            # what part hybridizes), rather than the default model. Ignore
+            # the given values of mismatches_tolerant and lcf_thres_tolerant
+            # (which may be default values) because these are only relevant for
+            # the default model
+            self.mismatches_tolerant, self.lcf_thres_tolerant = None, None
+
+            # Dynamically load the function
+            fn_path, fn_name = custom_cover_range_tolerant_fn
+            self.cover_range_tolerant_fn = dynamic_load.load_function_from_path(
+                fn_path, fn_name)
+        else:
+            self.mismatches_tolerant = mismatches_tolerant
+            self.lcf_thres_tolerant = lcf_thres_tolerant
+            # Construct a function using the default model of hybridization
+            self.cover_range_tolerant_fn = \
+                probe.probe_covers_sequence_by_longest_common_substring(
+                    mismatches_tolerant, lcf_thres_tolerant,
+                    island_of_exact_match_tolerant)
 
         # Warn if identification is enabled but the coverage is high
         if identify:

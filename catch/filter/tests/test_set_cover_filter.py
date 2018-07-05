@@ -3,6 +3,7 @@
 
 from collections import OrderedDict
 import logging
+import os
 import tempfile
 import unittest
 
@@ -543,6 +544,27 @@ class TestSetCoverFilter(unittest.TestCase):
                                         cover_groupings_separately=True)
         self.assertEqual(set(probes), {probe.Probe.from_str('MNOPQR'),
                                            probe.Probe.from_str('ATATAT')})
+
+    def test_custom_cover_range_fn(self):
+        custom_path = os.path.join(os.path.dirname(__file__),
+                                   'input/custom_cover_range_fn.py')
+        custom_cover_range_fn = (custom_path, 'covers_abc')
+
+        target_genomes = [['AAAAAAAAABCBBBBBBBBBB',
+                           'AAAAAAAAABCBBBBBBBBBB']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        candidate_probes = [probe.Probe.from_str(p) for p in
+                            ['AAAAAA', 'AAABCB', 'BBBBBB', 'XXXXXX']]
+
+        # Only try to cover 3 bp; the only probe that will hybridize
+        # by this toy cover_range_fn is the one with 'ABC'
+        f = scf.SetCoverFilter(0, 0,
+                               coverage=3,
+                               custom_cover_range_fn=custom_cover_range_fn,
+                               kmer_probe_map_k=3)
+        f.target_genomes = target_genomes
+        f.filter(candidate_probes)
+        self.assertEqual(set(f.output_probes), {probe.Probe.from_str('AAABCB')})
 
     def tearDown(self):
         # Re-enable logging

@@ -109,6 +109,7 @@ import logging
 
 from catch.filter.base_filter import BaseFilter
 from catch import probe
+from catch.utils import dynamic_load
 from catch.utils import interval
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -126,6 +127,7 @@ class AdapterFilter(BaseFilter):
                  mismatches,
                  lcf_thres,
                  island_of_exact_match=0,
+                 custom_cover_range_fn=None,
                  kmer_probe_map_k=20):
         """
         Args:
@@ -141,6 +143,18 @@ class AdapterFilter(BaseFilter):
             island_of_exact_match: for a probe to hybridize to a sequence,
                 require that there be an exact match of length at least
                 'island_of_exact_match'
+            custom_cover_range_fn: if set, tuple (path, fn) where path gives
+                a path to a Python module and fn gives the name of a function
+                in that module. This function is dynamically loaded and used
+                to determine whether a probe will hybridize to a region of
+                target sequence (and what portion will hybridize). The
+                function must accept the same arguments as the function
+                returned by
+                probe.probe_covers_sequence_by_longest_common_substring()
+                and return the same value. When set, the parameters
+                'mismatches', 'lcf_thres', and 'island_of_exact_match'
+                are ignored (even if their values are default values)
+                because they are only used in the default cover_range_fn
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
         """
@@ -151,12 +165,27 @@ class AdapterFilter(BaseFilter):
 
         self.adapter_a_5end, self.adapter_a_3end = adapter_a
         self.adapter_b_5end, self.adapter_b_3end = adapter_b
-        self.mismatches = mismatches
-        self.lcf_thres = lcf_thres
-        self.cover_range_fn = \
-            probe.probe_covers_sequence_by_longest_common_substring(
-                mismatches=mismatches, lcf_thres=lcf_thres,
-                island_of_exact_match=island_of_exact_match)
+
+        if custom_cover_range_fn is not None:
+            # Use a custom function to determine whether a probe hybridizes
+            # to a region of target sequence (and what part hybridizes),
+            # rather than the default model. Ignore the given values for
+            # mismatches and lcf_thres (which may be default values) because
+            # these are only relevant for the default model
+            self.mismatches, self.lcf_thres = None, None
+
+            # Dynamically load the function
+            fn_path, fn_name = custom_cover_range_fn
+            self.cover_range_fn = dynamic_load.load_function_from_path(
+                fn_path, fn_name)
+        else:
+            self.mismatches = mismatches
+            self.lcf_thres = lcf_thres
+            # Construct a function using the default model of hybridization
+            self.cover_range_fn = \
+                probe.probe_covers_sequence_by_longest_common_substring(
+                    mismatches, lcf_thres, island_of_exact_match)
+
         self.kmer_probe_map_k = kmer_probe_map_k
 
     def _votes_in_sequence(self, probes, sequence):
