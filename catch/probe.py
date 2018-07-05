@@ -519,6 +519,11 @@ def construct_kmer_probe_map_to_find_probe_covers(probes,
     If the "pigeonhole" function fails because it requires too small a
     value for k, then this resorts to calling the "random" function.
 
+    Note that mismatches and/or lcf_thres can be None, in which case the
+    "random" method is always used. This is useful, for example, if using
+    a custom function to determine whether a probe hybridizes to a target,
+    in which case the parameters mismatches and lcf_thres are not meaningful.
+
     Args:
         probes: list of probes from which to construct the map
         mismatches: number of mismatches that will be tolerated when
@@ -551,7 +556,8 @@ def construct_kmer_probe_map_to_find_probe_covers(probes,
             probe_lengths_differ = True
             break
 
-    if probe_lengths_differ or lcf_thres < probe_length:
+    if (mismatches is None or lcf_thres is None or
+            probe_lengths_differ or lcf_thres < probe_length):
         # Use the random method with its default values for k and
         # num_kmers_per_probe
         return _construct_rand_kmer_probe_map(
