@@ -122,6 +122,16 @@ def main(args):
                 "--adapter-a and --adapter-b, but --add-adapters is required "
                 "to add adapter sequences onto the ends of probes"))
 
+    # Check for whether a custom hybridization function was provided
+    if args.custom_hybridization_fn:
+        custom_cover_range_fn = tuple(args.custom_hybridization_fn)
+    else:
+        custom_cover_range_fn = None
+    if args.custom_hybridization_fn_tolerant:
+        custom_cover_range_tolerant_fn = tuple(args.custom_hybridization_fn_tolerant)
+    else:
+        custom_cover_range_tolerant_fn = None
+
     # Setup the filters
     # The filters we use are, in order:
     filters = []
@@ -173,6 +183,8 @@ def main(args):
         mismatches_tolerant=args.mismatches_tolerant,
         lcf_thres_tolerant=args.lcf_thres_tolerant,
         island_of_exact_match_tolerant=args.island_of_exact_match_tolerant,
+        custom_cover_range_fn=custom_cover_range_fn,
+        custom_cover_range_tolerant_fn=custom_cover_range_tolerant_fn,
         identify=args.identify,
         blacklisted_genomes=blacklisted_genomes_fasta,
         coverage=args.coverage,
@@ -200,7 +212,9 @@ def main(args):
                                           mismatches=args.mismatches,
                                           lcf_thres=args.lcf_thres,
                                           island_of_exact_match=\
-                                            args.island_of_exact_match)
+                                            args.island_of_exact_match,
+                                          custom_cover_range_fn=\
+                                            custom_cover_range_fn)
         filters += [af]
 
     # [Optional]
@@ -241,6 +255,7 @@ def main(args):
             genomes_grouped,
             genomes_grouped_names,
             island_of_exact_match=args.island_of_exact_match,
+            custom_cover_range_fn=custom_cover_range_fn,
             cover_extension=args.cover_extension,
             rc_too=args.add_reverse_complements)
         analyzer.run()
@@ -302,6 +317,43 @@ if __name__ == "__main__":
               "no mismatches) of length at least ISLAND_OF_EXACT_"
               "MATCH nt between a portion of the probe and a portion "
               "of the sequence"))
+
+    # Custom function (dynamically loaded) to determine probe hybridization
+    # When set, this makes values of the above arguments (--mismatches,
+    # --lcf-thres, and --island-of-exact-match) meaningless
+    parser.add_argument('--custom-hybridization-fn',
+        nargs=2,
+        help=("(Optional) Args: <PATH> <FUNC>; PATH is a path to a Python "
+              "module (.py file) and FUNC is a string giving the name of "
+              "a function in that module. FUNC provides a custom model of "
+              "hybridization between a probe and target sequence to use in "
+              "the probe set design. If this is set, the arguments "
+              "--mismatches, --lcf-thres, and --island-of-exact-match are "
+              "not used because these are meant for the default model of "
+              "hybridization. The function FUNC in PATH is dynamically "
+              "loaded to use when determining whether a probe hybridizes to "
+              "a target sequence (and, if so, what portion). FUNC must "
+              "accept the following arguments in order, though it "
+              "may choose to ignore some values: (1) array giving sequence "
+              "of a probe; (2) str giving subsequence of target sequence to "
+              "which the probe may hybridize, of the same length as the "
+              "given probe sequence; (3) int giving the position in the "
+              "probe (equivalently, the target subsequence) of the start "
+              "of a k-mer around which the probe and target subsequence "
+              "are anchored (the probe and target subsequence are aligned "
+              "using this k-mer as an anchor); (4) int giving the end "
+              "position (exclusive) of the anchor k-mer; (5) int giving the "
+              "full length of the probe (the probe provided in (1) may be "
+              "cutoff on an end if it extends further than where the "
+              "target sequence ends); (6) int giving the full length of the "
+              "target sequence of which the subsequence in (2) is part. "
+              "FUNC must return None if it deems that the probe does not "
+              "hybridize to the target subsequence; otherwise, it must "
+              "return a tuple (start, end) where start is an int giving "
+              "the start position in the probe (equivalently, in the "
+              "target subsequence) at which the probe will hybridize to "
+              "the target subsequence, and end is an int (exclusive) giving "
+              "the end position of the hybridization."))
 
     # Desired coverage of target genomes
     def check_coverage(val):
@@ -378,6 +430,14 @@ if __name__ == "__main__":
               "possible hybridizations (i.e., more sensitivity) "
               "when designing probes for identification or when "
               "genomes are blacklisted."))
+    parser.add_argument('--custom-hybridization-fn-tolerant',
+        nargs=2,
+        help=("(Optional) A more tolerant model than the one "
+              "implemented in custom_hybridization_fn. This should capture "
+              "more possible hybridizations (i.e., be more sensitive) "
+              "when designing probes for identification or when genomes "
+              "are blacklisted. See --custom-hybridization-fn for details "
+              "of how this function should be implemented and provided."))
 
     # Outputting probe sequences and coverage analyses
     parser.add_argument('-o', '--output-probes',
