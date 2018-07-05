@@ -94,7 +94,7 @@ design.py [dataset] [dataset ...]
 Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [350+ viral datasets](./catch/datasets/README.md) (e.g., `hiv1` or `zika`) distributed as part of this package.
 Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) that have human as a host, for one or more species, as of Sep. 2017.
 
-Below are some commonly used arguments to `design.py`:
+Below is a summary of some useful arguments to `design.py`:
 
 * `-pl PROBE_LENGTH`/`-ps PROBE_STRIDE`: Design probes to be PROBE_LENGTH nt long, and generate candidate probes using a stride of PROBE_STRIDE nt.
 (Default: 100 and 50.)
@@ -116,6 +116,10 @@ Probes are designed such that each `dataset` should be captured by probes that a
 * `--add-adapters`: Add PCR adapters to the ends of each probe sequence.
 This selects adapters to add to probe sequences so as to minimize overlap among probes that share an adapter, allowing probes with the same adapter to be amplified together.
 (See `--adapter-a` and `--adapter-b` too.)
+* `--custom-hybridization-fn PATH FN`: Specify a function, for CATCH to dynamically load, that implements a custom model of hybridization between a probe and target sequence.
+See `design.py --help` for details on the expected input and output of this function.
+If not set, CATCH uses its default model of hybridization based on `-m/--mismatches`, `-l/--lcf-thres`, and `--island-of-exact-match`.
+(Relatedly, see `--custom-hybridization-fn-tolerant`.)
 * `--filter-with-lsh-hamming FILTER_WITH_LSH_HAMMING`/`--filter-with-lsh-minhash FILTER_WITH_LSH_MINHASH`: Use locality-sensitive hashing to reduce the space of candidate probes.
 This can significantly improve runtime and memory requirements when the input is especially large and diverse.
 See `design.py --help` for details on using these options and downsides.
