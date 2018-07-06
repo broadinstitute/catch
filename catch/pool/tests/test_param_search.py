@@ -124,6 +124,12 @@ class TestSearchFunctions(unittest.TestCase):
             hiv1_mismatches, hiv1_cover_extension = opt_params['hiv1_without_ltr']
             self.assertTrue(hiv1_mismatches > 3 or hiv1_cover_extension > 20)
 
+    def _search_vwafr_too_small_counts(self, search_fn):
+        self.assertEqual(self.param_names_vwafr, ('mismatches', 'cover_extension'))
+        for max_total_count in [1, 1000, 10000]:
+            with self.assertRaises(param_search.CannotSatisfyProbeCountConstraintError):
+                search_fn(max_total_count)
+
     def test_standard_search_vwafr_typical_counts(self):
         """Integration test with the V-WAfr probe set data."""
         def search_fn(max_total_count):
@@ -146,6 +152,13 @@ class TestSearchFunctions(unittest.TestCase):
             self.assertEqual(mismatches, 0)
             self.assertEqual(cover_extension, 0)
 
+    def test_standard_search_vwafr_too_small_counts(self):
+        """Integration test with the V-WAfr probe set data."""
+        def search_fn(max_total_count):
+            return param_search.standard_search(self.probe_counts_vwafr,
+                max_total_count)
+        self._search_vwafr_too_small_counts(search_fn)
+
     def test_higher_dimensional_search_vwafr_typical_counts(self):
         """Integration test with the V-WAfr probe set data."""
         def search_fn(max_total_count):
@@ -153,6 +166,14 @@ class TestSearchFunctions(unittest.TestCase):
                 self.param_names_vwafr, self.probe_counts_vwafr,
                 max_total_count, loss_coeffs=(1.0, 1.0/100.0))
         self._search_vwafr_typical_counts(search_fn)
+
+    def test_higher_dimensional_search_vwafr_too_small_counts(self):
+        """Integration test with the V-WAfr probe set data."""
+        def search_fn(max_total_count):
+            return param_search.higher_dimensional_search(
+                self.param_names_vwafr, self.probe_counts_vwafr,
+                max_total_count, loss_coeffs=(1.0, 1.0/100.0))
+        self._search_vwafr_too_small_counts(search_fn)
 
     def test_higher_dimensional_search_vwafr_with_third_param(self):
         """Integration test with the V-WAfr probe set data.
