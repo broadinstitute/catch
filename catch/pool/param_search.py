@@ -685,4 +685,11 @@ def higher_dimensional_search(param_names, probe_counts, max_total_count,
         probe_counts, interp_fn_type='nd')(x_sol)
     x_sol_loss = loss_fn(x_sol, 0)
 
+    # Verify that the probe count satisfies the constraint
+    # Note that this assertion may fail if we are dealing with datasets
+    # for which few actual probe counts have been computed; in these
+    # cases, the interpolation may severely underestimate the number
+    # of probes at a particular parameter choice
+    assert x_sol_count < max_total_count
+
     return (x_sol_dict, x_sol_count, x_sol_loss)
