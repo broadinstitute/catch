@@ -745,7 +745,7 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     def test_random_small_genome1(self):
         self.run_random(100, 15000, 25000, 300, seed=1)
 
-    def test_random_small_genome1(self):
+    def test_random_small_genome2(self):
         self.run_random(100, 15000, 25000, 300, probe_length=75,
                         lcf_thres=75, seed=2)
 
