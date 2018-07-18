@@ -745,9 +745,14 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
     def test_random_small_genome1(self):
         self.run_random(100, 15000, 25000, 300, seed=1)
 
-    def test_random_small_genome1(self):
+    def test_random_small_genome2(self):
         self.run_random(100, 15000, 25000, 300, probe_length=75,
                         lcf_thres=75, seed=2)
+
+    def test_random_small_genome_varied_k(self):
+        for k in [21, 15, 13, 10]:
+            self.run_random(100, 15000, 25000, 300,
+                kmer_probe_map_k=k, seed=1)
 
     def test_random_large_genome1(self):
         self.run_random(1, 1500000, 2500000, 30000,
@@ -761,13 +766,18 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
         self.run_random(1, 500000, 1000000, 6000, probe_length=75,
                         lcf_thres=75, seed=3)
 
+    def test_random_large_genome_varied_k(self):
+        for k in [21, 15, 13, 10]:
+            self.run_random(1, 1500000, 2500000, 30000,
+                            lcf_thres=100, kmer_probe_map_k=k, seed=1)
+
     def test_random_large_genome_native_dict(self):
         self.run_random(1, 1500000, 2500000, 30000,
                         lcf_thres=100, seed=4, use_native_dict=True)
 
     def run_random(self, n, genome_min, genome_max, num_probes,
-                   probe_length=100, lcf_thres=None, seed=1, n_workers=2,
-                   use_native_dict=False):
+                   probe_length=100, lcf_thres=None, kmer_probe_map_k=20,
+                   seed=1, n_workers=2, use_native_dict=False):
         """Run tests with a randomly generated sequence.
 
         Repeatedly runs tests in which a sequence is randomly generated,
@@ -786,6 +796,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             probe_length: number of bp to make each probe
             lcf_thres: lcf threshold parameter; when None, it is
                 randomly chosen among 80 and 100
+            kmer_probe_map_k: k-mer length to use when constructing the
+                map of k-mers to probes
             seed: random number generator seed
             n_workers: number of workers to have in a probe finding pool
             use_native_dict: have the probe finding pool use a native Python
@@ -839,7 +851,8 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
                 desired_probe_cover_ranges[p].append((cover_start, cover_end))
                 probes += [p]
             kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
-                probes, 3, lcf_thres)
+                probes, 3, lcf_thres,
+                min_k=kmer_probe_map_k, k=kmer_probe_map_k)
             kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
             f = probe.probe_covers_sequence_by_longest_common_substring(
                 3, lcf_thres)
