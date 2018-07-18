@@ -105,6 +105,34 @@ def main(args):
                         "and may lead to undefined behavior"),
                         args.island_of_exact_match, args.probe_length)
 
+    # Setup and verify parameters related to k-mer length in probe map
+    if args.kmer_probe_map_k:
+        # Check that k is sufficiently small
+        if args.kmer_probe_map_k > args.probe_length:
+            raise Exception(("KMER_PROBE_MAP_K (%d) exceeds PROBE_LENGTH "
+                             "(%d), which is not permitted") %
+                            (args.kmer_probe_map_k, args.probe_length))
+
+        # Use this value for the SetCoverFilter, AdapterFilter, and
+        # the Analyzer
+        kmer_probe_map_k_scf = args.kmer_probe_map_k
+        kmer_probe_map_k_af = args.kmer_probe_map_k
+        kmer_probe_map_k_analyzer = args.kmer_probe_map_k
+    else:
+        if args.probe_length <= 20:
+            logger.warning(("PROBE_LENGTH (%d) is small; you may want to "
+                            "consider setting --kmer-probe-map-k to be "
+                            "small as well in order to be more sensitive "
+                            "in mapping candidate probes to target sequence"),
+                            args.probe_length)
+
+        # Use a default k of 20 for the SetCoverFilter and AdapterFilter,
+        # and 10 for the Analyzer since we would like to be more sensitive
+        # (potentially at the cost of slower runtime) for the latter
+        kmer_probe_map_k_scf = 20
+        kmer_probe_map_k_af = 20
+        kmer_probe_map_k_analyzer = 10
+
     # Set the maximum number of processes in multiprocessing pools
     if args.max_num_processes:
         probe.set_max_num_processes_for_probe_finding_pools(
@@ -190,6 +218,7 @@ def main(args):
         coverage=args.coverage,
         cover_extension=args.cover_extension,
         cover_groupings_separately=args.cover_groupings_separately,
+        kmer_probe_map_k=kmer_probe_map_k_scf,
         kmer_probe_map_use_native_dict=args.use_native_dict_when_finding_tolerant_coverage)
     filters += [scf]
 
@@ -214,7 +243,8 @@ def main(args):
                                           island_of_exact_match=\
                                             args.island_of_exact_match,
                                           custom_cover_range_fn=\
-                                            custom_cover_range_fn)
+                                            custom_cover_range_fn,
+                                          kmer_probe_map_k=kmer_probe_map_k_af)
         filters += [af]
 
     # [Optional]
@@ -257,6 +287,7 @@ def main(args):
             island_of_exact_match=args.island_of_exact_match,
             custom_cover_range_fn=custom_cover_range_fn,
             cover_extension=args.cover_extension,
+            kmer_probe_map_k=kmer_probe_map_k_analyzer,
             rc_too=args.add_reverse_complements)
         analyzer.run()
         if args.write_analysis_to_tsv:
@@ -608,6 +639,25 @@ if __name__ == "__main__":
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
               "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
+    parser.add_argument('--kmer-probe-map-k',
+        type=int,
+        help=("(Optional) Use this value (KMER_PROBE_LENGTH_K) as the "
+              "k-mer length when constructing a map of k-mers to the probes "
+              "that contain these k-mers. This map is used when mapping "
+              "candidate probes to target sequences and the k-mers serve "
+              "as seeds for calculating whether a candidate probe 'covers' "
+              "a subsequence. The value should be sufficiently less than "
+              "PROBE_LENGTH so that it can find mappings even when the "
+              "candidate probe and target sequence are divergent. In "
+              "particular, CATCH will try to find a value k >= "
+              "KMER_PROBE_LENGTH_K (by default, >=20) such that k divides "
+              "PROBE_LENGTH and k < PROBE_LENGTH / MISMATCHES (if "
+              "MISMATCHES=0, then k=PROBE_LENGTH). It will then use this "
+              "k as the k-mer length in mappings; if no such k exists, it "
+              "will use a randomized approach with KMER_PROBE_LENGTH_K as "
+              "the k-mer length. If --custom-hybridization-fn is set, "
+              "it will always use the randomized approach with "
+              "KMER_PROBE_LENGTH_K (by default, 20) as the k-mer length."))
     parser.add_argument('--use-native-dict-when-finding-tolerant-coverage',
         dest="use_native_dict_when_finding_tolerant_coverage",
         action="store_true",

@@ -45,7 +45,8 @@ def main(args):
         genomes_grouped,
         genomes_grouped_names,
         island_of_exact_match=args.island_of_exact_match,
-        cover_extension=args.cover_extension)
+        cover_extension=args.cover_extension,
+        kmer_probe_map_k=args.kmer_probe_map_k)
     analyzer.run()
     if args.write_analysis_to_tsv:
         analyzer.write_data_matrix_as_tsv(
@@ -125,7 +126,7 @@ if __name__ == "__main__":
               "by the probe set within sliding windows of each target "
               "genome"))
 
-    # Number of processes to use
+    # Technical adjustments
     def check_max_num_processes(val):
         ival = int(val)
         if ival >= 1:
@@ -138,6 +139,24 @@ if __name__ == "__main__":
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
               "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
+    parser.add_argument('--kmer-probe-map-k',
+        type=int,
+        default=10,
+        help=("(Optional) Use this value (KMER_PROBE_LENGTH_K) as the "
+              "k-mer length when constructing a map of k-mers to the probes "
+              "that contain these k-mers. This map is used when mapping "
+              "the given probes to target sequences and the k-mers serve "
+              "as seeds for calculating whether a probe 'covers' "
+              "a subsequence. The value should be sufficiently less than "
+              "the probe length (PROBE_LENGTH) so that it can find mappings "
+              "even when the candidate probe and target sequence are "
+              "divergent. In particular, CATCH will try to find a value k >= "
+              "KMER_PROBE_LENGTH_K (by default, >=10) such that k divides "
+              "PROBE_LENGTH and k < PROBE_LENGTH / MISMATCHES (if "
+              "MISMATCHES=0, then k=PROBE_LENGTH). It will then use this "
+              "k as the k-mer length in mappings; if no such k exists, it "
+              "will use a randomized approach with KMER_PROBE_LENGTH_K as "
+              "the k-mer length."))
 
     # Logging levels and version
     parser.add_argument('--debug',
