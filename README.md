@@ -26,6 +26,7 @@ It allows blacklisting sequence from the design (e.g., background in microbial e
   * [Example of running design.py](#example-of-running-designpy)
   * [Example of running pool.py](#example-of-running-poolpy)
 * [Contributing](#contributing)
+* [Citation](#citation)
 * [License](#license)
 <br/>
 
@@ -193,6 +194,11 @@ The pooled design yields about 89,950 probes, depending on the initial guess.
 ## Contributing
 
 We welcome contributions to CATCH. This can be in the form of an [issue](https://github.com/broadinstitute/catch/issues)  or [pull request](https://github.com/broadinstitute/catch/pulls). If you have questions, please create an [issue](https://github.com/broadinstitute/catch/issues) or email **Hayden Metsky** &lt;hayden@mit.edu&gt;.
+
+## Citation
+
+For details on how CATCH works, please refer to our [preprint](https://doi.org/10.1101/279570). If you find CATCH useful to your work, please cite our preprint as:
+  * Metsky HC and Siddle KJ _et al_. Capturing diverse microbial sequence with comprehensive and scalable probe design. bioRxiv 279570. doi: https://doi.org/10.1101/279570 (2018).
 
 ## License
 
