@@ -1,4 +1,4 @@
-"""Setup script for the catch distribution using Distutils.
+"""Setup script for the catch distribution using setuptools.
 """
 
 from setuptools import find_packages
@@ -10,7 +10,7 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 setup(name='catch',
       version=catch.__version__,
-      description='Tools to design compact, comprehensive probe sets',
+      description='A package for designing compact and comprehensive probe sets.',
       author='Hayden Metsky',
       author_email='hayden@mit.edu',
       packages=find_packages(),
