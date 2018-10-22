@@ -19,6 +19,7 @@ It allows blacklisting sequence from the design (e.g., background in microbial e
   * [Downloading and installing](#downloading-and-installing)
   * [Downloading viral sequence data](#downloading-viral-sequence-data)
   * [Testing](#testing)
+  * [Alternative approach: installing with conda](#alternative-approach-installing-with-conda)
 * [Using CATCH](#using-catch)
   * [Designing with one choice of parameteters](#designing-with-one-choice-of-parameters-designpy)
   * [Pooling across many runs](#pooling-across-many-runs-poolpy)
@@ -39,11 +40,11 @@ CATCH requires:
 * [NumPy](http://www.numpy.org) &gt;= 1.9.0
 * [SciPy](https://www.scipy.org) &gt;= 1.0.0
 
-Installing CATCH with `pip`, as described below, will install NumPy and SciPy if they are not already installed.
+Installing CATCH with `pip` (or conda), as described below, will install NumPy and SciPy if they are not already installed.
 
 ### Downloading and installing
 
-The easiest way to setup CATCH is with `pip`:
+An easy way to setup CATCH is to clone the repository and install with `pip`:
 
 ```bash
 git clone git@github.com:broadinstitute/catch.git
@@ -74,6 +75,17 @@ To execute all unit tests, run:
 ```bash
 python -m unittest discover
 ```
+
+### Alternative approach: installing with conda
+
+CATCH is also available through the [conda](https://conda.io/) package manager as part of the [bioconda](https://bioconda.github.io/) channel.
+If you use conda, the easiest way to install CATCH is by running:
+
+```bash
+conda install -c bioconda catch
+```
+
+Note that this installation method does not distribute [viral sequence data](#downloading-viral-sequence-data) with the package, but CATCH can still be run with your own input data.
 
 ## Using CATCH
 
