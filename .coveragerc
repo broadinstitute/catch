@@ -6,6 +6,7 @@ branch = True
 # (as suggested in sample config files)
 exclude_lines =
     pragma: no cover
+    def __str__
     def __repr__
     raise AssertionError
     raise NotImplementedError
@@ -16,5 +17,9 @@ exclude_lines =
 # are automatically generated (and they collectively
 # encompass a lot of code) but they are not executed
 # in tests
+# Also omit custom_cover_range_fn.py, which is tested,
+# but is loaded dynamically and does not appear to
+# be counted as covered
 omit =
     catch/datasets/*
+    catch/filter/tests/input/custom_cover_range_fn.py
