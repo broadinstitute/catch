@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Design probes by treating the problem as an instance of set cover."""
+"""Design probes for genome capture.
+
+This is the main executable of CATCH for probe design.
+"""
 
 import argparse
 import importlib
