@@ -12,7 +12,6 @@ import random
 
 from catch import coverage_analysis
 from catch import probe
-from catch.datasets import hg19
 from catch.filter import adapter_filter
 from catch.filter import duplicate_filter
 from catch.filter import fasta_filter
