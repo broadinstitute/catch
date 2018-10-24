@@ -104,7 +104,7 @@ design.py --help
 design.py [dataset] [dataset ...]
 ```
 
-Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [350+ viral datasets](./catch/datasets/README.md) (e.g., `hiv1` or `zika`) distributed as part of this package.
+Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [550+ viral datasets](./catch/datasets/README.md) (e.g., `human_immunodeficiency_virus_1` or `zika`) distributed as part of this package.
 Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) that have human as a host, for one or more species, as of Sep. 2017.
 
 Below is a summary of some useful arguments to `design.py`:
