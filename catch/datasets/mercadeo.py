@@ -9,9 +9,7 @@ import sys
 
 from catch.datasets import GenomesDatasetSingleChrom
 
-__author__ = 'Hayden Metsky <hayden@mit.edu>'
-
 
 ds = GenomesDatasetSingleChrom(__name__, __file__, __spec__)
-ds.add_fasta_path("data/mercadeo.fasta", relative=True)
+ds.add_fasta_path("data/mercadeo.fasta.gz", relative=True)
 sys.modules[__name__] = ds

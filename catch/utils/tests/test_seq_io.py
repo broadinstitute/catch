@@ -6,8 +6,8 @@ import logging
 import tempfile
 import unittest
 
-from catch.datasets import ebola_zaire_with_2014
-from catch.datasets import lassa
+from catch.datasets import zaire_ebolavirus
+from catch.datasets import lassa_mammarenavirus
 from catch import genome
 from catch.utils import seq_io
 
@@ -22,14 +22,14 @@ class TestEbolaZaireFASTARead(unittest.TestCase):
         # Disable logging
         logging.disable(logging.INFO)
 
-        assert len(ebola_zaire_with_2014.fasta_paths) == 1
-        self.seqs_map = seq_io.read_fasta(ebola_zaire_with_2014.fasta_paths[0])
+        assert len(zaire_ebolavirus.fasta_paths) == 1
+        self.seqs_map = seq_io.read_fasta(zaire_ebolavirus.fasta_paths[0])
         self.seqs = list(self.seqs_map.values())
 
     def test_num_seqs(self):
-        """Test that there are 883 sequences.
+        """Test that there are 1525 sequences.
         """
-        self.assertEqual(len(self.seqs), 883)
+        self.assertEqual(len(self.seqs), 1525)
 
     def test_seq_length(self):
         """Test that all sequences are of length 17-20 kbp.
@@ -53,8 +53,8 @@ class TestEbolaZaireFASTARead(unittest.TestCase):
         Tests this by comparing to the output from read_fasta.
         """
         generator_seqs = []
-        assert len(ebola_zaire_with_2014.fasta_paths) == 1
-        for seq in seq_io.iterate_fasta(ebola_zaire_with_2014.fasta_paths[0]):
+        assert len(zaire_ebolavirus.fasta_paths) == 1
+        for seq in seq_io.iterate_fasta(zaire_ebolavirus.fasta_paths[0]):
             generator_seqs += [seq]
         self.assertEqual(generator_seqs, self.seqs)
 
@@ -73,29 +73,29 @@ class TestDatasetGenomeRead(unittest.TestCase):
 
     def test_single_chr_dataset(self):
         """Tests that the genomes obtained from reading the
-        ebola_zaire_with_2014 dataset are the same as those obtained
+        zaire_ebolavirus dataset are the same as those obtained
         from directly reading the FASTA.
 
         This is effectively executing most of the same code as
         seq_io.read_dataset_genomes() but does check that it correctly
         enters the condition of reading just one sequence per genome.
         """
-        genomes = seq_io.read_dataset_genomes(ebola_zaire_with_2014)
-        assert len(ebola_zaire_with_2014.fasta_paths) == 1
+        genomes = seq_io.read_dataset_genomes(zaire_ebolavirus)
+        assert len(zaire_ebolavirus.fasta_paths) == 1
         desired_genomes = [
             genome.Genome.from_one_seq(s)
-            for s in seq_io.read_fasta(ebola_zaire_with_2014.fasta_paths[0]).\
+            for s in seq_io.read_fasta(zaire_ebolavirus.fasta_paths[0]).\
                 values()
         ]
         self.assertEqual(genomes, desired_genomes)
 
     def test_multi_chr_dataset(self):
-        """Tests that the lassa dataset can be read.
+        """Tests that the lassa_mammarenavirus dataset can be read.
 
         This does not test that the genomes are read correctly -- just
         that they can be read without issues.
         """
-        genomes = seq_io.read_dataset_genomes(lassa)
+        genomes = seq_io.read_dataset_genomes(lassa_mammarenavirus)
 
     def tearDown(self):
         # Re-enable logging

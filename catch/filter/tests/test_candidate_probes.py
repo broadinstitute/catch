@@ -3,7 +3,7 @@
 
 import unittest
 
-from catch.datasets import ebola_zaire_with_2014
+from catch.datasets import zaire_ebolavirus
 from catch.filter import candidate_probes
 from catch.utils import seq_io
 
@@ -118,7 +118,7 @@ class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
         with the candidate probes.
         """
         seqs = [gnm.seqs[0]
-                for gnm in seq_io.read_dataset_genomes(ebola_zaire_with_2014)]
+                for gnm in seq_io.read_dataset_genomes(zaire_ebolavirus)]
         seqs = seqs[:100]
         self.probes_100 = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
