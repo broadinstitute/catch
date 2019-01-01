@@ -253,7 +253,8 @@ def main(args):
     # N expansion filter (nef) -- expand Ns in probe sequences
     # to avoid ambiguity
     if args.expand_n:
-        nef = n_expansion_filter.NExpansionFilter()
+        nef = n_expansion_filter.NExpansionFilter(
+            limit_n_expansion_randomly=args.expand_n)
         filters += [nef]
 
     # [Optional]
@@ -541,14 +542,19 @@ if __name__ == "__main__":
         action="store_true",
         help=("Add to the output the reverse complement of each probe"))
     parser.add_argument('--expand-n',
-        dest="expand_n",
-        action="store_true",
+        nargs='?',
+        type=int,
+        default=None,
+        const=3,
         help=("Expand each probe so that 'N' bases are replaced by real "
               "bases; for example, the probe 'ANA' would be replaced "
               "with the probes 'AAA', 'ATA', 'ACA', and 'AGA'; this is "
               "done combinatorially across all 'N' bases in a probe, and "
               "thus the number of new probes grows exponentially with the "
-              "number of 'N' bases in a probe"))
+              "number of 'N' bases in a probe. If followed by a command- "
+              "line argument (INT), this only expands at most INT randomly "
+              "selected N bases, and the rest are replaced with random "
+              "unambiguous bases (default INT is 3)."))
 
     # Limiting input
     parser.add_argument('--limit-target-genomes',
