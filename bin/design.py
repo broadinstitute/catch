@@ -275,9 +275,8 @@ def main(args):
                                       allow_small_seqs=args.small_seq_min)
     pb.design()
 
-    if args.output_probes:
-        # Write the final probes to the file args.output_probes
-        seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
+    # Write the final probes to the file args.output_probes
+    seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
     if (args.print_analysis or args.write_analysis_to_tsv or
             args.write_sliding_window_coverage):
@@ -319,6 +318,12 @@ if __name__ == "__main__":
               "in this package (e.g., 'zika'). If the label starts with "
               "'collection:' (e.g., 'collection:viruses_with_human_host'), "
               "then this reads from an available collection of datasets."))
+
+    # Outputting probes
+    parser.add_argument('-o', '--output-probes',
+        required=True,
+        help=("The file to which all final probes should be "
+              "written; they are written in FASTA format"))
 
     # Parameters on probe length and stride
     parser.add_argument('-pl', '--probe-length',
@@ -473,11 +478,7 @@ if __name__ == "__main__":
               "are blacklisted. See --custom-hybridization-fn for details "
               "of how this function should be implemented and provided."))
 
-    # Outputting probe sequences and coverage analyses
-    parser.add_argument('-o', '--output-probes',
-        help=("(Optional) The file to which all final probes should be "
-              "written; if not specified, the final probes are not "
-              "written to a file"))
+    # Outputting coverage analyses
     parser.add_argument('--print-analysis',
         dest="print_analysis",
         action="store_true",
