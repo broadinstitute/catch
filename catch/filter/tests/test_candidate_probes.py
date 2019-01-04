@@ -89,7 +89,7 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
                 allow_small_seqs=5,
                 min_n_string_length=2)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(Exception):
             candidate_probes.make_candidate_probes_from_sequences(
                 ['ATCGATCGATCG', 'CNNN'],
                 probe_length=6,

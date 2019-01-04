@@ -156,7 +156,7 @@ class DatasetCollection:
                 dataset = importlib.import_module(
                                 'catch.datasets.' + name)
             except ImportError:
-                raise ValueError(("Unknown dataset %s; cannot import into "
-                                  "collection") % name)
+                raise Exception(("Unknown dataset %s; cannot import into "
+                                 "collection") % name)
             datasets += [(name, dataset)]
         return datasets
