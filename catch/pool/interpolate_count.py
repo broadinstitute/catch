@@ -174,10 +174,10 @@ def _make_interp_probe_count_for_dataset_standard_fn(probe_counts,
                                                            mismatches,
                                                            cover_extension)
             if min_rectangle is None:
-                raise ValueError(("Unable to find rectangular bounding box around "
-                                  "(mismatches, cover_extension)=(%f, %f) for "
-                                  "dataset %s") % (mismatches, cover_extension,
-                                  dataset))
+                raise Exception(("Unable to find rectangular bounding box around "
+                                 "(mismatches, cover_extension)=(%f, %f) for "
+                                 "dataset %s") % (mismatches, cover_extension,
+                                 dataset))
             memoized_bounding_boxes[dataset][immediate_bb] = min_rectangle
 
         rect_topleft, rect_bottomright = min_rectangle

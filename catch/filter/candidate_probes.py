@@ -52,8 +52,8 @@ def make_candidate_probes_from_sequence(seq,
                                   "allowed length"))
             else:
                 if n_string_query.search(seq):
-                    raise ValueError(("Only possible probe from input "
-                                      "sequence has too long a stretch of N's"))
+                    raise Exception(("Only possible probe from input "
+                                     "sequence has too long a stretch of N's"))
                 else:
                     # Make a probe equal to this sequence
                     return [probe.Probe.from_str(seq)]
@@ -148,12 +148,12 @@ def make_candidate_probes_from_sequences(
         list of candidate probes as instances of probe.Probe
     """
     if not isinstance(seqs, list):
-        raise ValueError("seqs must be a list of sequences")
+        raise TypeError("seqs must be a list of sequences")
     if len(seqs) == 0:
         raise ValueError("seqs must have at least one sequence")
     for seq in seqs:
         if not isinstance(seq, str):
-            raise ValueError("seqs must be a list of Python strings")
+            raise TypeError("seqs must be a list of Python strings")
 
     probes = []
     for seq in seqs:
