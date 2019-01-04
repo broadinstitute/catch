@@ -98,14 +98,16 @@ To see details on all the arguments that the program accepts, run:
 design.py --help
 ```
 
-[`design.py`](./bin/design.py) requires one or more `dataset`s that specify input sequence data to target:
+[`design.py`](./bin/design.py) requires one or more `dataset`s that specify input sequence data to target, as well as a path to which the probe sequences are written:
 
 ```bash
-design.py [dataset] [dataset ...]
+design.py [dataset] [dataset ...] -o OUTPUT
 ```
 
 Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [550+ viral datasets](./catch/datasets/README.md) (e.g., `human_immunodeficiency_virus_1` or `zika`) distributed as part of this package.
 Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) for a species that has human as a host, as of Oct. 2018.
+
+The probe sequences are written to OUTPUT in FASTA format.
 
 Below is a summary of some useful arguments to `design.py`:
 
@@ -136,7 +138,6 @@ If not set, CATCH uses its default model of hybridization based on `-m/--mismatc
 * `--filter-with-lsh-hamming FILTER_WITH_LSH_HAMMING`/`--filter-with-lsh-minhash FILTER_WITH_LSH_MINHASH`: Use locality-sensitive hashing to reduce the space of candidate probes.
 This can significantly improve runtime and memory requirements when the input is especially large and diverse.
 See `design.py --help` for details on using these options and downsides.
-* `-o OUTPUT`: Write probe sequences in FASTA format to OUTPUT.
 
 ### Pooling across many runs ([`pool.py`](./bin/pool.py))
 
