@@ -176,7 +176,7 @@ We recommend running this multiple times and selecting the output that has the s
 Below is an example of designing probes to target a single taxon.
 
 ```bash
-design.py zika -pl 75 -m 2 -l 60 -e 50 -o zika-probes.fasta
+design.py zika -pl 75 -m 2 -l 60 -e 50 -o zika-probes.fasta --verbose
 ```
 
 This will design probes that:
@@ -187,8 +187,9 @@ This will design probes that:
 
 and will save them to `zika-probes.fasta`.
 
-It yields about 500 probes.
-Note that the `zika` dataset distributed with CATCH contains 379 genomes, but the input can also be a path to any custom FASTA file.
+It will provide detailed output during runtime (`--verbose`) and yield about 600 probes.
+Note that using `-l 75` here will run significantly faster, but results in more probes.
+Also, note that the `zika` dataset distributed with CATCH contains 640 genomes, but the input can also be a path to any custom FASTA file.
 
 ### Example of running [`pool.py`](./bin/pool.py)
 
