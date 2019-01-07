@@ -62,9 +62,15 @@ class TestIntervalSet(unittest.TestCase):
         a = IntervalSet(input_a)
         b = IntervalSet(input_b)
         o = IntervalSet(desired_output)
+
         # Union is commutative, so check both orders
         self.assertEqual(a.union(b), o)
         self.assertEqual(b.union(a), o)
+
+        # Making a new IntervalSet should merge overlapping
+        # intervals, effectively taking the union
+        ab = IntervalSet(input_a + input_b)
+        self.assertEqual(ab, o)
 
     def test_union(self):
         self.compare_union([], [], [])
@@ -77,6 +83,7 @@ class TestIntervalSet(unittest.TestCase):
         self.compare_union([(1, 10)], [(3, 7)], [(1, 10)])
         self.compare_union([(2, 100)], [(0, 50)], [(0, 100)])
         self.compare_union([(0, 7)], [(4, 10)], [(0, 10)])
+        self.compare_union([(4, 10)], [(0, 7)], [(0, 10)])
         self.compare_union([(1, 5), (10, 15)], [(1, 5), (15, 20)], [(1, 5),
                                                                     (10, 20)])
         self.compare_union([(1, 5), (10, 15)], [(3, 12)], [(1, 15)])

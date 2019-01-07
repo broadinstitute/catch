@@ -299,23 +299,34 @@ def approx_multiuniverse(sets,
     # Create the universes from given sets
     if use_intervalsets:
         # Store the elements of each universe in an IntervalSet
-        universes = defaultdict(lambda: interval.IntervalSet([]))
+        # First, collect a list of intervals for each universe
+        universes_unmerged = defaultdict(list)
+        for sets_by_universe in sets.values():
+            for universe_id, s in sets_by_universe.items():
+                if isinstance(s, tuple):
+                    # s is a single interval
+                    universes_unmerged[universe_id].append(s)
+                else:
+                    # s is an IntervalSet
+                    for i in s.intervals:
+                        universes_unmerged[universe_id].append(i)
+        # Now, for each universe, create one IntervalSet from its list
+        # of intervals; doing so will merge overlapping intervals
+        # (effectively taking the union of all the intervals)
+        universes = {}
+        for universe_id, intervals in universes_unmerged.items():
+            universes[universe_id] = interval.IntervalSet(intervals)
     else:
         # Store the elements of each universe in a set
         universes = defaultdict(set)
-    for sets_by_universe in sets.values():
-        for universe_id, s in sets_by_universe.items():
-            if use_intervalsets:
-                if isinstance(s, tuple):
-                    # s is a single interval
-                    s = interval.IntervalSet([s])
-                universes[universe_id] = universes[universe_id].union(s)
-            elif use_arrays:
-                for v in s:
-                    universes[universe_id].add(v)
-            else:
-                universes[universe_id].update(s)
-    universes = dict(universes)
+        for sets_by_universe in sets.values():
+            for universe_id, s in sets_by_universe.items():
+                if use_arrays:
+                    for v in s:
+                        universes[universe_id].add(v)
+                else:
+                    universes[universe_id].update(s)
+        universes = dict(universes)
 
     if universe_p is None:
         # Give each universe a coverage fraction of 1.0 (i.e., cover
