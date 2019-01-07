@@ -1,7 +1,6 @@
-# Have git lfs track all data that is part of the repo
-# (added by @haydenm on 2017-10-25 during 'git lfs migrate')
+# git lfs - track all data in the datasets
 catch/datasets/data/** filter=lfs diff=lfs merge=lfs -text
 
-# Have git lfs track all probe designs saved in the repo
+# git lfs - track all probe designs
 probe-designs/*.fasta.gz filter=lfs diff=lfs merge=lfs -text
 probe-designs/*.fasta filter=lfs diff=lfs merge=lfs -text
