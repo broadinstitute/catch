@@ -4,6 +4,7 @@ These functions compute lists of many (likely redundant) probes, termed
 candidate probes, from a sequence of list of sequences.
 """
 
+import logging
 import re
 import sys
 
@@ -13,6 +14,8 @@ from catch import probe
 from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
+
+logger = logging.getLogger(__name__)
 
 
 def make_candidate_probes_from_sequence(seq,
@@ -125,7 +128,8 @@ def make_candidate_probes_from_sequences(
         probe_length,
         probe_stride,
         min_n_string_length=2,
-        allow_small_seqs=None):
+        allow_small_seqs=None,
+        seq_length_to_skip=None):
     """Generate a list of candidate probes from a list of sequences.
 
     It is possible (perhaps even likely depending on where
@@ -143,6 +147,9 @@ def make_candidate_probes_from_sequences(
         allow_small_seqs: if set, allow sequences that are smaller than the
             probe length by creating candidate probes equal to the sequence;
             the value gives the minimum allowed probe (sequence) length
+        seq_length_to_skip: if set, skip sequences whose length is <=
+            the given value (i.e., do not design candidate probes for
+            them)
 
     Returns:
         list of candidate probes as instances of probe.Probe
@@ -157,6 +164,13 @@ def make_candidate_probes_from_sequences(
 
     probes = []
     for seq in seqs:
+        if seq_length_to_skip is not None:
+            if len(seq) <= seq_length_to_skip:
+                logger.info(("Not designing candidate probes for a "
+                    "sequence with length %d, since it is <= %d"),
+                    len(seq), seq_length_to_skip)
+                continue
+
         probes += make_candidate_probes_from_sequence(
             seq,
             probe_length=probe_length,
