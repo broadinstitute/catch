@@ -699,6 +699,29 @@ class TestFindProbeCoversInSequence(unittest.TestCase):
             self.assertFalse(c in found)
             probe.close_probe_finding_pool()
 
+    def test_too_short_sequence(self):
+        """Tests with sequence shorter than the probe length.
+        """
+        np.random.seed(1)
+        sequence = 'ABCDEFGHI'
+        a = probe.Probe.from_str('ABCDEFGHIJKL')
+        b = probe.Probe.from_str('EFGHIJKLMNOP')
+        c = probe.Probe.from_str('DEFGHIJKLMNO')
+        d = probe.Probe.from_str('XYZXYZABCDEF')
+        probes = [a, b, c, d]
+        kmer_map = probe.construct_kmer_probe_map_to_find_probe_covers(
+            probes, 0, 6, min_k=6, k=6)
+        kmer_map = probe.SharedKmerProbeMap.construct(kmer_map)
+        f = probe.probe_covers_sequence_by_longest_common_substring(0, 6)
+        for n_workers in [1, 2, 4, 7, 8]:
+            probe.open_probe_finding_pool(kmer_map, f, n_workers)
+            found = probe.find_probe_covers_in_sequence(sequence)
+            self.assertCountEqual(found[a], [(0, 9)])
+            self.assertFalse(b in found)
+            self.assertCountEqual(found[c], [(3, 9)])
+            self.assertCountEqual(found[d], [(0, 6)])
+            probe.close_probe_finding_pool()
+
     def test_multiple_searches_with_same_pool(self):
         """Tests more than one call to find_probe_covers_in_sequence()
         with the same pool.
