@@ -17,6 +17,7 @@ from catch.filter import duplicate_filter
 from catch.filter import fasta_filter
 from catch.filter import n_expansion_filter
 from catch.filter import near_duplicate_filter
+from catch.filter import polya_filter
 from catch.filter import probe_designer
 from catch.filter import reverse_complement_filter
 from catch.filter import set_cover_filter
@@ -172,6 +173,26 @@ def main(args):
         ff = fasta_filter.FastaFilter(args.filter_from_fasta,
                                       skip_reverse_complements=True)
         filters += [ff]
+
+    # [Optional]
+    # Poly(A) filter (paf) -- leave out probes with stretches of 'A' or 'T'
+    if args.filter_polya:
+        polya_length, polya_mismatches = args.filter_polya
+        if polya_length > args.probe_length:
+            logger.warning(("Length of poly(A) stretch to filter (%d) is "
+                            "greater than PROBE_LENGTH (%d), which is usually "
+                            "undesirable"), polya_length, args.probe_length)
+        if polya_length < 10:
+            logger.warning(("Length of poly(A) stretch to filter (%d) is "
+                            "short, and may lead to many probes being "
+                            "filtered"), polya_length)
+        if polya_mismatches > 10:
+            logger.warning(("Number of mismatches to tolerate when searching "
+                            "for poly(A) stretches (%d) is high, and may "
+                            "lead to many probes being filtered"),
+                           polya_mismatches)
+        paf = polya_filter.PolyAFilter(polya_length, polya_mismatches)
+        filters += [paf]
 
     # Duplicate filter (df) -- condense all candidate probes that
     #     are identical down to one; this is not necessary for
@@ -536,6 +557,14 @@ if __name__ == "__main__":
               "where X is the B adapter sequence to place on the 5' end of "
               "a probe and Y is the B adapter sequence to place on the 3' "
               "end of a probe"))
+
+    # Filtering poly(A) sequence from probes
+    parser.add_argument('--filter-polya',
+        nargs=2,
+        type=int,
+        help=("(Optional) Args: <X> <Y> (integers); do not output any probe "
+              "that contains a stretch of X or more 'A' bases, tolerating "
+              "up to Y mismatches (and likewise for 'T' bases)"))
 
     # Adjusting probe output
     parser.add_argument('--add-reverse-complements',
