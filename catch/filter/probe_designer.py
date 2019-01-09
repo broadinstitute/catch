@@ -17,7 +17,7 @@ class ProbeDesigner:
     """
 
     def __init__(self, genomes, filters, probe_length,
-            probe_stride, allow_small_seqs=None):
+            probe_stride, allow_small_seqs=None, seq_length_to_skip=None):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
@@ -32,12 +32,16 @@ class ProbeDesigner:
             allow_small_seqs: if set, allow sequences that are smaller than the
                 probe length by creating candidate probes equal to the sequence;
                 the value gives the minimum allowed probe (sequence) length
+            seq_length_to_skip: if set, skip sequences whose length is <=
+                the given value (i.e., do not design candidate probes for
+                them)
         """
         self.genomes = genomes
         self.filters = filters
         self.probe_length = probe_length
         self.probe_stride = probe_stride
         self.allow_small_seqs = allow_small_seqs
+        self.seq_length_to_skip = seq_length_to_skip
 
     def design(self):
         """Design probes using the provided filters.
@@ -55,7 +59,8 @@ class ProbeDesigner:
                     make_candidate_probes_from_sequences(
                         g.seqs, probe_length=self.probe_length,
                         probe_stride=self.probe_stride,
-                        allow_small_seqs=self.allow_small_seqs)
+                        allow_small_seqs=self.allow_small_seqs,
+                        seq_length_to_skip=self.seq_length_to_skip)
 
         probes = self.candidate_probes
         for f in self.filters:
