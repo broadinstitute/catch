@@ -1,6 +1,7 @@
 """Tests for candidate_probes module.
 """
 
+import logging
 import unittest
 
 from catch.datasets import zaire_ebolavirus
@@ -13,6 +14,10 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 class TestCandidateProbesOnContrivedInput(unittest.TestCase):
     """Tests explicitly the generated candidate probes from contrived input.
     """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
 
     def test_no_n(self):
         p = candidate_probes.make_candidate_probes_from_sequence(
@@ -97,6 +102,7 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
                 allow_small_seqs=4,
                 min_n_string_length=2)
 
+        # With allow_small_seqs
         p = candidate_probes.make_candidate_probes_from_sequences(
             ['ATCGATCGATCG', 'CCGG'],
             probe_length=6,
@@ -105,6 +111,20 @@ class TestCandidateProbesOnContrivedInput(unittest.TestCase):
             min_n_string_length=2)
         p = [''.join(x.seq) for x in p]
         self.assertCountEqual(p, ['ATCGAT', 'GATCGA', 'CGATCG'] + ['CCGG'])
+
+        # With seq_length_to_skip
+        p = candidate_probes.make_candidate_probes_from_sequences(
+            ['ATCGATCGATCG', 'CCGG'],
+            probe_length=6,
+            probe_stride=3,
+            seq_length_to_skip=4,
+            min_n_string_length=2)
+        p = [''.join(x.seq) for x in p]
+        self.assertCountEqual(p, ['ATCGAT', 'GATCGA', 'CGATCG'])
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
 
 
 class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
@@ -117,6 +137,9 @@ class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
         Only process the first 100 genomes to avoid using too much memory
         with the candidate probes.
         """
+        # Disable logging
+        logging.disable(logging.WARNING)
+
         seqs = [gnm.seqs[0]
                 for gnm in seq_io.read_dataset_genomes(zaire_ebolavirus)]
         seqs = seqs[:100]
@@ -156,3 +179,7 @@ class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
             self.assertNotIn('NN', ''.join(probe.seq))
         for probe in self.probes_75:
             self.assertNotIn('NN', ''.join(probe.seq))
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)

@@ -153,6 +153,12 @@ def main(args):
                 "--adapter-a and --adapter-b, but --add-adapters is required "
                 "to add adapter sequences onto the ends of probes"))
 
+    # Do not allow both --small-seq-skip and --small-seq-min, since they
+    # have different intentions
+    if args.small_seq_skip is not None and args.small_seq_min is not None:
+        raise Exception(("Both --small-seq-skip and --small-seq-min were "
+            "specified, but both cannot be used together"))
+
     # Check for whether a custom hybridization function was provided
     if args.custom_hybridization_fn:
         custom_cover_range_fn = tuple(args.custom_hybridization_fn)
@@ -293,7 +299,8 @@ def main(args):
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
                                       probe_length=args.probe_length,
                                       probe_stride=args.probe_stride,
-                                      allow_small_seqs=args.small_seq_min)
+                                      allow_small_seqs=args.small_seq_min,
+                                      seq_length_to_skip=args.small_seq_skip)
     pb.design()
 
     # Write the final probes to the file args.output_probes
@@ -648,6 +655,12 @@ if __name__ == "__main__":
               "from each grouping and pool (union) the resulting probes. "
               "When set, the software will run faster than when not set, but "
               "it may yield more probes than when it is not set."))
+    parser.add_argument('--small-seq-skip',
+        type=int,
+        help=("(Optional) Do not create candidate probes from sequences "
+              "whose length is <= SMALL_SEQ_SKIP. If set to (PROBE_LENGTH - "
+              "1), this avoids the error raised when sequences are less "
+              "than the probe length"))
     parser.add_argument('--small-seq-min',
         type=int,
         help=("(Optional) If set, allow sequences as input that are "
