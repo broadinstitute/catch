@@ -932,6 +932,8 @@ def close_probe_finding_pool():
     del _pfp_kmer_probe_map_native
     del _pfp_kmer_probe_map_use_native
 
+    _pfp_pool.close()
+
     # In Python versions earlier than 2.7.3 there is a bug (see
     # http://bugs.python.org/issue12157) that occurs if a pool p is
     # created and p.join() is called, but p.map() is never called (i.e.,
@@ -941,11 +943,7 @@ def close_probe_finding_pool():
     # but find_probe_covers_in_sequence() is never called; the variable
     # _pfp_work_was_submitted ensures that join() is only called on
     # the pool if work was indeed submitted.
-    # Similarly, when no work is submitted, a call to p.close() may yield
-    # a RuntimeError that is printed but ignored; so only call close()
-    # when work was indeed submitted.
     if _pfp_work_was_submitted:
-        _pfp_pool.close()
         # Due to issues that likely stem from bugs in the multiprocessing
         # module, calls to _pfp_pool.terminate() and _pfp_pool.join()
         # sometimes hang indefinitely (even when work was indeed submitted
