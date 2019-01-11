@@ -1195,6 +1195,16 @@ def find_probe_covers_in_sequence(sequence,
 
     k = _pfp_kmer_probe_map_k
 
+    if len(sequence) < k:
+        # This special case can arise if a sequence is shorter than the
+        # probe length (and options are set to continue design in this case),
+        # but len(sequence) is either extremely small or k (e.g., as
+        # determined by _construct_pigeonholed_kmer_probe_map()) is
+        # sufficiently large such that len(sequence) < k
+        # In this case, do not attempt to cover the sequence -- i.e., return
+        # an indication that no probes cover it
+        return {}
+
     # Setup a function that the processes can execute; do this using
     # functools.partial so that the created function (scan_subsequence)
     # takes just the argument 'bounds' and all the other arguments to
