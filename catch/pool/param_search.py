@@ -680,6 +680,8 @@ def higher_dimensional_search(param_names, probe_counts, max_total_count,
     # Set default values for arguments provided as None
     if loss_coeffs is None:
         # The default coefficient is 1 for each parameter
+        logger.warning(("Using a default coefficient for 1 for each parameter "
+            "in the loss function"))
         loss_coeffs = tuple(1.0 for _ in range(num_params))
     else:
         # There must be a coefficient for each parameter
