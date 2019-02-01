@@ -104,7 +104,8 @@ if __name__ == "__main__":
               "more than 2 parameters. This does not round parameters "
               "to integers or to be placed on a grid -- i.e., they "
               "will be output as fractional values (from which probe "
-              "counts were interpolated)."))
+              "counts were interpolated). When using this, --loss-coeffs "
+              "should also be set (default is 1 for all parameters)."))
     parser.add_argument('--loss-coeffs', nargs='+', type=float,
         help=("Coefficients on parameters in the loss function. These "
               "must be specified in the same order as the parameter "
