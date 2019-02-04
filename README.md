@@ -211,8 +211,8 @@ We welcome contributions to CATCH. This can be in the form of an [issue](https:/
 
 ## Citation
 
-For details on how CATCH works, please refer to our [preprint](https://doi.org/10.1101/279570). If you find CATCH useful to your work, please cite our preprint as:
-  * Metsky HC and Siddle KJ _et al_. Capturing diverse microbial sequence with comprehensive and scalable probe design. bioRxiv 279570. doi: https://doi.org/10.1101/279570 (2018).
+For details on how CATCH works, please refer to our publication in [Nature Biotechnology](https://www.nature.com/articles/s41587-018-0006-x). If you find CATCH useful to your work, please cite our paper as:
+  * Metsky HC and Siddle KJ _et al_. Capturing sequence diversity in metagenomes with comprehensive and scalable probe design. _Nature Biotechnology_, **37**(2), 160&ndash;168 (2019). doi: 10.1038/s41587-018-0006-x
 
 ## License
 
