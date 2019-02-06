@@ -47,7 +47,7 @@ Installing CATCH with `pip` (or conda), as described below, will install NumPy a
 An easy way to setup CATCH is to clone the repository and install with `pip`:
 
 ```bash
-git clone git@github.com:broadinstitute/catch.git
+git clone https://github.com/broadinstitute/catch.git
 cd catch
 pip install --user -e .
 ```
