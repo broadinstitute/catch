@@ -2,6 +2,7 @@
 """
 
 from collections import defaultdict
+import heapq
 import logging
 import math
 import random
@@ -49,17 +50,28 @@ class MinHashFamily:
     k-mers in a string/sequence (MinHash).
 
     See (Broder et al. 1997) and (Andoni and Indyk 2008) for details.
+
+    The signature produced here also has similarity to Mash (Ondov et al.
+    2016).
     """
 
-    def __init__(self, kmer_size):
+    def __init__(self, kmer_size, N=1):
+        """
+        Args:
+            kmer_size: length of each k-mer to hash
+            N: represent the signature of a sequence using hash values of
+                the N k-mers in the sequence that have the smallest hash
+                values
+        """
         self.kmer_size = kmer_size
+        self.N = N
 
     def make_h(self):
         """Construct a random hash function for this family.
 
         Here, we treat a sequence as being a set of k-mers. We calculate
         a hash value for each k-mer and the hash function on the sequence
-        returns the minimum of these.
+        returns the N smallest of these in sorted order.
 
         Returns:
             hash function
@@ -87,18 +99,23 @@ class MinHashFamily:
 
         def h(s):
             # For a string/sequence s, have the MinHash function be the minimum
-            # hash over all the k-mers in it
+            # N hashes, in sorted order, over all the k-mers in it
             assert self.kmer_size <= len(s)
             if self.kmer_size >= len(s) / 2:
                 logger.warning(("The k-mer size %d is large (> (1/2)x) "
                     "compared to the size of a sequence to hash (%d), which "
                     "might make it difficult for MinHash to find similar "
-                    "sequence"))
-            kmer_hashes = []
-            for i in range(len(s) - self.kmer_size + 1):
-                kmer = s[i:(i + self.kmer_size)]
-                kmer_hashes += [kmer_hash(kmer)]
-            return min(kmer_hashes)
+                    "sequence"), self.kmer_size, len(s))
+            num_kmers = len(s) - self.kmer_size + 1
+            if num_kmers < self.N:
+                raise ValueError(("The number of k-mers (%d) in the given "
+                    "sequence is too small to produce a signature of "
+                    "size %d") % (num_kmers, self.N))
+            def kmer_hashes():
+                for i in range(num_kmers):
+                    kmer = s[i:(i + self.kmer_size)]
+                    yield kmer_hash(kmer)
+            return tuple(sorted(heapq.nsmallest(self.N, kmer_hashes())))
         return h
 
     def P1(self, dist):
@@ -116,6 +133,57 @@ class MinHashFamily:
         """
         # With MinHash, the collision probability is the Jaccard similarity
         return 1.0 - dist
+
+    def estimate_jaccard_dist(self, hA, hB):
+        """Estimate Jaccard distance between two MinHash signatures.
+        Args:
+            hA: signature output by h(A) for a hash function h given by
+                make_h() and a sequence A (specifically, an ordered list of
+                hash values of k-mers in A)
+            hB: signature output by h(B) for the same hash function used
+                to generate hA, and a sequence B (specifically, an ordered
+                list of hash values of k-mers in B)
+        Returns:
+            estimate of Jaccard distance between signatures A and B
+        """
+        # Let X = h(hA \union hB). This is equivalent to h(A \union B)
+        # where A and B, here, represent the set of k-mers in their
+        # respective sequences. X is a random sample of the hashes of
+        # the k-mers in (A \union B), and (Y = X \intersect hA \intersect hB)
+        # are the hashes in both X and (A \intersect B). So |Y|/|X| is
+        # an estimate of the Jaccard similarity. Since X has self.N
+        # elements (it is the output of h(.)), this is |Y|/self.N
+
+        # Iterate over hA and hB simultaneously, to count the number of
+        # hash values in common between them, among the first self.N of
+        # them
+        # This is possible because hA and hB are in sorted order
+        hA_i, hB_i = 0, 0
+        intersect_count = 0
+        union_count = 0
+        while hA_i < len(hA) and hB_i < len(hB):
+            if union_count == self.N:
+                # We found all the hash values in X, as defined above
+                break
+            elif hA[hA_i] < hB[hB_i]:
+                hA_i += 1
+                union_count += 1
+            elif hA[hA_i] > hB[hB_i]:
+                hB_i += 1
+                union_count += 1
+            else:
+                # We found a new unique hash value in common:
+                # hA[hA_i] == hB[hB_i]
+                intersect_count += 1
+                union_count += 1
+                hA_i += 1
+                hB_i += 1
+
+        # It should be that union_count == self.N, except perhaps in
+        # some edge cases (e.g., if a hash value is repeated in a signature)
+        # And |Y| == intersect_count, where Y is defined above
+        similarity = float(intersect_count) / union_count
+        return 1.0 - similarity
 
 
 class HashConcatenation:
