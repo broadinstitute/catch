@@ -2,6 +2,9 @@ Probe sets
 ==========
 
 This directory contains some of the probe sets designed with CATCH:
+* `V-All.250k.201810.fasta.gz`: 249,999 probes that target genomes of all viruses known to infect humans, using sequence data through 2018-10 (588 species)
+* `V-All.350k.201810.fasta.gz`: 349,999 probes that target genomes of all viruses known to infect humans, using sequence data through 2018-10 (588 species)
+* `V-All.700k.201810.fasta.gz`: 699,999 probes that target genomes of all viruses known to infect humans, using sequence data through 2018-10 (588 species)
 * `V-All.201606.fasta.gz`: 349,998 probes that target genomes of all viruses known to infect humans, using sequence data through 2016-06 (356 species); `V-All.201606.trimmed.fasta.gz` is this same probe set with bases trimmed on the 3' end to meet synthesis cycle limits
 * `V-WAfr.201506.fasta.gz`: 44,995 probes that target genomes of viruses commonly circulating in West Africa, using sequence data through 2015-06 (23 species); this includes reverse complements as well, for 89,990 probes in total
 * `V-Flu.45k.201810.fasta.gz`: 44,848 probes that target genomes of influenza A, B, and C viruses, using sequence data through 2018-10; this includes reverse complements as well, for 89,696 probes in total
