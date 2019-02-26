@@ -138,6 +138,11 @@ If not set, CATCH uses its default model of hybridization based on `-m/--mismatc
 * `--filter-with-lsh-hamming FILTER_WITH_LSH_HAMMING`/`--filter-with-lsh-minhash FILTER_WITH_LSH_MINHASH`: Use locality-sensitive hashing to reduce the space of candidate probes.
 This can significantly improve runtime and memory requirements when the input is especially large and diverse.
 See `design.py --help` for details on using these options and downsides.
+* `--cluster-and-design-separately CLUSTER_AND_DESIGN_SEPARATELY`: Cluster input sequences prior to design by computing their MinHash signatures and comparing them.
+Then, design probes separately on each cluster and merge the resulting probes.
+Like the `--filter-with-{hamming,minhash}` arguments, this is another option to improve runtime and memory requirements on large and diverse input.
+CLUSTER_AND_DESIGN_SEPARATELY gives the inter-cluster distance threshold for merging clusters, expressed as average nucleotide dissimilarity (1-ANI).
+See `design.py --help` for details and, relatedly, see the `--cluster-from-fragments` argument.
 
 ### Pooling across many runs ([`pool.py`](./bin/pool.py))
 
