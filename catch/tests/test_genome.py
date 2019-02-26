@@ -77,3 +77,19 @@ class TestGenome(unittest.TestCase):
         self.assertNotEqual(genome_one_seq2, genome_two_chrs2)
         self.assertEqual(genome_two_chrs1, genome_two_chrs1)
         self.assertNotEqual(genome_two_chrs1, genome_two_chrs2)
+
+    def test_break_into_fragments_from_one_seq(self):
+        genome_one = genome.Genome.from_one_seq('ATCGTTAA')
+        broken = genome_one.break_into_fragments(3)
+        expected_genome = genome.Genome.from_chrs(
+                OrderedDict([('0', 'ATC'), ('1', 'GTT'), ('2', 'AA')]))
+        self.assertEqual(broken, expected_genome)
+
+    def test_break_into_fragments_from_chrs(self):
+        genome_two_chrs = genome.Genome.from_chrs(
+                OrderedDict([("chr1", 'ATCGTTAA'), ("chr2", 'AATTCCGGG')]))
+        broken = genome_two_chrs.break_into_fragments(3)
+        expected_genome = genome.Genome.from_chrs(
+                OrderedDict([("chr1-0", 'ATC'), ("chr1-1", 'GTT'), ("chr1-2", 'AA'),
+                             ("chr2-0", 'AAT'), ("chr2-1", 'TCC'), ("chr2-2", 'GGG')]))
+        self.assertEqual(broken, expected_genome)

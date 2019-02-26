@@ -1,6 +1,8 @@
 """Structure(s) for storing and directly working with genomes.
 """
 
+from collections import OrderedDict
+
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
@@ -58,6 +60,33 @@ class Genome:
             if self.size_cached is None:
                 self.size_cached = sum(len(seq) for seq in self.seqs)
             return self.size_cached
+
+    def break_into_fragments(self, fragment_length):
+        """Construct a new Genome with these sequences broken into fragments.
+
+        Args:
+            fragment_length: length of the fragment
+
+        Returns:
+            Genome object, containing multiple sequences that represent the
+            sequences in self.seqs broken into fragments of length
+            fragment_length
+        """
+        def fragments(seq):
+            for i in range(0, len(seq), fragment_length):
+                yield seq[i:(i + fragment_length)]
+
+        fragment_chrs = OrderedDict()
+        if self.chrs is None:
+            assert len(self.seqs) == 1
+            for fragment_idx, fragment in enumerate(fragments(self.seqs[0])):
+                fragment_chrs[str(fragment_idx)] = fragment
+        else:
+            for chr_name, chr_seq in self.chrs.items():
+                for fragment_idx, fragment in enumerate(fragments(chr_seq)):
+                    fragment_name = chr_name + '-' + str(fragment_idx)
+                    fragment_chrs[fragment_name] = fragment
+        return Genome.from_chrs(fragment_chrs)
 
     def __hash__(self):
         if self.hash_cached is None:
