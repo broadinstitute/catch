@@ -80,10 +80,14 @@ class ProbeDesigner:
                     seqs[seq_idx] = s
                     seq_idx += 1
 
-        logger.info(("Clustering %d sequences using MinHash signatures"),
-                seq_idx)
+        logger.info(("Clustering %d sequences using MinHash signatures, at an "
+            "average nucleotide dissimilarity threshold of %f"),
+                seq_idx, self.cluster_threshold)
         clusters = cluster.cluster_with_minhash_signatures(seqs,
                 threshold=self.cluster_threshold)
+
+        logger.info(("Found %d clusters with sizes: %s"), len(clusters),
+                [len(clust) for clust in clusters])
 
         clustered_genomes = []
         for clust in clusters:

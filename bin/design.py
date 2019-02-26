@@ -159,6 +159,13 @@ def main(args):
         raise Exception(("Both --small-seq-skip and --small-seq-min were "
             "specified, but both cannot be used together"))
 
+    # Do not allow differential identification if clustering is enabled,
+    # since clustering collapses genome groupings into one
+    if args.cluster_and_design_separately and args.identify:
+        raise Exception(("Cannot use --cluster-and-design-separately with "
+            "--identify, because clustering collapses genome groupings into "
+            "one"))
+
     # Check for whether a custom hybridization function was provided
     if args.custom_hybridization_fn:
         custom_cover_range_fn = tuple(args.custom_hybridization_fn)
@@ -293,14 +300,28 @@ def main(args):
 
     # If requested, don't apply the set cover filter
     if args.skip_set_cover:
+        filter_before_scf = filters[filters.index(scf) - 1]
         filters.remove(scf)
+
+    # Define parameters for clustering sequences
+    if args.cluster_and_design_separately:
+        cluster_threshold = args.cluster_and_design_separately
+        if args.skip_set_cover:
+            cluster_merge_after = filter_before_scf
+        else:
+            cluster_merge_after = scf
+    else:
+        cluster_threshold = None
+        cluster_merge_after = None
 
     # Design the probes
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
                                       probe_length=args.probe_length,
                                       probe_stride=args.probe_stride,
                                       allow_small_seqs=args.small_seq_min,
-                                      seq_length_to_skip=args.small_seq_skip)
+                                      seq_length_to_skip=args.small_seq_skip,
+                                      cluster_threshold=cluster_threshold,
+                                      cluster_merge_after=cluster_merge_after)
     pb.design()
 
     # Write the final probes to the file args.output_probes
@@ -604,7 +625,34 @@ if __name__ == "__main__":
               "WITH_REPLACMENT target genomes in the dataset with "
               "replacement"))
 
-    # Technical adjustments
+    # Clustering input sequences
+    def check_cluster_and_design_separately(val):
+        fval = float(val)
+        if fval > 0 and fval <= 0.5:
+            # a float in (0,0.5]
+            return fval
+        else:
+            raise argparse.ArgumentTypeError(("%s is an invalid average "
+                                              "nucleotide dissimilarity") % val)
+    parser.add_argument('--cluster-and-design-separately',
+        type=check_cluster_and_design_separately,
+        help=("(Optional) If set, cluster all input sequences using their "
+              "MinHash signatures, design probes separately on each cluster, "
+              "and combine the resulting probes. This can significantly lower "
+              "runtime and memory usage, but may lead to a suboptimal "
+              "solution. The value CLUSTER_AND_DESIGN_SEPARATELY gives the "
+              "inter-cluster distance threshold to merge clusters (1-ANI, "
+              "where ANI is average nucleotide identity); higher values "
+              "result in fewer clusters, and thus longer runtime. Values "
+              "must be in (0,0.5], and generally should be around 0.1 or "
+              "0.2. When used, this creates a separate genome for each "
+              "input sequence -- it collapses all sequences, across both "
+              "groups and genomes, into one list of sequences in one group. "
+              "Therefore, genomes will not be grouped as specified in the "
+              "input and sequences will not be grouped by genome, and "
+              "differential identification is not supported"))
+
+    # Filter candidate probes with LSH
     parser.add_argument('--filter-with-lsh-hamming',
         type=int,
         help=("(Optional) If set, filter candidate probes for near-"
@@ -648,6 +696,8 @@ if __name__ == "__main__":
               "--filter-with-lsh-hamming also apply here. Values of "
               "FILTER_WITH_LSH_MINHASH above ~0.7 may start to require "
               "significant memory and runtime for near-duplicate detection."))
+
+    # Miscellaneous technical adjustments
     parser.add_argument('--cover-groupings-separately',
         dest="cover_groupings_separately",
         action="store_true",
