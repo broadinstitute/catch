@@ -91,12 +91,17 @@ class ProbeDesigner:
                 if self.cluster_fragment_length is not None:
                     # Break g into fragments
                     g_fragments = g.break_into_fragments(
-                            self.cluster_fragment_length)
+                            self.cluster_fragment_length,
+                            include_full_end=True)
                     g_seqs = g_fragments.seqs
                 else:
                     # Do not break into fragments; use whole sequences
                     g_seqs = g.seqs
                 for s in g_seqs:
+                    if (self.seq_length_to_skip is not None and
+                            len(s) <= self.seq_length_to_skip):
+                        # Skip this sequence, which is too short
+                        continue
                     seqs[seq_idx] = s
                     seq_idx += 1
 

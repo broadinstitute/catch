@@ -61,11 +61,16 @@ class Genome:
                 self.size_cached = sum(len(seq) for seq in self.seqs)
             return self.size_cached
 
-    def break_into_fragments(self, fragment_length):
+    def break_into_fragments(self, fragment_length, include_full_end=False):
         """Construct a new Genome with these sequences broken into fragments.
 
         Args:
             fragment_length: length of the fragment
+            include_full_end: if the last fragment is shorter than
+                fragment_length (because the length of a sequence is not a
+                multiple of fragment_length), instead use a fragment from
+                the end of the sequence with length fragment_length (the
+                last fragment_length nt)
 
         Returns:
             Genome object, containing multiple sequences that represent the
@@ -74,7 +79,13 @@ class Genome:
         """
         def fragments(seq):
             for i in range(0, len(seq), fragment_length):
-                yield seq[i:(i + fragment_length)]
+                fragment = seq[i:(i + fragment_length)]
+                if include_full_end and len(fragment) < fragment_length:
+                    # This is at the end of seq; instead, use the last
+                    # fragment_length nt
+                    yield seq[(len(seq) - fragment_length):]
+                else:
+                    yield fragment
 
         fragment_chrs = OrderedDict()
         if self.chrs is None:
