@@ -20,9 +20,8 @@ class TestPolyAFilter(unittest.TestCase):
                                  for s in desired_output]
         f = polya_filter.PolyAFilter(length, mismatches,
             min_exact_length_to_consider=2)
-        f.filter(input_probes)
-        self.assertEqual(f.input_probes, input_probes)
-        self.assertEqual(f.output_probes, desired_output_probes)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(output_probes, desired_output_probes)
 
     def test_no_polya(self):
         input = ['CCGGAAGGCC', 'GCGCGCGCGC']

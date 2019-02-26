@@ -35,8 +35,8 @@ class TestFastaFilter(unittest.TestCase):
         input_probes = [p1, p2, p3, p4, p5]
 
         fasta_filter = ff.FastaFilter(fasta_file.name)
-        fasta_filter.filter(input_probes)
-        self.assertEqual(fasta_filter.output_probes, [p4, p2])
+        output_probes = fasta_filter.filter(input_probes)
+        self.assertEqual(output_probes, [p4, p2])
 
         fasta_file.close()
 
@@ -60,8 +60,8 @@ class TestFastaFilter(unittest.TestCase):
 
         fasta_filter = ff.FastaFilter(fasta_file.name,
                                       skip_reverse_complements=True)
-        fasta_filter.filter(input_probes)
-        self.assertEqual(fasta_filter.output_probes, [p4, p2])
+        output_probes = fasta_filter.filter(input_probes)
+        self.assertEqual(output_probes, [p4, p2])
 
         fasta_file.close()
 

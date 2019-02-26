@@ -24,9 +24,9 @@ class TestNearDuplicateFilterWithHammingDistance(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithHammingDistance(2, 10)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 1)
-        self.assertIn(f.output_probes[0], input_probes)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 1)
+        self.assertIn(output_probes[0], input_probes)
 
     def test_all_similar_with_exact_dup(self):
         input = ['ATCGTCGCGG', 'ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG',
@@ -35,11 +35,11 @@ class TestNearDuplicateFilterWithHammingDistance(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithHammingDistance(2, 10)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 1)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 1)
         # The first probe in input_probes is the most common, so this
         # should be the one that is kept
-        self.assertEqual(f.output_probes[0], input_probes[0])
+        self.assertEqual(output_probes[0], input_probes[0])
 
     def test_all_similar_but_zero_dist_thres(self):
         input = ['ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG', 'ATCGGCGCGG']
@@ -47,8 +47,8 @@ class TestNearDuplicateFilterWithHammingDistance(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithHammingDistance(0, 10)
         f.k = 3
-        f.filter(input_probes)
-        self.assertCountEqual(f.output_probes, input_probes)
+        output_probes = f.filter(input_probes)
+        self.assertCountEqual(output_probes, input_probes)
 
     def test_all_similar_but_one_too_far(self):
         input = ['ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG', 'ATCGGCGCCT']
@@ -56,11 +56,11 @@ class TestNearDuplicateFilterWithHammingDistance(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithHammingDistance(2, 10)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 2)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 2)
         # The last probe in input_probes is barely >2 mismatches
         # from the others
-        self.assertIn(input_probes[-1], f.output_probes)
+        self.assertIn(input_probes[-1], output_probes)
 
     def test_two_clusters(self):
         cluster1 = ['ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG', 'ATCGGCGCGG']
@@ -71,12 +71,12 @@ class TestNearDuplicateFilterWithHammingDistance(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithHammingDistance(2, 10)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 2)
-        self.assertTrue((f.output_probes[0].seq_str in cluster1 and
-                         f.output_probes[1].seq_str in cluster2) or
-                        (f.output_probes[0].seq_str in cluster2 and
-                         f.output_probes[1].seq_str in cluster1))
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 2)
+        self.assertTrue((output_probes[0].seq_str in cluster1 and
+                         output_probes[1].seq_str in cluster2) or
+                        (output_probes[0].seq_str in cluster2 and
+                         output_probes[1].seq_str in cluster1))
 
 
 class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
@@ -93,9 +93,9 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 1)
-        self.assertIn(f.output_probes[0], input_probes)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 1)
+        self.assertIn(output_probes[0], input_probes)
 
     def test_all_similar_with_exact_dup(self):
         input = ['ATCGTCGCGG', 'ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG',
@@ -104,11 +104,11 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 1)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 1)
         # The first probe in input_probes is the most common, so this
         # should be the one that is kept
-        self.assertEqual(f.output_probes[0], input_probes[0])
+        self.assertEqual(output_probes[0], input_probes[0])
 
     def test_all_similar_but_zero_dist_thres(self):
         input = ['ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG', 'ATCGGCGCGG']
@@ -116,8 +116,8 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0, 3)
         f.k = 3
-        f.filter(input_probes)
-        self.assertCountEqual(f.output_probes, input_probes)
+        output_probes = f.filter(input_probes)
+        self.assertCountEqual(output_probes, input_probes)
 
     def test_all_similar_but_one_too_far(self):
         input = ['ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG', 'ATTGGGGCCA']
@@ -125,10 +125,10 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 2)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 2)
         # The last probe in input_probes is far from the others
-        self.assertIn(input_probes[-1], f.output_probes)
+        self.assertIn(input_probes[-1], output_probes)
 
     def test_two_clusters(self):
         cluster1 = ['ATCGTCGCGG', 'ATCGTGGCGG', 'TTCGTCGCGG', 'ATCGGCGCGG']
@@ -139,9 +139,9 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
-        f.filter(input_probes)
-        self.assertEqual(len(f.output_probes), 2)
-        self.assertTrue((f.output_probes[0].seq_str in cluster1 and
-                         f.output_probes[1].seq_str in cluster2) or
-                        (f.output_probes[0].seq_str in cluster2 and
-                         f.output_probes[1].seq_str in cluster1))
+        output_probes = f.filter(input_probes)
+        self.assertEqual(len(output_probes), 2)
+        self.assertTrue((output_probes[0].seq_str in cluster1 and
+                         output_probes[1].seq_str in cluster2) or
+                        (output_probes[0].seq_str in cluster2 and
+                         output_probes[1].seq_str in cluster1))

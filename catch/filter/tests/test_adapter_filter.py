@@ -34,9 +34,8 @@ class TestAdapterFilter(unittest.TestCase):
                              mismatches=mismatches,
                              lcf_thres=lcf_thres,
                              kmer_probe_map_k=3)
-        f.target_genomes = target_genomes
-        f.filter(input_probes)
-        return (f, f.output_probes)
+        output_probes = f.filter(input_probes, target_genomes)
+        return (f, output_probes)
 
     def assert_has_adapter(self, probe, adapter):
         """Assert that probe has a particular adapter.
@@ -168,7 +167,7 @@ class TestAdapterFilter(unittest.TestCase):
             self.assertCountEqual(output, desired_output)
 
             # Check votes too
-            votes = f._make_votes_across_target_genomes(input)
+            votes = f._make_votes_across_target_genomes(input, target_genomes)
             if allowed_mismatches == 0:
                 # Each middle probe should align to one genome
                 self.assertEqual(votes, [(2, 0), (0, 1), (0, 1), (2, 0)])
@@ -199,7 +198,7 @@ class TestAdapterFilter(unittest.TestCase):
         self.assertCountEqual(output, desired_output)
 
         # Check votes too
-        votes = f._make_votes_across_target_genomes(input)
+        votes = f._make_votes_across_target_genomes(input, target_genomes)
         self.assertEqual(votes, [(0, 1), (2, 0), (0, 2), (2, 0), (0, 2),
                                  (2, 0)])
 
@@ -220,7 +219,7 @@ class TestAdapterFilter(unittest.TestCase):
         self.assertCountEqual(output, desired_output)
 
         # Check votes too
-        votes = f._make_votes_across_target_genomes(input)
+        votes = f._make_votes_across_target_genomes(input, target_genomes)
         self.assertEqual(votes, [(3, 0), (1, 2)])
 
     def test_with_mismatches(self):

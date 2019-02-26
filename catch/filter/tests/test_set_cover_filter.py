@@ -45,9 +45,8 @@ class TestSetCoverFilter(unittest.TestCase):
             blacklisted_genomes=blacklisted_genomes,
             cover_groupings_separately=cover_groupings_separately,
             kmer_probe_map_k=3)
-        f.target_genomes = target_genomes
-        f.filter(input_probes)
-        return (f, f.output_probes)
+        output_probes = f.filter(input_probes, target_genomes)
+        return (f, output_probes)
 
     def verify_target_genome_coverage(self, selected_probes, target_genomes,
                                       filter, desired_coverage,
@@ -562,9 +561,8 @@ class TestSetCoverFilter(unittest.TestCase):
                                coverage=3,
                                custom_cover_range_fn=custom_cover_range_fn,
                                kmer_probe_map_k=3)
-        f.target_genomes = target_genomes
-        f.filter(candidate_probes)
-        self.assertEqual(set(f.output_probes), {probe.Probe.from_str('AAABCB')})
+        output_probes = f.filter(candidate_probes, target_genomes)
+        self.assertEqual(set(output_probes), {probe.Probe.from_str('AAABCB')})
 
     def tearDown(self):
         # Re-enable logging

@@ -94,6 +94,27 @@ class ProbeDesigner:
             clustered_genomes += [genomes_in_clust]
         return clustered_genomes
 
+    def _pass_through_filters(self, probes, genomes, filters):
+        """Pass candidate probes through a list of filters.
+
+        Args:
+            probes: collection of probes to filter
+            genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
+                each g_i is a list of genome.Genomes belonging to group i.
+                For example, a group may be a species and each g_i would be
+                a list of the target genomes of species i.
+            filters: an (ordered) list of filters, each of which should be
+                an instance of a subclass of BaseFilter
+
+        Returns:
+            subset of probes, after passing through the filters
+        """
+        for f in filters:
+            logger.info("Starting filter %s", f.__class__.__name__)
+            probes = f.filter(probes, genomes)
+        return probes
+
+
     def _design_for_genomes(self, genomes, filters):
         """Design probes on a subset of genomes using a subset of filters.
 
@@ -124,11 +145,7 @@ class ProbeDesigner:
                         allow_small_seqs=self.allow_small_seqs,
                         seq_length_to_skip=self.seq_length_to_skip)
 
-        probes = candidates
-        for f in filters:
-            logger.info("Starting filter %s", f.__class__.__name__)
-            f.target_genomes = genomes
-            probes = f.filter(probes)
+        probes = self._pass_through_filters(candidates, genomes, filters)
         return (candidates, probes)
 
     def design(self):
@@ -140,6 +157,7 @@ class ProbeDesigner:
         self.candidate_probes.
         """
         if self.cluster_threshold is None:
+            # Do not cluster sequences; just design on self.genomes as given
             candidates, probes = self._design_for_genomes(self.genomes,
                     self.filters)
             self.candidate_probes = candidates
@@ -168,8 +186,6 @@ class ProbeDesigner:
         # Run the remaining filters (filters_after_merge) on all the probes
         # after the merge
         probes = list(probes)
-        for f in filters_after_merge:
-            logger.info("Starting filter %s", f.__class__.__name__)
-            f.target_genomes = self.genomes
-            probes = f.filter(probes)
+        probes = self._pass_through_filters(probes, self.genomes,
+                filters_after_merge)
         self.final_probes = probes
