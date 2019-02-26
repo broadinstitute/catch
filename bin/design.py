@@ -159,12 +159,14 @@ def main(args):
         raise Exception(("Both --small-seq-skip and --small-seq-min were "
             "specified, but both cannot be used together"))
 
-    # Do not allow differential identification if clustering is enabled,
-    # since clustering collapses genome groupings into one
+    # Check arguments involving clustering
     if args.cluster_and_design_separately and args.identify:
         raise Exception(("Cannot use --cluster-and-design-separately with "
             "--identify, because clustering collapses genome groupings into "
             "one"))
+    if args.cluster_from_fragments and not args.cluster_and_design_separately:
+        raise Exception(("Cannot use --cluster-from-fragments without also "
+            "setting --cluster-and-design-separately"))
 
     # Check for whether a custom hybridization function was provided
     if args.custom_hybridization_fn:
@@ -310,9 +312,11 @@ def main(args):
             cluster_merge_after = filter_before_scf
         else:
             cluster_merge_after = scf
+        cluster_fragment_length = args.cluster_from_fragments
     else:
         cluster_threshold = None
         cluster_merge_after = None
+        cluster_fragment_length = None
 
     # Design the probes
     pb = probe_designer.ProbeDesigner(genomes_grouped, filters,
@@ -321,7 +325,8 @@ def main(args):
                                       allow_small_seqs=args.small_seq_min,
                                       seq_length_to_skip=args.small_seq_skip,
                                       cluster_threshold=cluster_threshold,
-                                      cluster_merge_after=cluster_merge_after)
+                                      cluster_merge_after=cluster_merge_after,
+                                      cluster_fragment_length=cluster_fragment_length)
     pb.design()
 
     # Write the final probes to the file args.output_probes
@@ -651,6 +656,15 @@ if __name__ == "__main__":
               "Therefore, genomes will not be grouped as specified in the "
               "input and sequences will not be grouped by genome, and "
               "differential identification is not supported"))
+    parser.add_argument('--cluster-from-fragments',
+        type=int,
+        help=("(Optional) If set, break all sequences into sequences of "
+              "length CLUSTER_FROM_FRAGMENTS nt, and cluster these fragments. "
+              "This can be useful for improving runtime on input with "
+              "especially large genomes, in which probes for different "
+              "fragments can be designed separately. Values should generally "
+              "be around 10,000. For this to be used, "
+              "--cluster-and-design-separately must also be set."))
 
     # Filter candidate probes with LSH
     parser.add_argument('--filter-with-lsh-hamming',
