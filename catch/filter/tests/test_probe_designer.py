@@ -158,6 +158,36 @@ class TestProbeDesignerWithClustering(unittest.TestCase):
             self.assertEqual(set(cluster1), set([g3, g4]))
             self.assertEqual(set(cluster2), set([g1, g2]))
 
+    def test_cluster_genomes_with_fragmenting(self):
+        """Test the cluster_genomes() function, with fragmenting sequences.
+        """
+        g1 = genome.Genome.from_one_seq('ATTA'*500)
+        g2 = genome.Genome.from_one_seq('TAAT'*500)
+        g3 = genome.Genome.from_one_seq('GC'*500)
+        g4 = genome.Genome.from_one_seq('CG'*500)
+        seqs = [[g1, g3], [g2, g4]]
+        pb = probe_designer.ProbeDesigner(seqs, [], probe_length=100,
+            probe_stride=50, cluster_threshold=0.1, cluster_merge_after=None,
+            cluster_fragment_length=500)
+        clustered_genomes = pb._cluster_genomes()
+
+        g1_frag = genome.Genome.from_one_seq('ATTA'*125)
+        g2_frag = genome.Genome.from_one_seq('TAAT'*125)
+        g3_frag = genome.Genome.from_one_seq('GC'*250)
+        g4_frag = genome.Genome.from_one_seq('CG'*250)
+
+        # g1_frag and g2_frag should be in a cluster (4 of each),
+        # and g3_frag and g4_frag should be in a cluster (2 of each)
+        self.assertEqual(len(clustered_genomes), 2)
+        cluster1 = clustered_genomes[0]
+        cluster2 = clustered_genomes[1]
+        if g1_frag in cluster1:
+            self.assertCountEqual(cluster1, [g1_frag]*4 + [g2_frag]*4)
+            self.assertCountEqual(cluster2, [g3_frag]*2 + [g4_frag]*2)
+        else:
+            self.assertCountEqual(cluster1, [g3_frag]*2 + [g4_frag]*2)
+            self.assertCountEqual(cluster2, [g1_frag]*4 + [g2_frag]*4)
+
     def test_filter_with_clusters(self):
         """Tests running two back-to-back DuplicateFilters, with the first
         run on each cluster and the second run on the merge of the output

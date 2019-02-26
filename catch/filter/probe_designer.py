@@ -20,7 +20,8 @@ class ProbeDesigner:
 
     def __init__(self, genomes, filters, probe_length,
             probe_stride, allow_small_seqs=None, seq_length_to_skip=None,
-            cluster_threshold=None, cluster_merge_after=None):
+            cluster_threshold=None, cluster_merge_after=None,
+            cluster_fragment_length=None):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
@@ -47,6 +48,9 @@ class ProbeDesigner:
                 from each cluster are merged just after running this filter,
                 and all subsequent filters are run on the merged list; must be
                 set if cluster_threshold is set
+            cluster_fragment_length: if set, break genomes into fragments of
+                this length and cluster these fragments rather than the whole
+                sequences
         """
         self.genomes = genomes
         self.filters = filters
@@ -56,6 +60,7 @@ class ProbeDesigner:
         self.seq_length_to_skip = seq_length_to_skip
         self.cluster_threshold = cluster_threshold
         self.cluster_merge_after = cluster_merge_after
+        self.cluster_fragment_length = cluster_fragment_length
 
     def _cluster_genomes(self):
         """Cluster genomes by nucleotide similarity using MinHash signatures.
@@ -63,6 +68,10 @@ class ProbeDesigner:
         This collapses all sequences, across both groups and genomes, into one
         list of sequences in one group. Therefore, genomes will not be grouped
         as specified in the input and sequences will not be grouped by genome.
+
+        if self.cluster_fragment_length is specified, this additionally breaks
+        genomes into fragments of that length, and clusters those fragments
+        instead of the whole sequences.
 
         Returns:
             list of Genome objects, where each consists of a single sequence
@@ -72,11 +81,22 @@ class ProbeDesigner:
                 "clustering these will result in just one group; differential "
                 "identification or other tasks that rely on group separation "
                 "will no longer work"))
+
+        # Create a dict of sequences across all groupings and genomes, for
+        # input to clustering
         seqs = {}
         seq_idx = 0
         for genomes_from_group in self.genomes:
             for g in genomes_from_group:
-                for s in g.seqs:
+                if self.cluster_fragment_length is not None:
+                    # Break g into fragments
+                    g_fragments = g.break_into_fragments(
+                            self.cluster_fragment_length)
+                    g_seqs = g_fragments.seqs
+                else:
+                    # Do not break into fragments; use whole sequences
+                    g_seqs = g.seqs
+                for s in g_seqs:
                     seqs[seq_idx] = s
                     seq_idx += 1
 
