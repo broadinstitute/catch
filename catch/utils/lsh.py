@@ -110,7 +110,8 @@ class MinHashFamily:
             if num_kmers < self.N:
                 raise ValueError(("The number of k-mers (%d) in the given "
                     "sequence is too small to produce a signature of "
-                    "size %d") % (num_kmers, self.N))
+                    "size %d; try setting --small-seq-skip") %
+                    (num_kmers, self.N))
             def kmer_hashes():
                 for i in range(num_kmers):
                     kmer = s[i:(i + self.kmer_size)]

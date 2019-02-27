@@ -62,7 +62,8 @@ def make_candidate_probes_from_sequence(seq,
                     return [probe.Probe.from_str(seq)]
         else:
             raise ValueError(("An input sequence is smaller than the probe "
-                              "length (" + str(probe_length) + ")"))
+                              "length (" + str(probe_length) + "); try "
+                              "setting --small-seq-skip"))
 
     if isinstance(seq, np.ndarray):
         seq = ''.join(seq)
