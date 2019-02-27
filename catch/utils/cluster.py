@@ -52,8 +52,15 @@ def create_condensed_dist_matrix(n, dist_fn):
     dist_matrix_len = int(n*(n-1)/2)
     dist_matrix = np.zeros(dist_matrix_len)
 
+    num_pairs = n*(n-1) / 2
+    pair_counter = 0
+    logger.debug(("Condensed distance matrix has %d entries"), num_pairs)
     for j in range(n):
         for i in range(j):
+            if (pair_counter + 1) % 100000 == 0:
+                logger.debug(("Computing condensed distance matrix entry "
+                    "%d of %d"), pair_counter + 1, num_pairs)
+            pair_counter += 1
             dist_matrix[idx(i, j)] = dist_fn(i, j)
 
     return dist_matrix
