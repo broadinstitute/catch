@@ -19,6 +19,19 @@ class TestClusterFromMatrix(unittest.TestCase):
         # Disable logging
         logging.disable(logging.WARNING)
 
+    def create_condensed_dist_matrix(self, n, dist_fn):
+        # Run cluster.create_condensed_dist_matrix() for multiple values
+        # of num_processes; make sure the returned results are all equal
+        result = None
+        for num_processes in [1, 2, 4, 8]:
+            condensed = cluster.create_condensed_dist_matrix(n, dist_fn,
+                    num_processes=num_processes)
+            if result is None:
+                result = condensed
+            else:
+                self.assertTrue(np.array_equal(result, condensed))
+        return result
+
     def test_create_condensed_dist_matrix(self):
         # Have 3 elements: 0 and 1 are similar, 0 and 2 are
         # very dissimilar, and 1 and 2 are similar
@@ -30,7 +43,7 @@ class TestClusterFromMatrix(unittest.TestCase):
         def dist_fn(i, j):
             return dist_matrix_2d[i][j]
 
-        condensed = cluster.create_condensed_dist_matrix(n, dist_fn)
+        condensed = self.create_condensed_dist_matrix(n, dist_fn)
 
         # Use scipy to create a condensed matrix, which is possible
         # since we already have the 2d matrix available
@@ -45,7 +58,7 @@ class TestClusterFromMatrix(unittest.TestCase):
         dists = {(0, 1): 1, (0, 2): 100, (1, 2): 2}
         def dist_fn(i, j):
             return dists[(i, j)]
-        dist_matrix = cluster.create_condensed_dist_matrix(n, dist_fn)
+        dist_matrix = self.create_condensed_dist_matrix(n, dist_fn)
 
         clusters = cluster.cluster_from_dist_matrix(dist_matrix, 10)
         self.assertEqual(clusters, [[0, 1], [2]])
@@ -57,7 +70,7 @@ class TestClusterFromMatrix(unittest.TestCase):
         dists = {(0, 1): 100, (0, 2): 100, (1, 2): 1}
         def dist_fn(i, j):
             return dists[(i, j)]
-        dist_matrix = cluster.create_condensed_dist_matrix(n, dist_fn)
+        dist_matrix = self.create_condensed_dist_matrix(n, dist_fn)
 
         clusters = cluster.cluster_from_dist_matrix(dist_matrix, 10)
         self.assertEqual(clusters, [[1, 2], [0]])
@@ -70,7 +83,7 @@ class TestClusterFromMatrix(unittest.TestCase):
         dists = {(0, 1): 20, (0, 2): 30, (1, 2): 40}
         def dist_fn(i, j):
             return dists[(i, j)]
-        dist_matrix = cluster.create_condensed_dist_matrix(n, dist_fn)
+        dist_matrix = self.create_condensed_dist_matrix(n, dist_fn)
 
         clusters = cluster.cluster_from_dist_matrix(dist_matrix, 10)
         self.assertEqual(sorted(clusters), [[0], [1], [2]])

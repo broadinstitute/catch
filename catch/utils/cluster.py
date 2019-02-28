@@ -4,8 +4,11 @@ This includes computing a distance matrix using MinHash, and
 clustering that matrix.
 """
 
+import ctypes
 from collections import defaultdict
 import logging
+import multiprocessing
+from multiprocessing import sharedctypes
 import operator
 
 import numpy as np
@@ -20,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 def make_signatures_with_minhash(family, seqs):
     """Construct a signature using MinHash for each sequence.
+
     Args:
         family: lsh.MinHashFamily object
         seqs: dict mapping sequence header to sequences
+
     Returns:
         dict mapping sequence header to signature
     """
@@ -35,43 +40,129 @@ def make_signatures_with_minhash(family, seqs):
     return signatures
 
 
-def create_condensed_dist_matrix(n, dist_fn):
+def set_max_num_processes_for_creating_distance_matrix(max_num_processes=8):
+    """Set the maximum number of processes to use for creating distance matrix.
+
+    Args:
+        max_num_processes: an int (>= 1) specifying the maximum number of
+            processes to use in a multiprocessing.Pool when filling in the
+            condensed distance matrix; it uses min(the number of CPUs in the
+            system, max_num_processes) processes
+    """
+    global _cdm_max_num_processes
+    _cdm_max_num_processes = max_num_processes
+set_max_num_processes_for_creating_distance_matrix()
+
+
+# Define variables and functions to use in a multiprocessing Pool for
+# filling in the distance matrix; these must be top-level in the module
+global _dist_matrix_shared
+global _dist_fn
+def _fill_in_for_j_range(args):
+    j_start, j_end, n = args
+    for j in range(j_start, j_end):
+        for i in range(j):
+            # Compute index in 1d vector for pair (i, j)
+            idx = int((-1 * i*i)/2 + i*n - 3*i/2 + j - 1)
+            # Fill in _dist_matrix_shared at idx
+            _dist_matrix_shared[idx] = _dist_fn(i, j)
+
+def create_condensed_dist_matrix(n, dist_fn, num_processes=None):
     """Construct a 1d condensed distance matrix for scipy.
+
+    This fills in the matrix using a multiprocessing Pool. Note that having the
+    processes call dist_fn will cause some memory copying: the function  refers
+    to objects, which have reference counters that will be incremented (a
+    write), and for subprocesses Unix performs a copy-on-write. This might
+    cause a slowdown, but could be avoided in the future by copying the
+    MinHash signatures into multiprocessing sharedtypes and having the distance
+    function refer directly to these.
+
     Args:
         n: number of elements whose pairwise distances to store in the
             matrix
         dist_fn: function such that dist_fn(i, j) gives the distance
             between i and j, for all i<j<n
+        num_processes: number of processes to use for the multiprocessing Pool;
+            if not set, this determines a number
+
     Returns:
         condensed 1d distance matrix for input to scipy functions
     """
-    def idx(i, j):
-        # Compute index in 1d vector for pair (i, j)
-        return int((-1 * i*i)/2 + i*n - 3*i/2 + j - 1)
+    global _cdm_max_num_processes
+    if num_processes is None:
+        num_processes = min(multiprocessing.cpu_count(),
+                            _cdm_max_num_processes)
 
+    # Define the global variable _dist_matrix_shared (this must be top-level
+    # to be accessible by the top-level function _fill_in_for_j_range())
+    logger.debug(("Setting up shared distance matrix"))
+    global _dist_matrix_shared
     dist_matrix_len = int(n*(n-1)/2)
-    dist_matrix = np.zeros(dist_matrix_len)
+    _dist_matrix_shared = multiprocessing.sharedctypes.RawArray(
+            ctypes.c_float, dist_matrix_len)
+
+    # Define the global function _dist_fn (this must be top-level to be
+    # used in a multiprocessing Pool)
+    global _dist_fn
+    _dist_fn = dist_fn
 
     num_pairs = n*(n-1) / 2
-    pair_counter = 0
     logger.debug(("Condensed distance matrix has %d entries"), num_pairs)
+    num_entries_per_process = int(num_pairs / num_processes)
+
+    # Find out which value of j to start each process with
+    logger.debug(("Assigning ranges in distance matrix to %d processes"),
+            num_processes)
+    j_start_for_process = [None for _ in range(num_processes)]
+    num_entries_in_process = [0 for _ in range(num_processes)]
+    process_num = 0
+    j_start_for_process[process_num] = 0
     for j in range(n):
-        for i in range(j):
-            if (pair_counter + 1) % 100000 == 0:
-                logger.debug(("Computing condensed distance matrix entry "
-                    "%d of %d"), pair_counter + 1, num_pairs)
-            pair_counter += 1
-            dist_matrix[idx(i, j)] = dist_fn(i, j)
+        if num_entries_in_process[process_num] >= num_entries_per_process:
+            if process_num < num_processes - 1:
+                # Move onto the next process
+                process_num += 1
+                j_start_for_process[process_num] = j
+        # There are j entries associated with j
+        num_entries_in_process[process_num] += j
+
+    # Make arguments to _fill_in_for_j_range()
+    args_for_process = []
+    for process_num in range(num_processes):
+        j_start = j_start_for_process[process_num]
+        if j_start is None:
+            # There are more processes than needed; stop filling in args
+            break
+        if process_num == num_processes - 1:
+            j_end = n
+        else:
+            j_end = j_start_for_process[process_num + 1]
+            if j_end is None:
+                j_end = n
+        args_for_process += [(j_start, j_end, n)]
+
+    # Run the pool
+    logger.debug(("Running multiprocessing pool to fill in distance matrix"))
+    pool = multiprocessing.Pool(num_processes)
+    pool.map(_fill_in_for_j_range, args_for_process)
+    pool.close()
+
+    # Convert back to numpy array
+    logger.debug(("Converting shared distance matrix to numpy array"))
+    dist_matrix = np.ctypeslib.as_array(_dist_matrix_shared)
 
     return dist_matrix
 
 
 def cluster_from_dist_matrix(dist_matrix, threshold):
     """Use scipy to cluster a distance matrix.
+
     Args:
         dist_matrix: distance matrix, represented in scipy's 1d condensed form
         threshold: maximum inter-cluster distance to merge clusters (higher
             results in fewer clusters)
+
     Returns:
         list c such that c[i] is a collection of all the observations
         (whose pairwise distances are indexed in dist) in the i'th
@@ -100,6 +191,7 @@ def cluster_from_dist_matrix(dist_matrix, threshold):
 
 def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1):
     """Cluster sequences based on their MinHash signatures.
+
     Args:
         seqs: dict mapping sequence header to sequences
         k: k-mer size to use for k-mer hashes (smaller is likely more
@@ -111,6 +203,7 @@ def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1):
             average nucleotide dissimilarity (1-ANI, where ANI is
             average nucleotide identity); higher results in fewer
             clusters
+
     Returns:
         list c such that c[i] gives a collection of sequence headers
         in the same cluster, and the clusters in c are sorted

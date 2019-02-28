@@ -21,6 +21,7 @@ from catch.filter import polya_filter
 from catch.filter import probe_designer
 from catch.filter import reverse_complement_filter
 from catch.filter import set_cover_filter
+from catch.utils import cluster
 from catch.utils import seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -139,6 +140,8 @@ def main(args):
     # Set the maximum number of processes in multiprocessing pools
     if args.max_num_processes:
         probe.set_max_num_processes_for_probe_finding_pools(
+            args.max_num_processes)
+        cluster.set_max_num_processes_for_creating_distance_matrix(
             args.max_num_processes)
 
     # Raise exceptions or warn based on use of adapter arguments
