@@ -22,8 +22,7 @@ class TestDuplicateFilter(unittest.TestCase):
         desired_output_probes = [probe.Probe.from_str(s)
                                  for s in desired_output]
         f = duplicate_filter.DuplicateFilter()
-        f.filter(input_probes)
-        self.assertCountEqual(f.input_probes, input_probes)
+        output_probes = f.filter(input_probes)
         # Order should be preserved, so use assertEqual rather than
         # assertCountEqual
-        self.assertEqual(f.output_probes, desired_output_probes)
+        self.assertEqual(output_probes, desired_output_probes)

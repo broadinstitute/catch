@@ -24,9 +24,8 @@ class TestNExpansionFilter(unittest.TestCase):
                                  for s in desired_output]
         f = n_expansion_filter.NExpansionFilter(
                 limit_n_expansion_randomly=limit_n_expansion_randomly)
-        f.filter(input_probes)
-        self.assertEqual(f.input_probes, input_probes)
-        self.assertEqual(f.output_probes, desired_output_probes)
+        output_probes = f.filter(input_probes)
+        self.assertEqual(output_probes, desired_output_probes)
 
     def test_no_N(self):
         input = ['ATCG', 'ACTG']

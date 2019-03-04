@@ -1,6 +1,8 @@
 """Wrappers around a filter, meant to abstract away common tasks.
 """
 
+import inspect
+
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
@@ -17,24 +19,30 @@ class BaseFilter:
     input probes.
 
     All subclasses must implement a _filter(..) method that returns a
-    list of probes after processing from the given input list. This
-    saves the input probes in self.input_probes and the output probes in
-    self.output_probes.
+    list of probes after processing from the given input list.
     """
 
-    def filter(self, input):
+    def filter(self, input, target_genomes=None):
         """Perform the filtering.
 
         Args:
             input: list of candidate probes
+            target_genomes: list [g_1, g_2, g_m] of m groupings of genomes,
+                where each g_i is a list of genome.Genomes belonging to group
+                i, that should be targeted by the probes; for example a
+                group may be a species and each g_i would be a list of the
+                target genomes of species i
 
         Returns:
             list of probes after applying a filter to the input
         """
-        self.input_probes = input
-        filtered = self._filter(input)
-        self.output_probes = filtered
-        return filtered
+        _filter_params = inspect.signature(self._filter).parameters
+        if len(_filter_params) == 2:
+            # _filter() should accept both probes and target genomes
+            return self._filter(input, target_genomes)
+        else:
+            # _filter() may not need target genomes, and does not accept it
+            return self._filter(input)
 
     def _filter(self, input):
         raise Exception(("A subclass of BaseFilter must implement "

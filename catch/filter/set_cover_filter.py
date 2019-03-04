@@ -226,19 +226,20 @@ class SetCoverFilter(BaseFilter):
         self.kmer_probe_map_k = kmer_probe_map_k
         self.kmer_probe_map_use_native_dict = kmer_probe_map_use_native_dict
 
-    def _make_sets(self, candidate_probes):
+    def _make_sets(self, candidate_probes, target_genomes):
         """Return a collection of sets to use in set cover.
 
         In the returned collection of sets, each set corresponds to a
         candidate probe and contains the bases of the target genomes
         covered by the candidate probe. The target genomes must be in
-        grouped lists inside the list self.target_genomes.
+        grouped lists inside the list target_genomes.
 
         The output is intended for input to set_cover.approx_multiuniverse
         as the 'sets' input.
 
         Args:
             candidate_probes: list of candidate probes
+            target_genomes: list of groups of target genomes
 
         Returns:
             a dict mapping set_ids (from 0 through
@@ -246,10 +247,10 @@ class SetCoverFilter(BaseFilter):
             particular set_id maps universe_ids to sets. set_id
             corresponds to a candidate probe in candidate_probes and
             universe_id is a tuple that corresponds to a target genome in
-            a grouping from self.target_genomes. The j'th target genome
-            from the i'th grouping in self.target_genomes is given
+            a grouping from target_genomes. The j'th target genome
+            from the i'th grouping in target_genomes is given
             universe_id equal to (i,j). That is, i ranges from 0 through
-            len(self.target_genomes)-1 (i.e., the number of groupings) and
+            len(target_genomes)-1 (i.e., the number of groupings) and
             j ranges from 0 through (n_i)-1 where n_i is the number of
             target genomes in the i'th group. In the returned value
             (sets), sets[set_id][universe_id] is a set of all the bases
@@ -278,11 +279,11 @@ class SetCoverFilter(BaseFilter):
             probe_id[p] = id
             sets[id] = {}
 
-        for i, genomes_from_group in enumerate(self.target_genomes):
+        for i, genomes_from_group in enumerate(target_genomes):
             for j, gnm in enumerate(genomes_from_group):
                 logger.info(("Computing coverage in grouping %d (of %d), "
                              "with target genome %d (of %d)"), i + 1,
-                            len(self.target_genomes), j + 1,
+                            len(target_genomes), j + 1,
                             len(genomes_from_group))
                 universe_id = (i, j)
                 length_so_far = 0
@@ -398,7 +399,7 @@ class SetCoverFilter(BaseFilter):
 
         return dict(num_bp_covered)
 
-    def _count_num_groupings_hit(self, candidate_probes):
+    def _count_num_groupings_hit(self, candidate_probes, target_genomes):
         """Compute number of genome groupings hit by each candidate probe.
 
         A probe is said to "hit" a grouping of target genomes if it covers
@@ -409,16 +410,17 @@ class SetCoverFilter(BaseFilter):
 
         Args:
             candidate_probes: list of candidate probes
+            target_genomes: list of groups of target genomes
 
         Returns:
             dict mapping each candidate probe to the number of target
             genome groupings it hits
         """
         num_groupings_hit = {p: 0 for p in candidate_probes}
-        for i, genomes_from_group in enumerate(self.target_genomes):
+        for i, genomes_from_group in enumerate(target_genomes):
             logger.info(("Computing coverage in grouping %d (of %d) to "
                          "count number of groupings hit"), i + 1,
-                        len(self.target_genomes))
+                        len(target_genomes))
             num_bp_covered_in_grouping = defaultdict(int)
             for j, gnm in enumerate(genomes_from_group):
                 for sequence in gnm.seqs:
@@ -479,7 +481,7 @@ class SetCoverFilter(BaseFilter):
                     total_num_bp[p] += num_bp[p]
         return total_num_bp
 
-    def _make_ranks(self, candidate_probes):
+    def _make_ranks(self, candidate_probes, target_genomes):
         """Return a rank for each candidate probe to use in set cover.
 
         The "rank" of a candidate probe is a level of penalty for that
@@ -560,7 +562,8 @@ class SetCoverFilter(BaseFilter):
             # rank of 1); probes that hit more than one grouping are poor
             # for identification and their ranks are equal to the number
             # of groupings they hit.
-            num_groupings_hit = self._count_num_groupings_hit(candidate_probes)
+            num_groupings_hit = self._count_num_groupings_hit(candidate_probes,
+                    target_genomes)
             rank_val = {
                 p: (0, hit)
                 for p, hit in num_groupings_hit.items()
@@ -624,11 +627,14 @@ class SetCoverFilter(BaseFilter):
         """
         return {set_id: 1 for set_id in range(len(candidate_probes))}
 
-    def _make_universe_p(self):
+    def _make_universe_p(self, target_genomes):
         """Return a required coverage for each universe to use in set cover.
 
         The output is intended for input to set_cover.approx_multiunvierse
         as the 'universe_p' input.
+
+        Args:
+            target_genomes: list of groups of target genomes
 
         Returns:
             dict mapping each universe_id (representing a target genome) to
@@ -641,8 +647,8 @@ class SetCoverFilter(BaseFilter):
             # target genome to cover
             logger.info(("Building universe_p directly from desired "
                          "fractional coverage"))
-            for i in range(len(self.target_genomes)):
-                for j in range(len(self.target_genomes[i])):
+            for i in range(len(target_genomes)):
+                for j in range(len(target_genomes[i])):
                     universe_p[(i, j)] = self.coverage
         else:
             # self.coverage should be an int representing the number of
@@ -650,13 +656,13 @@ class SetCoverFilter(BaseFilter):
             # fraction using the size of each target genome
             logger.info(("Building universe_p from desired number of bp "
                          "to cover"))
-            for i in range(len(self.target_genomes)):
-                for j, gnm in enumerate(self.target_genomes[i]):
+            for i in range(len(target_genomes)):
+                for j, gnm in enumerate(target_genomes[i]):
                     desired_coverage = min(self.coverage, gnm.size())
                     universe_p[(i, j)] = float(desired_coverage) / gnm.size()
         return universe_p
 
-    def _compute_set_cover(self, sets, costs, universe_p, ranks):
+    def _compute_set_cover(self, sets, costs, universe_p, ranks, target_genomes):
         """Compute set cover approximation(s) for one or more instances.
 
         When self.cover_groupings_separately is True, this uses the input
@@ -686,6 +692,7 @@ class SetCoverFilter(BaseFilter):
             ranks: ranks input to set_cover.approxmultiuniverse for a full
                 instance of set cover (i.e., contains ranks for probes that
                 come from all target genomes across all groupings)
+            target_genomes: list of groups of target genomes
 
         Returns:
             set ids (corresponding to indices in the sets input) that give
@@ -694,7 +701,7 @@ class SetCoverFilter(BaseFilter):
         if self.cover_groupings_separately:
             # For each grouping, construct a set cover instance and solve it
             set_ids_in_cover = set()
-            for i in range(len(self.target_genomes)):
+            for i in range(len(target_genomes)):
                 # The costs, universe_p, and ranks input may have extra
                 # information for this instance, but should still be valid
                 # input to the solver (i.e., they contain all the necessary
@@ -716,7 +723,7 @@ class SetCoverFilter(BaseFilter):
                         sets_for_instance[set_id] = coverage_for_set_id
                 logger.info(("Approximating the solution to an instance of "
                              "set cover, corresponding to grouping %d (of %d)"),
-                            i + 1, len(self.target_genomes))
+                            i + 1, len(target_genomes))
                 set_ids_for_instance = set_cover.approx_multiuniverse(
                     sets_for_instance,
                     costs=costs,
@@ -735,30 +742,27 @@ class SetCoverFilter(BaseFilter):
                 use_intervalsets=True)
         return set_ids_in_cover
 
-    def _filter(self, input):
+    def _filter(self, input, target_genomes):
         """Return a subset of the input probes.
         """
         # Ensure that the input is a list
         input = list(input)
 
         logger.info("Building set cover sets input")
-        sets = self._make_sets(input)
+        sets = self._make_sets(input, target_genomes)
         logger.info("Building set cover ranks input")
-        ranks = self._make_ranks(input)
+        ranks = self._make_ranks(input, target_genomes)
         logger.info("Building set cover costs input")
         costs = self._make_costs(input)
         logger.info("Building set cover universe_p input")
-        universe_p = self._make_universe_p()
+        universe_p = self._make_universe_p(target_genomes)
 
         # Run the set cover approximation algorithm
         set_ids_in_cover = self._compute_set_cover(sets,
                                                    costs,
                                                    universe_p,
-                                                   ranks)
-
-        # Save ranks and costs
-        self.probe_ranks = ranks
-        self.probe_costs = costs
+                                                   ranks,
+                                                   target_genomes)
 
         # Warn when less-than-ideal probes are chosen (i.e., probes
         # whose ranks exceed 0)

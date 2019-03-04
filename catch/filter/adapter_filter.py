@@ -294,14 +294,14 @@ class AdapterFilter(BaseFilter):
             votes_sum += [tuple(x + y for x, y in zip(vote_x, vote_y))]
         return votes_sum
 
-    def _make_votes_across_target_genomes(self, probes):
+    def _make_votes_across_target_genomes(self, probes, target_genomes):
         """Compute, for each probe, votes for adapters to the probe.
 
-        Votes are computed, cumulatively, across all the target genomes in
-        self.target_genomes.
+        Votes are computed, cumulatively, across all the target genomes.
 
         Args:
             probes: list of candidate probes
+            target_genomes: list of groupings of genomes
 
         Returns:
             a list L such that L[i] is a tuple (A,B) where A gives the
@@ -321,7 +321,7 @@ class AdapterFilter(BaseFilter):
                                       self.cover_range_fn)
 
         def iter_all_seqs():
-            for genomes_from_group in self.target_genomes:
+            for genomes_from_group in target_genomes:
                 for g in genomes_from_group:
                     for seq in g.seqs:
                         yield seq
@@ -361,14 +361,14 @@ class AdapterFilter(BaseFilter):
 
         return cumulative_votes
 
-    def _filter(self, input):
+    def _filter(self, input, target_genomes):
         """Add adapters to input probes.
         """
         # Ensure that the input is a list
         input = list(input)
 
         logger.info("Computing adapter votes across all target genomes")
-        votes = self._make_votes_across_target_genomes(input)
+        votes = self._make_votes_across_target_genomes(input, target_genomes)
 
         # Using votes, select the adapter for each probe (the one with
         # the most number of votes) and create a new probe that has

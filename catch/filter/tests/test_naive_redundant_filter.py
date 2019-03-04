@@ -27,9 +27,8 @@ class TestNaiveRedundantFilterShiftAndMismatchCount(unittest.TestCase):
                                  for s in desired_output]
         f = nrf.NaiveRedundantFilter(
             nrf.redundant_shift_and_mismatch_count(shift, mismatches))
-        f.filter(input_probes)
-        self.assertCountEqual(f.input_probes, input_probes)
-        self.assertCountEqual(f.output_probes, desired_output_probes)
+        output_probes = f.filter(input_probes)
+        self.assertCountEqual(output_probes, desired_output_probes)
 
     def test_no_shift_no_mismatch(self):
         # This should detect and remove duplicates

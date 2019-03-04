@@ -59,7 +59,7 @@ class TestHammingDistanceFamily(unittest.TestCase):
         self.assertEqual(self.family.P1(2), 0.9)
 
 
-class TestMinHashFamily(unittest.TestCase):
+class TestMinHashFamilyWithSingleHash(unittest.TestCase):
     """Tests family of hash functions for MinHash.
     """
 
@@ -67,7 +67,7 @@ class TestMinHashFamily(unittest.TestCase):
         # Set a random sseed so hash functions are always the same
         random.seed(0)
 
-        self.family = lsh.MinHashFamily(3)
+        self.family = lsh.MinHashFamily(3, N=1)
 
     def test_identical(self):
         a = 'ATCGATATGGGCACTGCTAT'
@@ -110,6 +110,57 @@ class TestMinHashFamily(unittest.TestCase):
         # Collision probability for two sequences with a Jaccard
         # distance of 0.2 should be 0.8
         self.assertEqual(self.family.P1(0.2), 0.8)
+
+
+class TestMinHashFamilySignatures(unittest.TestCase):
+    """Tests family of hash functions for MinHash, where the hash function
+    returns a signature (multiple hash values).
+    """
+    
+    def setUp(self):
+        # Set a random seed so hash functions are always the same
+        random.seed(0)
+
+        self.family = lsh.MinHashFamily(4, N=10)
+
+    def test_identical(self):
+        a = 'ATCGATATGGGCACTGCTAT'
+        b = str(a)
+
+        # Identical strings should yield the same signature, for the same
+        # hash function
+        for i in range(10):
+            h = self.family.make_h()
+            self.assertEqual(h(a), h(b))
+            self.assertEqual(self.family.estimate_jaccard_dist(h(a), h(b)), 0.0)
+
+    def test_jaccard_dist_similar(self):
+        a = 'ATCGATATGGGCACTGCTATGTAGCGCAAATACGATCGCTAATGCGGATCGGATCGAATG'
+        b = 'ATCGACATGGGCACTGGTATGTAGCGCAAATACGATCGCTATTGCGGATCGGATCGAATG'
+
+        # These strings are very similar, but since N is small
+        # the Jaccard distance estimate may in some cases be a
+        # significant overestimate; test that most of
+        # the time, the distance is <=0.5
+        num_close = 0
+        for i in range(100):
+            h = self.family.make_h()
+            if self.family.estimate_jaccard_dist(h(a), h(b)) <= 0.5:
+                num_close += 1
+        self.assertGreaterEqual(num_close, 80)
+
+    def test_jaccard_dist_not_similar(self):
+        a = 'ATCGATATGGGCACTGCTATGTAGCGCAAATACGATCGCTAATGCGGATCGGATCGAATG'
+        b = 'TCGATCGAATCGAAGGTCGATCGGCGCAATACGGATCGCATTCGATCGGTTATAACGTGA'
+
+        # These strings are far apart, and the estimated Jaccard distance
+        # should usually be high
+        num_far = 0
+        for i in range(100):
+            h = self.family.make_h()
+            if self.family.estimate_jaccard_dist(h(a), h(b)) > 0.5:
+                num_far += 1
+        self.assertGreaterEqual(num_far, 80)
 
 
 class TestHammingHashConcatenation(unittest.TestCase):

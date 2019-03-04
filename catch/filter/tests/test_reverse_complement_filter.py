@@ -22,6 +22,5 @@ class TestReverseComplementFilter(unittest.TestCase):
         desired_output_probes = [probe.Probe.from_str(s)
                                  for s in desired_output]
         f = reverse_complement_filter.ReverseComplementFilter()
-        f.filter(input_probes)
-        self.assertCountEqual(f.input_probes, input_probes)
-        self.assertCountEqual(f.output_probes, desired_output_probes)
+        output_probes = f.filter(input_probes)
+        self.assertCountEqual(output_probes, desired_output_probes)
