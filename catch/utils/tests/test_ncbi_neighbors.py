@@ -12,17 +12,24 @@ class TestURLConstruction(unittest.TestCase):
     """Tests constructing URLs.
     """
 
+    def encoded_url_check(self, url, expected_start, expected_fields):
+        url_split = url.split('?')
+        self.assertEqual(url_split[0], expected_start)
+        fields = url_split[1].split('&')
+        self.assertCountEqual(fields, expected_fields)
+
     def test_ncbi_neighbors_url(self):
         url = nn.ncbi_neighbors_url(123)
-        expected_url = ('https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup'
-            '.cgi?taxid=123&cmd=download2')
-        self.assertEqual(url, expected_url)
+        self.encoded_url_check(url,
+            'https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi',
+            ['taxid=123', 'cmd=download2'])
 
     def test_ncbi_fasta_download_url(self):
         url = nn.ncbi_fasta_download_url(['A123', 'A456', 'B789'])
-        expected_url = ('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch'
-            '.fcgi?id=A123,A456,B789&db=nuccore&rettype=fasta&retmode=text')
-        self.assertEqual(url, expected_url)
+        self.encoded_url_check(url,
+            'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi',
+            ['id=A123,A456,B789', 'db=nuccore', 'rettype=fasta',
+                'retmode=text'])
 
 
 class TestConstructNeighbors(unittest.TestCase):
