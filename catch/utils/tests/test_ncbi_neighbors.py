@@ -2,6 +2,7 @@
 """
 
 import logging
+import os
 import unittest
 
 from catch.utils import ncbi_neighbors as nn
@@ -105,6 +106,11 @@ class TestConstructNeighborsIntegration(unittest.TestCase):
                 num_with_zika += 1
         self.assertGreaterEqual(num_with_zika, len(neighbors) / 2)
 
+    # Skip this test on Travis CI because it seems to not support calls
+    # to FTP servers; construct_influenza_genome_neighbors() requires an
+    # FTP call
+    @unittest.skipIf("TRAVIS" in os.environ and os.environ["TRAVIS"] == "true",
+            "Skipping test_construct_neighbors_for_influenza() on Travis CI.")
     def test_construct_neighbors_for_influenza(self):
         # Download Influenza A virus neighbors
         neighbors = nn.construct_influenza_genome_neighbors(TAXIDS['IAV'])
