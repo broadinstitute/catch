@@ -1,11 +1,16 @@
 """Tests for ncbi_neighbors module.
 """
 
+import logging
 import unittest
 
 from catch.utils import ncbi_neighbors as nn
+from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
+
+TAXIDS = {'ZIKV': 64320, 'IAV': 11320}
+ZIKV_ACCS = ['KY785462', 'KY785463']
 
 
 class TestURLConstruction(unittest.TestCase):
@@ -32,8 +37,8 @@ class TestURLConstruction(unittest.TestCase):
                 'retmode=text'])
 
 
-class TestConstructNeighbors(unittest.TestCase):
-    """Tests the construct_neighbors() function.
+class TestConstructNeighborsUnit(unittest.TestCase):
+    """Unit tests for the construct_neighbors() function.
 
     The function construct_neighbors() calls fetch_neighbors_table(),
     which makes a request to NCBI. To avoid the request, thsi overrides
@@ -69,3 +74,119 @@ class TestConstructNeighbors(unittest.TestCase):
     def tearDown(self):
         # Reset nn.fetch_neighbors_table()
         nn.fetch_neighbors_table = self.fetch_neighbors_table_real
+
+
+class TestConstructNeighborsIntegration(unittest.TestCase):
+    """Integration tests for the construct_neighbors() function.
+
+    This tests for non-influenza and influenza species. Note that it
+    makes remote calls to NCBI's API; if that is not working, these
+    tests will fail.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+    def test_construct_neighbors_for_zika(self):
+        # Download Zika virus neighbors
+        neighbors = nn.construct_neighbors(TAXIDS['ZIKV'])
+
+        # Check that there are at least 100 neighbors (there should
+        # be many more)
+        self.assertGreaterEqual(len(neighbors), 100)
+
+        # Check that most sequences have 'Zika virus' in their lineage (all
+        # should but there may be outliers so only check
+        # if at least half are)
+        num_with_zika = 0
+        for n in neighbors:
+            if 'Zika virus' in n.lineage:
+                num_with_zika += 1
+        self.assertGreaterEqual(num_with_zika, len(neighbors) / 2)
+
+    def test_construct_neighbors_for_influenza(self):
+        # Download Influenza A virus neighbors
+        neighbors = nn.construct_influenza_genome_neighbors(TAXIDS['IAV'])
+
+        # Check that there are at least 100 neighbors (there should
+        # be many more)
+        self.assertGreaterEqual(len(neighbors), 100)
+
+        # Check that most sequences have 'Influenza A virus' in their lineage
+        # (all should but there may be outliers so only check
+        # if at least half are)
+        num_with_influenza = 0
+        for n in neighbors:
+            if 'Influenza A virus' in n.lineage:
+                num_with_influenza += 1
+        self.assertGreaterEqual(num_with_influenza, len(neighbors) / 2)
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
+
+class TestFetchFastasFromAccessionsIntegration(unittest.TestCase):
+    """Integration tests for the fetch_fastas() function.
+
+    Note that this makes remote calls to NCBI's API; if that is not working,
+    these tests will fail.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+    def test_fetch_fastas(self):
+        # Download Zika virus accessions
+        fasta_tf = nn.fetch_fastas(ZIKV_ACCS)
+
+        # Read the fasta
+        seqs = seq_io.read_fasta(fasta_tf.name)
+
+        # Verify that the right number of sequences were fetched
+        self.assertEqual(len(seqs), len(ZIKV_ACCS))
+
+        # Verify that each accession appears in a sequence header (it may
+        # not match exactly because the sequence header is
+        # [accession].[verison], but the accession should be a substring)
+        for acc in ZIKV_ACCS:
+            num_with_acc = sum(1 for seq_header in seqs.keys() if acc in
+                    seq_header)
+            self.assertEqual(num_with_acc, 1)
+
+        fasta_tf.close()
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
+
+
+class TestConstructFastaFromTaxIDIntegration(unittest.TestCase):
+    """Integration tests for the construct_fasta_for_taxid() function.
+
+    Note that this makes remote calls to NCBI's API; if that is not working,
+    these tests will fail.
+    """
+
+    def setUp(self):
+        # Disable logging
+        logging.disable(logging.INFO)
+
+    def test_construct_fasta_for_taxid(self):
+        # Download Zika virus sequences
+        fasta_tf = nn.construct_fasta_for_taxid(TAXIDS['ZIKV'])
+
+        # Read the fasta
+        seqs = seq_io.read_fasta(fasta_tf.name)
+
+        # Check that there are at least 100 sequences (there should be
+        # many more)
+        self.assertGreaterEqual(len(seqs), 100)
+
+        fasta_tf.close()
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
