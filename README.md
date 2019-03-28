@@ -1,13 +1,13 @@
 # CATCH &nbsp;&middot;&nbsp; [![Build Status](https://travis-ci.com/broadinstitute/catch.svg?branch=master)](https://travis-ci.com/broadinstitute/catch) [![Coverage Status](https://coveralls.io/repos/broadinstitute/catch/badge.svg?branch=master)](https://coveralls.io/github/broadinstitute/catch?branch=master) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/broadinstitute/catch/pulls) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 #### Compact Aggregation of Targets for Comprehensive Hybridization
 
-CATCH is a Python package for designing probe sets to use in hybrid capture experiments.
+CATCH is a Python package for designing probe sets to use for nucleic acid capture of diverse sequence.
 
 * **Comprehensive coverage**: CATCH accepts any collection of unaligned sequences &mdash; typically whole genomes of all known genetic diversity of one or more microbial species.
 It designs oligo sequences that guarantee coverage of this diversity, enabling rapid design of exhaustive probe sets for customizable targets.
 * **Compact designs**: CATCH can design with a specified constraint on the number of oligos (e.g., array size).
 It searches a space of probe sets, which may pool many species, to find an optimal design.
-This allows its designs to scale well with known genetic diversity, and also supports cost-effective experiments.
+This allows its designs to scale well with known genetic diversity, and also supports cost-effective applications.
 * **Flexibility**: CATCH supports applications beyond whole genome enrichment, such as differential identification of species.
 It allows blacklisting sequence from the design (e.g., background in microbial enrichment), supports customized models of hybridization, enables weighting the sensitivity for different species, and more.
 <br/>
@@ -65,12 +65,13 @@ git lfs pull
 ```
 
 from inside the `catch` project directory.
+Note that having this data might be helpful, but is not necessary for using CATCH.
 
 ### Testing
 
 CATCH uses Python's `unittest` framework.
 Some of these tests require you to have [downloaded](#downloading-viral-sequence-data) viral sequence data.
-To execute all unit tests, run:
+To execute all tests, run:
 
 ```bash
 python -m unittest discover
@@ -104,7 +105,13 @@ design.py --help
 design.py [dataset] [dataset ...] -o OUTPUT
 ```
 
-Each `dataset` can be a path to a FASTA file. If you [downloaded](#downloading-viral-sequence-data) viral sequence data, it can also simply be a label for one of [550+ viral datasets](./catch/datasets/README.md) (e.g., `human_immunodeficiency_virus_1` or `zika`) distributed as part of this package.
+Each `dataset` can be one of several input formats:
+* A path to a FASTA file.
+* An NCBI taxonomy ID, for which sequences will be automatically downloaded.
+This is specified as `download:TAXID` where TAXID is the taxonomy ID.
+CATCH will fetch all accessions (representing whole genomes) for this taxonomy and download the sequences.
+For viruses, NCBI taxonomy IDs can be found via the [Taxonomy Browser](https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239).
+* If you [downloaded](#downloading-viral-sequence-data) viral sequence data, a label for one of [550+ viral datasets](./catch/datasets/README.md) (e.g., `human_immunodeficiency_virus_1` or `zika`) distributed as part of this package.
 Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) for a species that has human as a host, as of Oct. 2018.
 
 The probe sequences are written to OUTPUT in FASTA format.
@@ -181,11 +188,10 @@ We recommend running this multiple times and selecting the output that has the s
 Below is an example of designing probes to target a single taxon.
 
 ```bash
-design.py zika -pl 75 -m 2 -l 60 -e 50 -o zika-probes.fasta --verbose
+design.py download:64320 -pl 75 -m 2 -l 60 -e 50 -o zika-probes.fasta --verbose
 ```
 
-This will design probes that:
-* target whole genomes of Zika virus (`zika`)
+This will download whole genomes of Zika virus (NCBI taxonomy ID [64320](https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=64320)) and design probes that:
 * are 75 nt long (`-pl 75`)
 * capture the entirety of each genome under a model that a probe hybridizes to a region if the longest common substring, up to 2 mismatches (`-m 2`), between a probe and target is at least 60 nt (`-l 60`)
 * assume 50 nt on each side of the hybridization is captured as well (`-e 50`)
@@ -194,7 +200,7 @@ and will save them to `zika-probes.fasta`.
 
 It will provide detailed output during runtime (`--verbose`) and yield about 600 probes.
 Note that using `-l 75` here will run significantly faster, but results in more probes.
-Also, note that the `zika` dataset distributed with CATCH contains 640 genomes, but the input can also be a path to any custom FASTA file.
+Also, note that the input can be `zika` to use the `zika` dataset distributed with CATCH, or a path to any custom FASTA file.
 
 ### Example of running [`pool.py`](./bin/pool.py)
 

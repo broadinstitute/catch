@@ -22,6 +22,7 @@ from catch.filter import probe_designer
 from catch.filter import reverse_complement_filter
 from catch.filter import set_cover_filter
 from catch.utils import cluster
+from catch.utils import ncbi_neighbors
 from catch.utils import seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -46,6 +47,13 @@ def main(args):
             for name, dataset in collection.import_all():
                 genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
                 genomes_grouped_names += [name]
+        elif ds.startswith('download:'):
+            # Download a FASTA for an NCBI taxonomic ID
+            taxid = ds[len('download:'):]
+            ds_fasta_tf = ncbi_neighbors.construct_fasta_for_taxid(taxid)
+            genomes_grouped += [seq_io.read_genomes_from_fasta(ds_fasta_tf.name)]
+            genomes_grouped_names += ['taxid:' + str(taxid)]
+            ds_fasta_tf.close()
         elif os.path.isfile(ds):
             # Process a custom fasta file with sequences
             genomes_grouped += [seq_io.read_genomes_from_fasta(ds)]
@@ -368,13 +376,17 @@ if __name__ == "__main__":
     # Input data
     parser.add_argument('dataset',
         nargs='+',
-        help=("One or more target datasets (e.g., one per species). If "
-              "DATASET is a path to a file, then that file is treated as "
-              "a FASTA file and its sequences are read. Otherwise, it "
-              "is assumed that this is a label for a dataset included "
-              "in this package (e.g., 'zika'). If the label starts with "
-              "'collection:' (e.g., 'collection:viruses_with_human_host'), "
-              "then this reads from an available collection of datasets."))
+        help=("One or more target datasets (e.g., one per species). Each "
+              "dataset can be specified in one of multiple ways. (a) If "
+              "dataset is in the format 'download:TAXID', then CATCH downloads "
+              "from NCBI all whole genomes for the NCBI taxonomy with id "
+              "TAXID, and uses these sequences as input. (b) If dataset is "
+              "a path to a FASTA file, then its sequences are read and used "
+              "as input. (c) Otherwise, it is assumed that this is a label "
+              "for a dataset included in this package (e.g., 'zika'). If "
+              "the label starts with 'colleciton:' (e.g., 'collection:viruses"
+              "_with_human_host'), then this reads from an available "
+              "collection of datasets."))
 
     # Outputting probes
     parser.add_argument('-o', '--output-probes',
