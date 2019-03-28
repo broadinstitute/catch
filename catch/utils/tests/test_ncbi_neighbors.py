@@ -42,7 +42,7 @@ class TestConstructNeighborsUnit(unittest.TestCase):
     """Unit tests for the construct_neighbors() function.
 
     The function construct_neighbors() calls fetch_neighbors_table(),
-    which makes a request to NCBI. To avoid the request, thsi overrides
+    which makes a request to NCBI. To avoid the request, this overrides
     fetch_neighbors_table() to return a known neighbors table.
     """
 
@@ -75,6 +75,62 @@ class TestConstructNeighborsUnit(unittest.TestCase):
     def tearDown(self):
         # Reset nn.fetch_neighbors_table()
         nn.fetch_neighbors_table = self.fetch_neighbors_table_real
+
+
+class TestConstructInfluenzaGenomeNeighborsUnit(unittest.TestCase):
+    """Unit tests for the construct_influenza_genome_neighbors() function.
+
+    The function construct_influenza_genome_neighbors() calls
+    fetch_influenza_genomes_table(), which makes a request to NCBI. To
+    avoid the request, this overrides fetch_influenza_genomes_table()
+    to return a known genomes table.
+    """
+
+    def setUp(self):
+        self.expected_table_contents = \
+            ("AB123\tHuman\t1\tH1N1\tUSA\t2018\t2300\tInfluenza A virus (A/USA/1/2018(H1N1))\t\t10000\n"
+             "AB456\tHuman\t2\t\tUSA\t2018\t2200\tInfluenza A virus (A/USA/2018)\n"
+             "AB789\tHuman\t3\tH1N1\tUSA\t2018\t2200\tInfluenza A virus (A/USA/2018)\n"
+             "CD123\tHuman\t4\tH1N1\tUSA\t\t2300\tInfluenza A virus (A/USA)\n"
+             "CD456\tHuman\t5\tH1N1\tUSA\t3000\t2200\tInfluenza A virus (A/USA/3000)\n"
+             "CD789\tHuman\t6\tH3N2\tChina\t2015\t2200\tInfluenza A virus (A/China/2015)\n")
+        self.expected_neighbors = [
+            nn.Neighbor('AB123', None, ['Human'],
+                ('Orthomyxoviridae', 'Alphainfluenzavirus', 'Influenza A virus'),
+                "Influenza A virus (A/USA/1/2018(H1N1))", "1",
+                {'subtype': 'H1N1', 'country': 'USA', 'year': 2018,
+                    'seq_len': 2300}),
+            nn.Neighbor('AB456', None, ['Human'],
+                ('Orthomyxoviridae', 'Alphainfluenzavirus', 'Influenza A virus'),
+                "Influenza A virus (A/USA/2018)", "2",
+                {'subtype': '', 'country': 'USA', 'year': 2018,
+                    'seq_len': 2200}),
+            nn.Neighbor('AB789', None, ['Human'],
+                ('Orthomyxoviridae', 'Alphainfluenzavirus', 'Influenza A virus'),
+                "Influenza A virus (A/USA/2018)", "3",
+                {'subtype': 'H1N1', 'country': 'USA', 'year': 2018,
+                    'seq_len': 2200}),
+            nn.Neighbor('CD789', None, ['Human'],
+                ('Orthomyxoviridae', 'Alphainfluenzavirus', 'Influenza A virus'),
+                "Influenza A virus (A/China/2015)", "6",
+                {'subtype': 'H3N2', 'country': 'China', 'year': 2015,
+                    'seq_len': 2200})
+        ]
+
+        # Override nn.fetch_influenza_genomes_table() to return
+        # expected_table_lines, but keep the real function
+        self.fetch_influenza_genomes_table_real = nn.fetch_influenza_genomes_table
+        nn.fetch_influenza_genomes_table = lambda taxid: self.expected_table_contents.split('\n')
+
+    def test_construct_influenza_genome_neighbors(self):
+        # Use 11320 as the taxid, so the function knows the right
+        # Influenza A virus lineage
+        neighbors = nn.construct_influenza_genome_neighbors(11320)
+        self.assertEqual(neighbors, self.expected_neighbors)
+
+    def tearDown(self):
+        # Reset nn.fetch_influenza_genomes_table()
+        nn.fetch_influenza_genomes_table = self.fetch_influenza_genomes_table_real
 
 
 class TestConstructNeighborsIntegration(unittest.TestCase):
