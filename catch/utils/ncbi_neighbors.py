@@ -217,7 +217,7 @@ class Neighbor:
                 sorted(self.hosts) == sorted(other.hosts) and
                 self.lineage == other.lineage and
                 self.tax_name == other.tax_name and
-                self.segment == other.segment,
+                self.segment == other.segment and
                 self.metadata == other.metadata)
 
     def __repr__(self):
