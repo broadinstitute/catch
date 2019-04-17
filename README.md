@@ -83,7 +83,7 @@ cd catch
 pip install -e .
 ```
 
-Depending on your setup (i.e., if you do not have write permissions in the installation directory), you may need to supply `--user` to `pip install`.
+If you do not have write permissions in the installation directory, you may need to supply `--user` to `pip install`.
 
 ### Downloading viral sequence data
 
@@ -98,6 +98,7 @@ git lfs pull
 ```
 
 from inside the `catch` project directory.
+
 Depending on your setup, providing `-e` to `pip` during [installation](#downloading-and-installing) may be necessary for CATCH to access this data.
 Also, note that having this data might be helpful, but is not necessary for using CATCH.
 
