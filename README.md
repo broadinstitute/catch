@@ -49,7 +49,7 @@ An easy way to setup CATCH is to clone the repository and install with `pip`:
 ```bash
 git clone https://github.com/broadinstitute/catch.git
 cd catch
-pip install --user -e .
+pip install -e .
 ```
 
 ### Downloading viral sequence data
@@ -65,7 +65,8 @@ git lfs pull
 ```
 
 from inside the `catch` project directory.
-Note that having this data might be helpful, but is not necessary for using CATCH.
+Depending on your setup, providing `-e` to `pip` during [installation](#downloading-and-installing) may be necessary for CATCH to access this data.
+Also, note that having this data might be helpful, but is not necessary for using CATCH.
 
 ### Testing
 
@@ -86,7 +87,7 @@ If you use conda, the easiest way to install CATCH is by running:
 conda install -c bioconda catch
 ```
 
-Note that this installation method does not distribute [viral sequence data](#downloading-viral-sequence-data) with the package, but CATCH can still be run with your own input data.
+Note that this installation method does not distribute [viral sequence data](#downloading-viral-sequence-data) with the package, but CATCH can still be run with your own input data or by automatically downloading genomes.
 
 ## Using CATCH
 
