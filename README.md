@@ -52,6 +52,8 @@ cd catch
 pip install -e .
 ```
 
+Depending on your setup (i.e., if you do not have write permissions in the installation directory), you may need to supply `--user` to `pip install`.
+
 ### Downloading viral sequence data
 
 We distribute viral sequence data with CATCH, which can be used as input to probe design.
