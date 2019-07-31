@@ -1,4 +1,6 @@
 [run]
+# Measure branch coverage in addition to
+# statement coverage
 branch = True
 
 [report]

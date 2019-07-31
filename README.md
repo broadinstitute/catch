@@ -38,8 +38,8 @@ It allows blacklisting sequence from the design (e.g., background in microbial e
 
 CATCH requires:
 * [Python](https://www.python.org) &gt;= 3.5
-* [NumPy](http://www.numpy.org) &gt;= 1.9.0
-* [SciPy](https://www.scipy.org) &gt;= 1.0.0
+* [NumPy](http://www.numpy.org) &gt;= 1.15.2
+* [SciPy](https://www.scipy.org) &gt;= 1.2.0
 
 Installing CATCH with `pip` (or conda), as described below, will install NumPy and SciPy if they are not already installed.
 
