@@ -14,7 +14,7 @@ setup(name='catch',
       author='Hayden Metsky',
       author_email='hayden@mit.edu',
       packages=find_packages(),
-      install_requires=['numpy>=1.9.0', 'scipy>=1.0.0'],
+      install_requires=['numpy>=1.9.0', 'scipy>=1.2.0'],
       scripts=[
           'bin/analyze_probe_coverage.py',
           'bin/design.py',
