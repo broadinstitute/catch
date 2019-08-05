@@ -5,15 +5,16 @@ If git is available, we use the version specified by git. This can indicate
 commits on top of the last numbered version and can also indicate if the
 working directory is dirty (i.e., has local modifications). If git is not
 available but some version from git was stored in a file, we use that. Finally,
-if none of these are available, we resort to the numbered version manually
-specified in the variable VERSION.
+if none of these are available, we resort to the numbered release version
+manually specified in the variable RELEASE_VERSION.
 """
+
+# Manually specify a numbered release version to use as a fallback
+RELEASE_VERSION = 'v1.3.0'
 
 
 import subprocess
 import os
-import re
-import time, datetime
 
 __author__ = ['Danny Park <dpark@broadinstitute.org>',
         'Hayden Metsky <hayden@mit.edu>']
@@ -39,7 +40,7 @@ def get_project_path():
     return path
 
 
-def call_git_describe():
+def get_version_from_git_describe():
     """Determine a version according to git.
 
     This calls `git describe`, if git is available.
@@ -95,62 +96,32 @@ def write_release_version(version):
         outf.write(version + '\n')
 
 
-def approx_version_number():
-    """
-        In the event that git is unavailable and the VERSION file is not present
-        this returns a "version number" in the following precedence:
-            - version number from path
-                downloads from GitHub tagged releases
-                might be extracted into directories containing
-                the version number. If they contain a version number
-                in the form d.d.d, we can use it
-            - modification time of this file (unix timestamp)
-                file modification time for github releases corresponds to
-                when the release archives were created, a rough way to ballpark
-                the release date. If we can't get the version number from the path
-                we can at least use the modification time of this file as a proxy
-                for the true version number
-            - the current time (unix timestamp)
-                the current time is better than not having any version number
-    """
-    version_re = re.compile(r"(?:(\d+)\.)?(?:(\d+)\.)?(?:(\d+))")
-    # path relative to version.py
-    relative_path = os.path.basename(get_project_path())
-
-    # for tagged releases, the version number might be part of
-    # the root directory name
-    matches = version_re.search(relative_path)
-
-    if matches and len([n for n in matches.groups() if n]) == 3:
-        version = ".".join(map(str, matches.groups()))
-    else:
-        try:
-            # Try to use modification time of the current file
-            version = str(int(os.path.getmtime(__file__)))
-        except OSError:
-            # Just use the current time
-            version = str(int(time.time()))
-
-    return version
-
-
 def get_version():
     """Determine version from git, and save if available.
     """
+    # Allow modifying the global __version__ variable
     global __version__
+
     if __version__ is None:
-        from_git = call_git_describe()
+        from_git = get_version_from_git_describe()
         from_file = read_release_version()
 
         if from_git:
+            # A version is available from git; use this
             if from_file != from_git:
+                # Update the version stored in the VERSION file
                 write_release_version(from_git)
             __version__ = from_git
         else:
-            __version__ = from_file
+            if from_file:
+                # No version is available from git but one is in the
+                # VERSION file; use this
+                __version__ = from_file
 
         if __version__ is None:
-            __version__ = approx_version_number()
+            # No version is available from git and there is no VERSION
+            # file; use the manually set release version
+            __version__ = RELEASE_VERSION
 
     return __version__
 
