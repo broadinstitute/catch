@@ -50,7 +50,13 @@ def main(args):
         elif ds.startswith('download:'):
             # Download a FASTA for an NCBI taxonomic ID
             taxid = ds[len('download:'):]
-            ds_fasta_tf = ncbi_neighbors.construct_fasta_for_taxid(taxid)
+            if args.write_taxid_acc:
+                taxid_fn = os.path.join(args.write_taxid_acc,
+                        str(taxid) + '.txt')
+            else:
+                taxid_fn = None
+            ds_fasta_tf = ncbi_neighbors.construct_fasta_for_taxid(taxid,
+                    write_to=taxid_fn)
             genomes_grouped += [seq_io.read_genomes_from_fasta(ds_fasta_tf.name)]
             genomes_grouped_names += ['taxid:' + str(taxid)]
             ds_fasta_tf.close()
@@ -393,6 +399,12 @@ if __name__ == "__main__":
         required=True,
         help=("The file to which all final probes should be "
               "written; they are written in FASTA format"))
+
+    # Outputting downloaed data
+    parser.add_argument('--write-taxid-acc',
+        help=("If 'download:' labels are used in datasets, write downloaded "
+              "accessions to a file in this directory. Accessions are written "
+              "to WRITE_TAXID_ACC/TAXID.txt"))
 
     # Parameters on probe length and stride
     parser.add_argument('-pl', '--probe-length',

@@ -363,13 +363,16 @@ def construct_influenza_genome_neighbors(taxid):
     return neighbors
 
 
-def construct_fasta_for_taxid(taxid, influenza_species={11320, 11520}):
+def construct_fasta_for_taxid(taxid, influenza_species={11320, 11520},
+        write_to=None):
     """Fetch accessions and a FASTA file for a taxonomy.
 
     Args:
         taxid: NCBI taxonomic ID
         influenza_species: NCBI taxonomic IDs for influenza species; use
             separate influenza DB for fetching accessions in these taxonomies
+        write_to: if set, path to a file to which to write the accessions
+            downloaded (one per line)
 
     Returns:
         tempfile object containing the sequences in fasta format
@@ -397,6 +400,12 @@ def construct_fasta_for_taxid(taxid, influenza_species={11320, 11520}):
 
     # TODO: filter by a given segment, which can be easily done using
     # the Neighbor objects
+
+    # Write accessions to file
+    if write_to is not None:
+        with open(write_to, 'w') as fw:
+            for acc in sorted(set(n.acc for n in neighbors)):
+                fw.write(str(acc) + '\n')
 
     # Fetch a FASTA file of these accessions
     acc_to_fetch = list(unique_acc)
