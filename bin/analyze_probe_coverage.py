@@ -4,6 +4,7 @@
 import argparse
 import importlib
 import logging
+import os
 
 from catch import coverage_analysis
 from catch import probe
@@ -17,12 +18,25 @@ def main(args):
     genomes_grouped = []
     genomes_grouped_names = []
     for ds in args.dataset:
-        try:
-            dataset = importlib.import_module('catch.datasets.' + ds)
-        except ImportError:
-            raise ValueError("Unknown dataset %s" % ds)
-        genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
-        genomes_grouped_names += [ds]
+        if ds.startswith('download:'):
+            # Download a FASTA for an NCBI taxonomic ID
+            taxid = ds[len('download:'):]
+            ds_fasta_tf = ncbi_neighbors.construct_fasta_for_taxid(taxid)
+            genomes_grouped += [seq_io.read_genomes_from_fasta(ds_fasta_tf.name)]
+            genomes_grouped_names += ['taxid:' + str(taxid)]
+            ds_fasta_tf.close()
+        elif os.path.isfile(ds):
+            # Process a custom fasta file with sequences
+            genomes_grouped += [seq_io.read_genomes_from_fasta(ds)]
+            genomes_grouped_names += [os.path.basename(ds)]
+        else:
+            # Process an individual dataset
+            try:
+                dataset = importlib.import_module('catch.datasets.' + ds)
+            except ImportError:
+                raise ValueError("Unknown dataset %s" % ds)
+            genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
+            genomes_grouped_names += [ds]
 
     if args.limit_target_genomes:
         genomes_grouped = [genomes[:args.limit_target_genomes]
@@ -65,8 +79,9 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dataset',
         nargs='+',
         required=True,
-        help=("Labels for one or more target datasets (e.g., "
-              "one label per species)"))
+        help=("Labels for one or more target datasets; each can be a "
+              "FASTA file, taxonomy ID to download, or dataset. The "
+              "format is as specified for --dataset in design.py."))
     parser.add_argument('-f', '--probes-fasta',
         required=True,
         help=("Path to a FASTA file that provides the probes (one per "
