@@ -363,12 +363,13 @@ def construct_influenza_genome_neighbors(taxid):
     return neighbors
 
 
-def construct_fasta_for_taxid(taxid, influenza_species={11320, 11520},
-        write_to=None):
+def construct_fasta_for_taxid(taxid, segment=None,
+        influenza_species={11320, 11520}, write_to=None):
     """Fetch accessions and a FASTA file for a taxonomy.
 
     Args:
         taxid: NCBI taxonomic ID
+        segment: if set, only use this segment
         influenza_species: NCBI taxonomic IDs for influenza species; use
             separate influenza DB for fetching accessions in these taxonomies
         write_to: if set, path to a file to which to write the accessions
@@ -385,7 +386,11 @@ def construct_fasta_for_taxid(taxid, influenza_species={11320, 11520},
             raise ValueError(("'%s' is not a valid NCBI taxonomic ID; it must "
                 "be an integer") % taxid) from error
 
-    logger.info(("Creating a FASTA file for taxid %d"), taxid)
+    if segment is None:
+        logger.info(("Creating a FASTA file for taxid %d"), taxid)
+    else:
+        logger.info(("Creating a FASTA file for taxid %d, segment %s"),
+                taxid, segment)
 
     # Fetch accessions for taxid
     if taxid in influenza_species:
@@ -394,12 +399,17 @@ def construct_fasta_for_taxid(taxid, influenza_species={11320, 11520},
         neighbors = construct_neighbors(taxid)
     if len(neighbors) == 0:
         raise Exception(("No neighbors were found for taxid %d") % taxid)
+
+    # Filter by segment
+    if segment is not None:
+        neighbors = [n for n in neighbors if n.segment == segment]
+        if len(neighbors) == 0:
+            raise Exception(("After filtering for segment '%s', no "
+                "neighbors are left for taxid %d") % (segment, taxid))
+
     unique_acc = set(n.acc for n in neighbors)
     logger.info(("There are %d neighbors, %d of which have unique accessions"),
             len(neighbors), len(unique_acc))
-
-    # TODO: filter by a given segment, which can be easily done using
-    # the Neighbor objects
 
     # Write accessions to file
     if write_to is not None:
