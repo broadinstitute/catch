@@ -17,6 +17,10 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 logger = logging.getLogger(__name__)
 
 
+# Global variable for API key
+ncbi_api_key = None
+
+
 def urlopen_with_tries(url, initial_wait=5, rand_wait_range=(1, 60),
         max_num_tries=5):
     """
@@ -48,11 +52,12 @@ def urlopen_with_tries(url, initial_wait=5, rand_wait_range=(1, 60),
             logger.debug(("Making request to open url: %s"), url)
             r = urllib.request.urlopen(url)
             return r
-        except urllib.error.HTTPError:
+        except urllib.error.HTTPError as e:
             if num_tries == max_num_tries:
                 # This was the last allowed try
                 logger.critical(("Encountered HTTPError %d times (the maximum "
-                    "allowed) when opening url: %s"), num_tries, url)
+                    "allowed) when opening url: %s; error: %s"), num_tries,
+                    url, e)
                 raise
             else:
                 # Pause for a bit and retry
@@ -60,8 +65,9 @@ def urlopen_with_tries(url, initial_wait=5, rand_wait_range=(1, 60),
                 rand_wait = random.randint(*rand_wait_range)
                 total_wait = wait + rand_wait
                 logger.info(("Encountered HTTPError when opening url; "
-                    "sleeping for %d seconds, and then trying again"),
-                    total_wait)
+                    "sleeping for %d seconds, and then trying again "
+                    "(try %d of %d); error: %s"),
+                    total_wait, num_tries, max_num_tries, e)
                 time.sleep(total_wait)
         except:
             logger.critical(("Encountered unexpected error while opening "
@@ -78,8 +84,11 @@ def ncbi_neighbors_url(taxid):
     Returns:
         str representing download URL
     """
-    params = urllib.parse.urlencode({'taxid': taxid, 'cmd': 'download2'})
-    url = 'https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?%s' % params
+    params = {'taxid': taxid, 'cmd': 'download2'}
+    if ncbi_api_key is not None:
+        params['api_key'] = ncbi_api_key
+    params_url = urllib.parse.urlencode(params)
+    url = 'https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?%s' % params_url
     return url
 
 
@@ -149,10 +158,13 @@ def ncbi_fasta_download_url(accessions):
         str representing download URL
     """
     ids = ','.join(accessions)
+    params = {'id': ids, 'db': 'nuccore', 'rettype': 'fasta',
+                'retmode': 'text'}
+    if ncbi_api_key is not None:
+        params['api_key'] = ncbi_api_key
     # Use safe=',' to not encode ',' as '%2'
-    params = urllib.parse.urlencode({'id': ids, 'db': 'nuccore',
-        'rettype': 'fasta', 'retmode': 'text'}, safe=',')
-    url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?%s' % params
+    params_url = urllib.parse.urlencode(params, safe=',')
+    url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?%s' % params_url
     return url
 
 
@@ -173,6 +185,10 @@ def fetch_fastas(accessions, batch_size=100, reqs_per_sec=2):
         tempfile object containing the sequences in fasta format
     """
     logger.debug(("Fetching fasta files for %d accessions") % len(accessions))
+
+    if ncbi_api_key is not None:
+        # Using an API keys allows more requests per second (up to 10)
+        reqs_per_sec = 7
 
     # Make temp file
     fp = tempfile.NamedTemporaryFile()

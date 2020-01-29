@@ -31,6 +31,10 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 def main(args):
     logger = logging.getLogger(__name__)
 
+    # Set NCBI API key
+    if args.ncbi_api_key:
+        ncbi_neighbors.ncbi_api_key = args.ncbi_api_key
+
     # Read the genomes from FASTA sequences
     genomes_grouped = []
     genomes_grouped_names = []
@@ -817,6 +821,10 @@ if __name__ == "__main__":
               "this may result in substantial memory usage; but it may provide "
               "an improvement in runtime when there are relatively few "
               "candidate probes and a very large blacklisted input"))
+    parser.add_argument('--ncbi-api-key',
+        help=("API key to use for NCBI e-utils. Using this increases the "
+              "limit on requests/second and may prevent an IP address "
+              "from being block due to too many requests"))
 
     # Log levels and version
     parser.add_argument('--debug',
