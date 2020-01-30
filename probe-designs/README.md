@@ -9,6 +9,8 @@ This directory contains some of the probe sets designed with CATCH:
 * `V-WAfr.201506.fasta.gz`: 44,995 probes that target genomes of viruses commonly circulating in West Africa, using sequence data through 2015-06 (23 species); this includes reverse complements as well, for 89,990 probes in total
 * `V-Flu.45k.201810.fasta.gz`: 44,848 probes that target genomes of influenza A, B, and C viruses, using sequence data through 2018-10; this includes reverse complements as well, for 89,696 probes in total
 * `V-Flu.6k.201810.fasta.gz`: 5,999 probes that target genomes of influenza A, B, and C viruses, using sequence data through 2018-10; this includes reverse complements as well, for 11,998 probes in total
+* `V-Respiratory.100k.202001.fasta.gz`: 99,994 probes that target genomes of respiratory-related viruses, including 2019-nCoV, using sequence data through 2020-01 (enteroviruses, HPIV, HRSV, human-infecting coronaviruses, human mastadenoviruses, hMPV, Rhinovirus A/B/C; influenza is not included, but is in a separate probe set)
+* `V-Respiratory.50k.202001.fasta.gz`: Same as `V-Respiratory.100k.202001.fasta.gz`, except with 49,919 probes
 * `V-MM.201603.fasta.gz`: 6,219 probes that target genomes of measles and mumps viruses, using sequence data through 2016-03; this includes reverse complements as well, for 12,438 probes in total
 * `V-ZC.201602.fasta.gz`: 6,171 probes that target genomes of chikungunya and Zika viruses, using sequence data through 2016-02; this includes reverse complements as well, for 12,342 probes in total
 
