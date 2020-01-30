@@ -260,6 +260,7 @@ def construct_neighbors(taxid):
         'Selected lineage', 'Taxonomy name', 'Segment name']
 
     neighbors = []
+    encountered_header = False
     for line in fetch_neighbors_table(taxid):
         if len(line.strip()) == 0:
             continue
@@ -268,6 +269,7 @@ def construct_neighbors(taxid):
 
         if line.startswith('##'):
             # Header line
+            encountered_header = True
             if line.startswith('## Columns:'):
                 # Verify the columns are as expected
                 col_names = [n.replace('"', '') for n in ls[1:]]
@@ -276,6 +278,12 @@ def construct_neighbors(taxid):
                         "list does not match the expected order"))
             # Skip the header
             continue
+
+        if not encountered_header:
+            # The format is not as expected
+            logger.critical(("Neighbors table for taxid %s did not "
+                "contain the expected header; it is possible that this "
+                "is not a valid species ID"), taxid)
 
         refseq_acc = ls[0]
         acc = ls[1]
