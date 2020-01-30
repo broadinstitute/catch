@@ -313,7 +313,7 @@ def main(args):
     # [Optional]
     # N expansion filter (nef) -- expand Ns in probe sequences
     # to avoid ambiguity
-    if args.expand_n:
+    if args.expand_n is not None:
         nef = n_expansion_filter.NExpansionFilter(
             limit_n_expansion_randomly=args.expand_n)
         filters += [nef]
