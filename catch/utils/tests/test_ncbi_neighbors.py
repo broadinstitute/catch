@@ -120,7 +120,7 @@ class TestConstructInfluenzaGenomeNeighborsUnit(unittest.TestCase):
         # Override nn.fetch_influenza_genomes_table() to return
         # expected_table_lines, but keep the real function
         self.fetch_influenza_genomes_table_real = nn.fetch_influenza_genomes_table
-        nn.fetch_influenza_genomes_table = lambda taxid: self.expected_table_contents.split('\n')
+        nn.fetch_influenza_genomes_table = lambda taxid, database: self.expected_table_contents.split('\n')
 
     def test_construct_influenza_genome_neighbors(self):
         # Use 11320 as the taxid, so the function knows the right
