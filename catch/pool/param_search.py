@@ -361,7 +361,8 @@ class CannotSatisfyProbeCountConstraintError(Exception):
 
 def _round_params(params, probe_counts, max_total_count, loss_coeffs, weights,
         mismatches_eps=0.01, cover_extension_eps=0.1,
-        mismatches_round=1, cover_extension_round=1):
+        mismatches_round=1, cover_extension_round=1,
+        bounds=None):
     """Round parameter values while satisfying the constraint on total count.
 
     This is only applied to the mismatches and cover_extension parameters.
@@ -407,6 +408,9 @@ def _round_params(params, probe_counts, max_total_count, loss_coeffs, weights,
             mismatches and cover_extension
         mismatches_round/cover_extension_round: round mismatches and
             cover_extension to the nearest multiple of this
+        bounds: list of tuples giving bounds on parameter values;
+            bounds[i] corresponds to parameter in parameters[i], and
+            bounds[i] is a tuple (lo, hi)
 
     Returns:
         list in which index i corresponds to the parameter given in
@@ -484,10 +488,18 @@ def _round_params(params, probe_counts, max_total_count, loss_coeffs, weights,
                 continue
             if i % 2 == 0:
                 # This is a mismatch; decrease by the rounding multiple
-                params_tmp[i] -= mismatches_round
+                new_value = params_tmp[i] - mismatches_round
+                if bounds is not None and new_value < bounds[i][0]:
+                    # This cannot be decreased
+                    continue
+                params_tmp[i] = new_value
             else:
                 # This is a cover_extension; decrease by the rounding multiple
-                params_tmp[i] -= cover_extension_round
+                new_value = params_tmp[i] - cover_extension_round
+                if bounds is not None and new_value < bounds[i][0]:
+                    # This cannot be decreased
+                    continue
+                params_tmp[i] = new_value
             if total_probe_count(params_tmp) >= max_total_count:
                 # This change yields too many probes, so skip it
                 continue
@@ -611,7 +623,8 @@ def standard_search(probe_counts, max_total_count,
     opt_params = _round_params(x_sol, probe_counts, max_total_count,
         loss_coeffs, dataset_weights,
         mismatches_round=mismatches_round,
-        cover_extension_round=cover_extension_round)
+        cover_extension_round=cover_extension_round,
+        bounds=bounds)
 
     # Log the rounded parameter values, the total probe count, and the
     # loss on the rounded values
