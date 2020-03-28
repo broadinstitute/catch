@@ -8,7 +8,7 @@ import os
 
 from catch import coverage_analysis
 from catch import probe
-from catch.utils import seq_io, version, log
+from catch.utils import ncbi_neighbors, seq_io, version, log
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -68,6 +68,9 @@ def main(args):
     if args.write_sliding_window_coverage:
         analyzer.write_sliding_window_coverage(
             args.write_sliding_window_coverage)
+    if args.write_probe_map_counts_to_tsv:
+        analyzer.write_probe_map_counts(
+                args.write_probe_map_counts_to_tsv)
     if args.print_analysis:
         analyzer.print_analysis()
 
@@ -140,6 +143,10 @@ if __name__ == "__main__":
         help=("The file to which to write the average coverage achieved "
               "by the probe set within sliding windows of each target "
               "genome"))
+    parser.add_argument('--write-probe-map-counts-to-tsv',
+        help=("The file to which to write a TSV-formatted list of the "
+              "number of sequences each probe maps to. This explicitly "
+              "does not count reverse complements."))
 
     # Technical adjustments
     def check_max_num_processes(val):

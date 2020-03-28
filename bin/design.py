@@ -358,7 +358,8 @@ def main(args):
     seq_io.write_probe_fasta(pb.final_probes, args.output_probes)
 
     if (args.print_analysis or args.write_analysis_to_tsv or
-            args.write_sliding_window_coverage):
+            args.write_sliding_window_coverage or
+            args.write_probe_map_counts_to_tsv):
         analyzer = coverage_analysis.Analyzer(
             pb.final_probes,
             args.mismatches,
@@ -377,6 +378,9 @@ def main(args):
         if args.write_sliding_window_coverage:
             analyzer.write_sliding_window_coverage(
                 args.write_sliding_window_coverage)
+        if args.write_probe_map_counts_to_tsv:
+            analyzer.write_probe_map_counts(
+                    args.write_probe_map_counts_to_tsv)
         if args.print_analysis:
             analyzer.print_analysis()
     else:
@@ -580,6 +584,10 @@ if __name__ == "__main__":
         help=("(Optional) The file to which to write the average coverage "
               "achieved by the probe set within sliding windows of each "
               "target genome"))
+    parser.add_argument('--write-probe-map-counts-to-tsv',
+        help=("(Optional) The file to which to write a TSV-formatted list of "
+              "the number of sequences each probe maps to. This explicitly "
+              "does not count reverse complements."))
 
     # Accepting probes as input and skipping set cover process
     parser.add_argument('--filter-from-fasta',
