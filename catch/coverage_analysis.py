@@ -54,6 +54,7 @@ the probes, though this could be generalized to any desired coverage):
    percentage more than 100%.
 """
 
+from collections import Counter
 from collections import defaultdict
 import logging
 
@@ -195,8 +196,12 @@ class Analyzer:
         are offset based on the length of the first chromosome). There may
         be duplicate intervals if two probes cover the same region of a
         sequence.
+
+        This also counts, for each probe, the number of sequences that
+        it maps to (not counting reverse complements).
         """
         logger.info("Finding probe covers across target genomes")
+
         logger.info("Building map from k-mers to probes")
         # Note that if adapters are added to the probes before this filter
         # is run (which would be typical), then self.lcf_thres will likely
@@ -213,6 +218,7 @@ class Analyzer:
                                       self.cover_range_fn)
 
         self.target_covers = {}
+        self.probe_map_counts = Counter()
         for i, j, gnm, rc in self._iter_target_genomes():
             if not rc:
                 logger.info(("Computing coverage in grouping %d (of %d), "
@@ -240,6 +246,9 @@ class Analyzer:
                     sequence,
                     merge_overlapping=False)
                 for p, cover_ranges in probe_cover_ranges.items():
+                    if not rc:
+                        self.probe_map_counts[p] += 1
+
                     for cover_range in cover_ranges:
                         # Extend the range covered by probe p on both sides
                         # by self.cover_extension
@@ -540,3 +549,20 @@ class Analyzer:
                     covg = gnm_sliding_coverage[pos]
                     line = '\t'.join([str(x) for x in [header, pos, covg]])
                     f.write(line + '\n')
+
+    def write_probe_map_counts(self, fn):
+        """Write number of sequences mapped by each probe to a file.
+
+        Args:
+            fn: path to file to write to
+        """
+        with open(fn, 'w') as f:
+            header = ["Probe identifier", "Probe sequence",
+                    "Number sequences mapped to"]
+            f.write('\t'.join(header) + '\n')
+
+            # Create an row for every probe
+            for p, count in self.probe_map_counts.items():
+                row = [p.identifier(), p.seq_str, count]
+                line = '\t'.join([str(x) for x in row])
+                f.write(line + '\n')

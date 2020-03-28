@@ -263,6 +263,22 @@ class TestAnalyzerCoversWithCoverExtension(unittest.TestCase):
         self.assertCountEqual(self.analyzer.target_covers[1][0][True],
                               [])   # no coverage in reverse complement
 
+    def test_probe_map_counts(self):
+        """Test the count of the number of sequences each probe maps to.
+
+        This explicitly should not count reverse complements.
+        """
+        def check(probe_seq, expected_count):
+            p = probe.Probe.from_str(probe_seq)
+            self.assertEqual(self.analyzer.probe_map_counts[p],
+                    expected_count)
+        check('ATCCAT', 1)
+        check('TTTGAA', 1)
+        check('GAAGCG', 2)
+        check('ATGGAT', 0)
+        check('CCCCCC', 1)
+        check('AAACCC', 0)
+
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
