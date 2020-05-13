@@ -92,6 +92,13 @@ class TestGenome(unittest.TestCase):
                 OrderedDict([('0', 'ATC'), ('1', 'GTT'), ('2', 'TAA')]))
         self.assertEqual(broken, expected_genome)
 
+    def test_break_into_fragments_from_one_seq_with_full_end_and_long_fragment(self):
+        genome_one = genome.Genome.from_one_seq('ATCGTTAA')
+        broken = genome_one.break_into_fragments(12, include_full_end=True)
+        expected_genome = genome.Genome.from_chrs(
+                OrderedDict([('0', 'ATCGTTAA')]))
+        self.assertEqual(broken, expected_genome)
+
     def test_break_into_fragments_from_chrs(self):
         genome_two_chrs = genome.Genome.from_chrs(
                 OrderedDict([("chr1", 'ATCGTTAA'), ("chr2", 'AATTCCGGG')]))
