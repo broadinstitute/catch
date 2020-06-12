@@ -83,7 +83,7 @@ class Genome:
                 if include_full_end and len(fragment) < fragment_length:
                     # This is at the end of seq; instead, use the last
                     # fragment_length nt
-                    yield seq[(len(seq) - fragment_length):]
+                    yield seq[max(0, len(seq) - fragment_length):]
                 else:
                     yield fragment
 
