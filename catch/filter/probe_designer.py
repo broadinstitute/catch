@@ -174,6 +174,16 @@ class ProbeDesigner:
                         allow_small_seqs=self.allow_small_seqs,
                         seq_length_to_skip=self.seq_length_to_skip)
 
+        if len(candidates) == 0:
+            # There are no candidate probes, possibly because all input
+            # sequences in genomes were skipped
+            logger.warning(("There are no candidate probes for a grouping of "
+                "genomes; it is possible that --small-seq-skip or "
+                "--small-seq-min are incompatible with the input sequence "
+                "lengths, especially if --cluster-and-design-separately is "
+                "set small. Skipping this grouping and returning no probes."))
+            return ([], [])
+
         probes = self._pass_through_filters(candidates, genomes, filters)
         return (candidates, probes)
 
