@@ -693,6 +693,9 @@ class SharedKmerProbeMap:
             ValueError if k-mers have different lengths or the kmer_probe_map
             does not include positions
         """
+        if len(kmer_probe_map) == 0:
+            raise ValueError(("kmer_probe_map is empty"))
+
         # Find the k-mer length k, check that all k-mers in the map are
         # of length k, and check that the k-mers in the map come with
         # positions
