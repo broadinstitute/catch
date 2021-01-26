@@ -253,7 +253,7 @@ The pooled design yields about 89,950 probes, depending on the initial guess.
 
 ## Contributing
 
-We welcome contributions to CATCH. This can be in the form of an [issue](https://github.com/broadinstitute/catch/issues)  or [pull request](https://github.com/broadinstitute/catch/pulls). If you have questions, please create an [issue](https://github.com/broadinstitute/catch/issues) or email **Hayden Metsky** &lt;hayden@mit.edu&gt;.
+We welcome contributions to CATCH. This can be in the form of an [issue](https://github.com/broadinstitute/catch/issues)  or [pull request](https://github.com/broadinstitute/catch/pulls). If you have questions, please create an [issue](https://github.com/broadinstitute/catch/issues) or email **Hayden Metsky** &lt;hmetsky@broadinstitute.org&gt;.
 
 ## Citation
 
