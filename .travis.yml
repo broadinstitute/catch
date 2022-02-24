@@ -1,11 +1,16 @@
 language: python
 
 python:
- - "3.5"
- - "3.6"
- - "3.7"
- - "3.8"
- - "3.9"
+ - 3.5
+ - 3.6
+
+# Python 3.7 requires dist: xenial and sudo: true
+# (see https://github.com/travis-ci/travis-ci/issues/9815#issue-336465122)
+matrix:
+ include:
+  - python: 3.7
+    dist: xenial
+    sudo: true
 
 cache:
  directories:
