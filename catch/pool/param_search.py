@@ -710,11 +710,11 @@ def higher_dimensional_search(param_names, probe_counts, max_total_count,
     # Setup the loss function, parameter bounds, and make an initial guess
     loss_fn = _make_loss_fn(probe_counts, max_total_count, loss_coeffs,
         dataset_weights, interp_fn_type='nd')
-    x0 = _make_initial_guess(probe_counts, None, num_params)
+    bounds = _make_param_bounds_nd(probe_counts)
+    x0 = _make_initial_guess(probe_counts, bounds, num_params)
 
     # Find the optimal parameter values, interpolating probe counts
     # for parameter values between what have been explicitly calculated
-    bounds = _make_param_bounds_nd(probe_counts)
     x_sol = _optimize_loss(probe_counts, loss_fn, bounds, x0,
         interp_fn_type='nd')
 
