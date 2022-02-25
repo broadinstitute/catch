@@ -206,10 +206,10 @@ class TestSearchFunctions(unittest.TestCase):
         self.assertLess(opt_params_count, 150000)
 
         # Verify that the optimal value of the third parameter is
-        # around 20 (namely, 15-25)
+        # around 20 (namely, 10-30)
         for dataset, param_vals in opt_params.items():
             mismatches, cover_extension, p3 = param_vals
-            self.assertTrue(15 <= p3 <= 25)
+            self.assertTrue(10 <= p3 <= 30)
 
     def test_standard_search_vwafr_with_coefficients(self):
         """Integration test with the V-WAfr probe set data.
