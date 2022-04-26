@@ -37,9 +37,11 @@ It allows blacklisting sequence from the design (e.g., background in microbial e
 ### Python dependencies
 
 CATCH requires:
-* [Python](https://www.python.org) &gt;= 3.5
-* [NumPy](http://www.numpy.org) &gt;= 1.15.2
-* [SciPy](https://www.scipy.org) &gt;= 1.2.0
+* [Python](https://www.python.org) &gt;= 3.8
+* [NumPy](http://www.numpy.org) &gt;= 1.22
+* [SciPy](https://www.scipy.org) &gt;= 1.8.0
+
+CATCH may also work with older versions of Python, NumPy, and SciPy, but is only tested with the above versions.
 
 Installing CATCH with `pip` (or conda), as described below, will install NumPy and SciPy if they are not already installed.
 
@@ -58,10 +60,10 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 ```
 
-Once you have conda, you can [create](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) an environment for CATCH with Python 3.7:
+Once you have conda, you can [create](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) an environment for CATCH with Python 3.8:
 
 ```bash
-conda create -n catch python=3.7
+conda create -n catch python=3.8
 ```
 
 Then, you can activate the `catch` environment:
