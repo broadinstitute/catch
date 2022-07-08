@@ -124,15 +124,22 @@ class MinHashFamily:
                     "sequence"), self.kmer_size, len(s))
             num_kmers = len(s) - self.kmer_size + 1
             if num_kmers < self.N:
-                raise ValueError(("The number of k-mers (%d) in the given "
+                logger.warning(("The number of k-mers (%d) in a given "
                     "sequence is too small to produce a signature of "
-                    "size %d; try setting --small-seq-skip") %
-                    (num_kmers, self.N))
+                    "size %d; the MinHash family might provide unreliable "
+                    "distances against the sequence. This might be fine, or "
+                    "specify --small-seq-skip to skip the sequence."),
+                    num_kmers, self.N)
 
             def kmer_hashes():
-                for i in range(num_kmers):
-                    kmer = s[i:(i + self.kmer_size)]
-                    yield kmer_hash(kmer)
+                num_yielded = 0
+                # Keep yielding k-mers until at least self.N
+                #   have been yielded (helpful when s is short)
+                while num_yielded < self.N:
+                    for i in range(num_kmers):
+                        kmer = s[i:(i + self.kmer_size)]
+                        num_yielded += 1
+                        yield kmer_hash(kmer)
             if self.N == 1:
                 # Speed the special case where self.N == 1
                 return tuple([min(kmer_hashes())])
