@@ -156,7 +156,8 @@ class NearDuplicateFilterWithMinHash(NearDuplicateFilter):
                 that this is *not* the same as self.k
         """
         super().__init__(k=3)
-        self.lsh_family = lsh.MinHashFamily(kmer_size)
+        self.lsh_family = lsh.MinHashFamily(kmer_size,
+                use_fast_str_hash=True) # safe as long as not parallelized
         self.dist_thres = dist_thres
 
         def jaccard_dist(a, b):

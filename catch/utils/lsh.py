@@ -2,11 +2,11 @@
 """
 
 from collections import defaultdict
+import hashlib
 import heapq
 import logging
 import math
 import random
-import zlib
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
@@ -55,16 +55,21 @@ class MinHashFamily:
     2016).
     """
 
-    def __init__(self, kmer_size, N=1):
+    def __init__(self, kmer_size, N=1, use_fast_str_hash=False):
         """
         Args:
             kmer_size: length of each k-mer to hash
             N: represent the signature of a sequence using hash values of
                 the N k-mers in the sequence that have the smallest hash
                 values
+            use_fast_str_hash: if True, use a faster (~10x faster) inner
+                hash function for strings (k-mers) that is not deterministic
+                and varies across Python processes; this may not be
+                appropriate if the family is shared across processes
         """
         self.kmer_size = kmer_size
         self.N = N
+        self.use_fast_str_hash = use_fast_str_hash
 
     def make_h(self):
         """Construct a random hash function for this family.
@@ -89,13 +94,24 @@ class MinHashFamily:
         # for random integers a, b (a in [1, p] and b in [0, p])
         a = random.randint(1, p)
         b = random.randint(0, p)
-        def kmer_hash(x):
-            # Hash a k-mer x with the random hash function
-            # hash(..) uses a random seed in Python 3.3+, so its output
-            # varies across Python processes; use zlib.adler32(..) for a
-            # deterministic hash value of the k-mer
-            x_hash = zlib.adler32(x.encode('utf-8'))
-            return (a * x_hash + b) % p
+        if self.use_fast_str_hash:
+            def kmer_hash(x):
+                # Hash a k-mer x with the random hash function
+                # hash(..) uses a random seed in Python 3.3+, so its output
+                #   varies across Python processes; thus, this may not be
+                #   suitable if used across processes
+                x_hash = abs(hash(x))
+                return (a * x_hash + b) % p
+        else:
+            def kmer_hash(x):
+                # Hash a k-mer x with the random hash function
+                # hashlib.md5(..) gives a deterministic hash value of the k-mer
+                #   but is ~10x slower than hash(..)
+                x_hash = int(hashlib.md5(x.encode('utf-8')).hexdigest(), 16)
+                return (a * x_hash + b) % p
+
+        # TODO Consider only allowing fully unambiguous k-mers to be
+        #   in the signature, as a check below in kmer_hashes()
 
         def h(s):
             # For a string/sequence s, have the MinHash function be the minimum
@@ -112,11 +128,16 @@ class MinHashFamily:
                     "sequence is too small to produce a signature of "
                     "size %d; try setting --small-seq-skip") %
                     (num_kmers, self.N))
+
             def kmer_hashes():
                 for i in range(num_kmers):
                     kmer = s[i:(i + self.kmer_size)]
                     yield kmer_hash(kmer)
-            return tuple(sorted(heapq.nsmallest(self.N, kmer_hashes())))
+            if self.N == 1:
+                # Speed the special case where self.N == 1
+                return tuple([min(kmer_hashes())])
+            else:
+                return tuple(sorted(heapq.nsmallest(self.N, kmer_hashes())))
         return h
 
     def P1(self, dist):
