@@ -1,6 +1,7 @@
 """Tests for lsh module.
 """
 
+import logging
 import random
 import unittest
 
@@ -118,6 +119,9 @@ class TestMinHashFamilySignatures(unittest.TestCase):
     """
     
     def setUp(self):
+        # Disable logging
+        logging.disable(logging.WARNING)
+
         # Set a random seed so hash functions are always the same
         random.seed(0)
 
@@ -125,6 +129,17 @@ class TestMinHashFamilySignatures(unittest.TestCase):
 
     def test_identical(self):
         a = 'ATCGATATGGGCACTGCTAT'
+        b = str(a)
+
+        # Identical strings should yield the same signature, for the same
+        # hash function
+        for i in range(10):
+            h = self.family.make_h()
+            self.assertEqual(h(a), h(b))
+            self.assertEqual(self.family.estimate_jaccard_dist(h(a), h(b)), 0.0)
+
+    def test_identical_with_short_sequences(self):
+        a = 'ATCGA'
         b = str(a)
 
         # Identical strings should yield the same signature, for the same
@@ -161,6 +176,10 @@ class TestMinHashFamilySignatures(unittest.TestCase):
             if self.family.estimate_jaccard_dist(h(a), h(b)) > 0.5:
                 num_far += 1
         self.assertGreaterEqual(num_far, 80)
+
+    def tearDown(self):
+        # Re-enable logging
+        logging.disable(logging.NOTSET)
 
 
 class TestHammingHashConcatenation(unittest.TestCase):
