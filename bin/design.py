@@ -337,10 +337,12 @@ def main(args):
             cluster_merge_after = filter_before_scf
         else:
             cluster_merge_after = scf
+        cluster_method = args.cluster_and_design_separately_method
         cluster_fragment_length = args.cluster_from_fragments
     else:
         cluster_threshold = None
         cluster_merge_after = None
+        cluster_method = None
         cluster_fragment_length = None
 
     # Design the probes
@@ -351,6 +353,7 @@ def main(args):
                                       seq_length_to_skip=args.small_seq_skip,
                                       cluster_threshold=cluster_threshold,
                                       cluster_merge_after=cluster_merge_after,
+                                      cluster_method=cluster_method,
                                       cluster_fragment_length=cluster_fragment_length)
     pb.design()
 
@@ -690,8 +693,10 @@ if __name__ == "__main__":
               "and combine the resulting probes. This can significantly lower "
               "runtime and memory usage, but may lead to a suboptimal "
               "solution. The value CLUSTER_AND_DESIGN_SEPARATELY gives the "
-              "inter-cluster distance threshold to merge clusters (1-ANI, "
-              "where ANI is average nucleotide identity); higher values "
+              "distance threshold for determining clusters in terms of "
+              "average nucleotide dissimilarity (1-ANI, where ANI is "
+              "average nucleotide identity; see --cluster-and-design-"
+              "separately-method for details); higher values "
               "result in fewer clusters, and thus longer runtime. Values "
               "must be in (0,0.5], and generally should be around 0.1 or "
               "0.2. When used, this creates a separate genome for each "
@@ -700,6 +705,17 @@ if __name__ == "__main__":
               "Therefore, genomes will not be grouped as specified in the "
               "input and sequences will not be grouped by genome, and "
               "differential identification is not supported"))
+    parser.add_argument('--cluster-and-design-separately-method',
+        choices=['simple', 'hierarchical'], default='simple',
+        help=("(Optional) Method for clustering input sequences, which is "
+              "only used if --cluster-and-design-separately is set. If "
+              "'simple', clusters are connected components of a graph in "
+              "which each sequence is a vertex and two sequences are adjacent "
+              "if their estimated nucleotide dissimilarity is within "
+              "the value CLUSTER_AND_DESIGN_SEPARATELY. If 'hierarchical', "
+              "clusters are determined by agglomerative hierarchical "
+              "clustering and the the value CLUSTER_AND_DESIGN_SEPARATELY "
+              "is the inter-cluster distance threshold to merge clusters."))
     parser.add_argument('--cluster-from-fragments',
         type=int,
         help=("(Optional) If set, break all sequences into sequences of "

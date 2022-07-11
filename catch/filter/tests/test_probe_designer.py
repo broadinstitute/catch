@@ -143,7 +143,8 @@ class TestProbeDesignerWithClustering(unittest.TestCase):
         g4 = genome.Genome.from_one_seq('CG'*500)
         seqs = [[g1, g3], [g2, g4]]
         pb = probe_designer.ProbeDesigner(seqs, [], probe_length=100,
-            probe_stride=50, cluster_threshold=0.1, cluster_merge_after=None)
+            probe_stride=50, cluster_threshold=0.1, cluster_merge_after=None,
+            cluster_method='simple')
         clustered_genomes = pb._cluster_genomes()
 
         # g1 and g2 should be in a cluster, and g3 and g4 should be in a
@@ -168,7 +169,7 @@ class TestProbeDesignerWithClustering(unittest.TestCase):
         seqs = [[g1, g3], [g2, g4]]
         pb = probe_designer.ProbeDesigner(seqs, [], probe_length=100,
             probe_stride=50, cluster_threshold=0.1, cluster_merge_after=None,
-            cluster_fragment_length=500)
+            cluster_method='simple', cluster_fragment_length=500)
         clustered_genomes = pb._cluster_genomes()
 
         g1_frag = genome.Genome.from_one_seq('ATTA'*125)
@@ -202,7 +203,8 @@ class TestProbeDesignerWithClustering(unittest.TestCase):
         df1 = duplicate_filter.DuplicateFilter()
         df2 = duplicate_filter.DuplicateFilter()
         pb = probe_designer.ProbeDesigner(seqs, [df1, df2], probe_length=100,
-            probe_stride=8, cluster_threshold=0.1, cluster_merge_after=df1)
+            probe_stride=8, cluster_threshold=0.1, cluster_merge_after=df1,
+            cluster_method='simple')
         pb.design()
 
         desired_candidate_probes = ['ATTA'*25, 'TAAT'*25, 'CG'*50, 'GC'*50]

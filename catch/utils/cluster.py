@@ -155,8 +155,8 @@ def create_condensed_dist_matrix(n, dist_fn, num_processes=None):
     return dist_matrix
 
 
-def cluster_from_dist_matrix(dist_matrix, threshold):
-    """Use scipy to cluster a distance matrix.
+def cluster_hierarchically_from_dist_matrix(dist_matrix, threshold):
+    """Use scipy to do hierarchical clustering from a distance matrix.
 
     Args:
         dist_matrix: distance matrix, represented in scipy's 1d condensed form
@@ -189,7 +189,92 @@ def cluster_from_dist_matrix(dist_matrix, threshold):
     return elements_in_cluster_sorted
 
 
-def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1):
+def find_connected_components(n, dist_fn, threshold):
+    """Determine connected components based on a distance threshold.
+
+    This follows a depth-first search to identify connected components
+    (to be used as clusters), where two vertices (e.g., sequences) are
+    considered adjacent if the distance between them, as calculated
+    by dist_fn, is within the provided threshold.
+
+    This is inspired by the approach in the Mash paper (Ondov et al. 2016),
+    which uses "simple thresholding of the Mash distance to create connected
+    components".
+
+    Rather than using a distance matrix as input, this computes distances
+    using dist_fn on-the-fly; each pairwise distance should only need to
+    be computed at most once, so there is not a need to store a matrix.
+
+    Args:
+        n: number of elements in the graph; i.e., number of sequences
+        dist_fn: function such that dist_fn(i, j) gives the distance
+            between i and j, for all i<j<n
+        threshold: consider two vertices (or two sequences) to be adjacent
+            if their distance is <= this value
+
+    Returns:
+        list c such that c[i] is a sorted collection of all the indices
+        in the i'th connected component/cluster, and c is in sorted order by
+        decreasing cluster size
+    """
+    # Instead of considering all indices {0..n-1} during each DFS,
+    #   only consider ones not previously found to be a part of a connected
+    #   component
+    indices_to_consider = set(range(n))
+
+    def dfs(i):
+        # Perform a depth-first search starting at vertex i; return all
+        #   indices encountered
+
+        visited_indices = set()
+        indices_to_visit = [i]  # to be used as a stack
+        indices_to_visit_or_already_visited = {i}    # to help performance
+        while len(indices_to_visit) > 0:
+            j = indices_to_visit.pop()
+            if j in visited_indices:
+                # Already encountered j in this connected component
+                continue
+            visited_indices.add(j)
+
+            # Find every vertex k that is adjacent to j and add it to the
+            #   stack
+            # There is no point in considering indices that have been or
+            #   will be visited, so subtract
+            #   indices_to_visit_or_already_visited
+            for k in indices_to_consider - indices_to_visit_or_already_visited:
+                # Note that k will not be in visited_indices because
+                #   visited_indices is a subset of
+                #   indices_to_visit_or_already_visited
+                if dist_fn(j, k) <= threshold:
+                    # j and k are adjacent
+                    indices_to_visit.append(k)
+                    indices_to_visit_or_already_visited.add(k)
+        return visited_indices
+
+    previously_visited_indices = set()
+    connected_components = []
+    for i in range(n):
+        if i in previously_visited_indices:
+            # i was already a part of a connected component
+            continue
+
+        # Perform a depth-first search at vertex i to find a connected
+        #   component
+        cc = dfs(i)
+
+        # Mark every index in cc as already visited and save cc
+        previously_visited_indices.update(cc)
+        indices_to_consider -= cc   # no longer consider indices in cc
+        connected_components.append(sorted(list(cc)))
+
+    # Reverse sort by size of each connected component
+    connected_components.sort(key=len, reverse=True)
+
+    return connected_components
+
+
+def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1,
+        cluster_method='simple'):
     """Cluster sequences based on their MinHash signatures.
 
     Args:
@@ -199,10 +284,17 @@ def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1):
             in determining which genomes are close)
         N: number of hash values to use in a signature (higher is slower for
             clustering, but likely more sensitive for divergent genomes)
-        threshold: maximum inter-cluster distance to merge clusters, in
-            average nucleotide dissimilarity (1-ANI, where ANI is
+        threshold: when cluster_method is 'simple', the maximum distance at
+            which to consider two sequences as adjacent when determining
+            connected components; when cluster_method is 'hierarchical', the
+            maximum inter-cluster distance to merge clusters; for both,
+            expressed in average nucleotide dissimilarity (1-ANI, where ANI is
             average nucleotide identity); higher results in fewer
             clusters
+        cluster_method: 'simple' for determining clusters based on connected
+            components decided based on a distance threshold (relatively less
+            resource intensive); 'hierarchical' for agglomerative hierarchical
+            clustering (relatively more resource intensive)
 
     Returns:
         list c such that c[i] gives a collection of sequence headers
@@ -241,12 +333,23 @@ def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1):
         return family.estimate_jaccard_dist(
             signatures[i], signatures[j])
 
-    logger.info(("Creating condensed distance matrix of %d sequences"), num_seqs)
-    dist_matrix = create_condensed_dist_matrix(num_seqs, jaccard_dist)
-    logger.info(("Clustering %d sequences at Jaccard distance threshold of %f"),
-            num_seqs, jaccard_dist_threshold)
-    clusters = cluster_from_dist_matrix(dist_matrix,
-        jaccard_dist_threshold)
+    if cluster_method == 'simple':
+        logger.info(("Clustering %d sequences at Jaccard distance threshold "
+                "of %f based on connected components"), num_seqs,
+                jaccard_dist_threshold)
+        clusters = find_connected_components(num_seqs, jaccard_dist,
+                jaccard_dist_threshold)
+    elif cluster_method == 'hierarchical':
+        logger.info(("Creating condensed distance matrix of %d sequences"),
+                num_seqs)
+        dist_matrix = create_condensed_dist_matrix(num_seqs, jaccard_dist)
+        logger.info(("Clustering %d sequences at Jaccard distance threshold "
+                "of %f using hierarchical method"), num_seqs,
+                jaccard_dist_threshold)
+        clusters = cluster_hierarchically_from_dist_matrix(dist_matrix,
+            jaccard_dist_threshold)
+    else:
+        raise ValueError(f"Unknown cluster_method '{cluster_method}'")
 
     seqs_in_cluster = []
     for cluster_idxs in clusters:

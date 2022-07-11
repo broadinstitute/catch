@@ -21,7 +21,7 @@ class ProbeDesigner:
     def __init__(self, genomes, filters, probe_length,
             probe_stride, allow_small_seqs=None, seq_length_to_skip=None,
             cluster_threshold=None, cluster_merge_after=None,
-            cluster_fragment_length=None):
+            cluster_method=None, cluster_fragment_length=None):
         """
         Args:
             genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
@@ -41,13 +41,23 @@ class ProbeDesigner:
                 them)
             cluster_threshold: if set, cluster genomes and run filters (except
                 the final ones) separately on each cluster, and merge probes;
-                this value is the inter-cluster distance to merge clusters,
-                in average nucleotide dissimilarity (1-ANI, where ANI is
-                average nucleotide identity); higher results in fewer clusters
+                when cluster_method is 'simple', this value is the maximum
+                distance at which to consider two sequences as adjacent when
+                determining connected components; when cluster_method is
+                'hierarchical', this value is the inter-cluster distance to
+                merge clusters; for both, expressed in average nucleotide
+                dissimilarity (1-ANI, where ANI is average nucleotide
+                identity); higher results in fewer clusters
             cluster_merge_after: a filter in filters such that output probes
                 from each cluster are merged just after running this filter,
                 and all subsequent filters are run on the merged list; must be
                 set if cluster_threshold is set
+            cluster_method: method for performing cluster -- 'simple' for
+                determining clusters based on connected components decided
+                based on a distance threshold (relative less resource
+                intensive); 'hierarchical' for agglomerative hierarchical
+                clustering (more resource intensive); must be set if
+                cluster_threshold is set
             cluster_fragment_length: if set, break genomes into fragments of
                 this length and cluster these fragments rather than the whole
                 sequences
@@ -60,6 +70,7 @@ class ProbeDesigner:
         self.seq_length_to_skip = seq_length_to_skip
         self.cluster_threshold = cluster_threshold
         self.cluster_merge_after = cluster_merge_after
+        self.cluster_method = cluster_method
         self.cluster_fragment_length = cluster_fragment_length
 
     def _cluster_genomes(self):
@@ -109,7 +120,8 @@ class ProbeDesigner:
             "average nucleotide dissimilarity threshold of %f"),
                 seq_idx, self.cluster_threshold)
         clusters = cluster.cluster_with_minhash_signatures(seqs,
-                threshold=self.cluster_threshold)
+                threshold=self.cluster_threshold,
+                cluster_method=self.cluster_method)
 
         logger.info(("Found %d clusters with sizes: %s"), len(clusters),
                 [len(clust) for clust in clusters])
