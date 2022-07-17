@@ -40,6 +40,29 @@ def make_signatures_with_minhash(family, seqs):
     return signatures
 
 
+def _jaccard_dist_from_mash_dist(mash_dist, k):
+    """Compute a Jaccard distance from a Mash distance.
+
+     Eq. 4 of the Mash paper (Ondov et al. 2016) shows that the
+     Mash distance, which is shown to be closely related to 1-ANI, is:
+      D = (-1/k) * ln(2*j/(1+j))
+     where j is a Jaccard similarity. Solving for j:
+      j = 1/(2*exp(k*D) - 1)
+     So, for a desired distance D in terms of 1-ANI, the corresponding
+     Jaccard distance is:
+      1.0 - 1/(2*exp(k*D) - 1)
+
+    Args:
+        mash_dist: a distance giving approximate nucleotide dissimilarity
+            (1-ANI), namely a Mash distance
+        k: k-mer size to use for k-mer hashes
+
+    Returns:
+        corresponding Jaccoard distance
+    """
+    return 1.0 - 1.0/(2.0*np.exp(k*mash_dist) - 1)
+
+
 def set_max_num_processes_for_creating_distance_matrix(max_num_processes=8):
     """Set the maximum number of processes to use for creating distance matrix.
 
@@ -189,7 +212,8 @@ def cluster_hierarchically_from_dist_matrix(dist_matrix, threshold):
     return elements_in_cluster_sorted
 
 
-def find_connected_components(n, dist_fn, threshold):
+def find_connected_components(n, dist_fn, threshold,
+        early_stop_threshold=_jaccard_dist_from_mash_dist(0.02, 12)):
     """Determine connected components based on a distance threshold.
 
     This follows a depth-first search to identify connected components
@@ -210,7 +234,14 @@ def find_connected_components(n, dist_fn, threshold):
         dist_fn: function such that dist_fn(i, j) gives the distance
             between i and j, for all i<j<n
         threshold: consider two vertices (or two sequences) to be adjacent
-            if their distance is <= this value
+            if their Jaccard distance is <= this value
+        early_stop_threshold: as a heuristic to improve performance, if
+            a sequence j is within this distance of i and i (plus its
+            neighborhood) has been visited, simply mark j as visited and do not
+            actually visit it (and, thus, do not explore its neighborhood);
+            expressed as a Jaccard distance, like `threshold`; higher values
+            will speed the search, but may result in more (and inaccurate)
+            connected components; set the value to 0 to disable this heuristic
 
     Returns:
         list c such that c[i] is a sorted collection of all the indices
@@ -245,10 +276,19 @@ def find_connected_components(n, dist_fn, threshold):
                 # Note that k will not be in visited_indices because
                 #   visited_indices is a subset of
                 #   indices_to_visit_or_already_visited
-                if dist_fn(j, k) <= threshold:
+                dist = dist_fn(j, k)
+                if dist <= threshold:
                     # j and k are adjacent
-                    indices_to_visit.append(k)
-                    indices_to_visit_or_already_visited.add(k)
+                    if dist <= early_stop_threshold:
+                        # j and k are so similar that, as a heuristic to
+                        # improve performance, don't bother visting k; just
+                        # mark it as visited instead
+                        visited_indices.add(k)
+                        indices_to_visit_or_already_visited.add(k)
+                    else:
+                        # Visit k later in the search
+                        indices_to_visit.append(k)
+                        indices_to_visit_or_already_visited.add(k)
         return visited_indices
 
     previously_visited_indices = set()
@@ -315,17 +355,8 @@ def cluster_with_minhash_signatures(seqs, k=12, N=100, threshold=0.1,
         seq_headers += [name]
         signatures += [signatures_map[name]]
 
-    # Eq. 4 of the Mash paper (Ondov et al. 2016) shows that the
-    # Mash distance, which is shown to be closely related to 1-ANI, is:
-    #  D = (-1/k) * ln(2*j/(1+j))
-    # where j is a Jaccard similarity. Solving for j:
-    #  j = 1/(2*exp(k*D) - 1)
-    # So, for a desired distance D in terms of 1-ANI, the corresponding
-    # Jaccard distance is:
-    #  1.0 - 1/(2*exp(k*D) - 1)
-    # We can use this to calculate a clustering threshold in terms of
-    # Jaccard distance
-    jaccard_dist_threshold = 1.0 - 1.0/(2.0*np.exp(k*threshold) - 1)
+    # Calculate a clustering threshold in terms of Jaccard distance
+    jaccard_dist_threshold = _jaccard_dist_from_mash_dist(threshold, k)
 
     def jaccard_dist(i, j):
         # Return estimated Jaccard dist between signatures at
