@@ -95,22 +95,22 @@ def main(args):
         genomes_grouped = [random.choices(genomes, k=k)
                            for genomes in genomes_grouped]
 
-    # Store the FASTA paths of blacklisted genomes
-    blacklisted_genomes_fasta = []
-    if args.blacklist_genomes:
-        for bg in args.blacklist_genomes:
-            if os.path.isfile(bg):
+    # Store the FASTA paths of avoided genomes
+    avoided_genomes_fasta = []
+    if args.avoid_genomes:
+        for ag in args.avoid_genomes:
+            if os.path.isfile(ag):
                 # Process a custom fasta file with sequences
-                blacklisted_genomes_fasta += [bg]
+                avoided_genomes_fasta += [ag]
             else:
                 # Process an individual dataset
                 try:
                     dataset = importlib.import_module(
-                        'catch.datasets.' + bg)
+                        'catch.datasets.' + ag)
                 except ImportError:
-                    raise ValueError("Unknown file or dataset '%s'" % bg)
+                    raise ValueError("Unknown file or dataset '%s'" % ag)
                 for fp in dataset.fasta_paths:
-                    blacklisted_genomes_fasta += [fp]
+                    avoided_genomes_fasta += [fp]
 
     # Setup and verify parameters related to probe length
     if not args.lcf_thres:
@@ -277,7 +277,7 @@ def main(args):
         custom_cover_range_fn=custom_cover_range_fn,
         custom_cover_range_tolerant_fn=custom_cover_range_tolerant_fn,
         identify=args.identify,
-        blacklisted_genomes=blacklisted_genomes_fasta,
+        avoided_genomes=avoided_genomes_fasta,
         coverage=args.coverage,
         cover_extension=args.cover_extension,
         cover_groupings_separately=args.cover_groupings_separately,
@@ -524,7 +524,7 @@ if __name__ == "__main__":
               "its value should reduce the number of probes required to "
               "achieve the desired coverage."))
 
-    # Differential identification and blacklisting
+    # Differential identification and avoiding genomes
     parser.add_argument('-i', '--identify',
         dest="identify",
         action="store_true",
@@ -532,9 +532,9 @@ if __name__ == "__main__":
               "nucleic acid from a particular input dataset against "
               "the other datasets; when set, the coverage should "
               "generally be small"))
-    parser.add_argument('--blacklist-genomes',
+    parser.add_argument('--avoid-genomes',
         nargs='+',
-        help=("One or more blacklisted genomes; penalize probes based "
+        help=("One or more genomes to avoid; penalize probes based "
               "on how much of each of these genomes they cover. If "
               "the value is a path to a file, then that file is treated "
               "as a FASTA file and its sequences are read. Otherwise, "
@@ -546,14 +546,14 @@ if __name__ == "__main__":
               "this should be greater than the value of MISMATCHES. "
               "Allows for capturing more possible hybridizations "
               "(i.e., more sensitivity) when designing probes for "
-              "identification or when genomes are blacklisted."))
+              "identification or when genomes are avoided."))
     parser.add_argument('-lt', '--lcf-thres-tolerant',
         type=int,
         help=("(Optional) A more tolerant value for 'lcf_thres'; "
               "this should be less than LCF_THRES. "
               "Allows for capturing more possible hybridizations "
               "(i.e., more sensitivity) when designing probes for "
-              "identification or when genomes are blacklisted."))
+              "identification or when genomes are avoided."))
     parser.add_argument('--island-of-exact-match-tolerant',
         type=int,
         default=0,
@@ -562,14 +562,14 @@ if __name__ == "__main__":
               "EXACT_MATCH. Allows for capturing more "
               "possible hybridizations (i.e., more sensitivity) "
               "when designing probes for identification or when "
-              "genomes are blacklisted."))
+              "genomes are avoided."))
     parser.add_argument('--custom-hybridization-fn-tolerant',
         nargs=2,
         help=("(Optional) A more tolerant model than the one "
               "implemented in custom_hybridization_fn. This should capture "
               "more possible hybridizations (i.e., be more sensitive) "
               "when designing probes for identification or when genomes "
-              "are blacklisted. See --custom-hybridization-fn for details "
+              "are avoided. See --custom-hybridization-fn for details "
               "of how this function should be implemented and provided."))
 
     # Outputting coverage analyses
@@ -820,7 +820,7 @@ if __name__ == "__main__":
     parser.add_argument('--use-native-dict-when-finding-tolerant-coverage',
         dest="use_native_dict_when_finding_tolerant_coverage",
         action="store_true",
-        help=("When finding probe coverage for blacklisting and "
+        help=("When finding probe coverage for avoiding genomes and "
               "identification (i.e., when using tolerant parameters), "
               "use a native Python dict as the kmer_probe_map across "
               "processes, rather than the primitives in SharedKmerProbeMap "
@@ -828,11 +828,11 @@ if __name__ == "__main__":
               "on the input (particularly if there are many candidate probes) "
               "this may result in substantial memory usage; but it may provide "
               "an improvement in runtime when there are relatively few "
-              "candidate probes and a very large blacklisted input"))
+              "candidate probes and a very large avoided genomes input"))
     parser.add_argument('--ncbi-api-key',
         help=("API key to use for NCBI e-utils. Using this increases the "
               "limit on requests/second and may prevent an IP address "
-              "from being block due to too many requests"))
+              "from being blocked due to too many requests"))
 
     # Log levels and version
     parser.add_argument('--debug',

@@ -29,7 +29,7 @@ class TestSetCoverFilter(unittest.TestCase):
                               lcf_thres_tolerant=-1,
                               cover_extension=0,
                               identify=False,
-                              blacklisted_genomes=[],
+                              avoided_genomes=[],
                               cover_groupings_separately=False):
         input_probes = [probe.Probe.from_str(s) for s in input]
         # Remove duplicates
@@ -42,7 +42,7 @@ class TestSetCoverFilter(unittest.TestCase):
             mismatches_tolerant=mismatches_tolerant,
             lcf_thres_tolerant=lcf_thres_tolerant,
             identify=identify,
-            blacklisted_genomes=blacklisted_genomes,
+            avoided_genomes=avoided_genomes,
             cover_groupings_separately=cover_groupings_separately,
             kmer_probe_map_k=3)
         output_probes = f.filter(input_probes, target_genomes)
@@ -138,7 +138,7 @@ class TestSetCoverFilter(unittest.TestCase):
                        identify=False,
                        mismatches_tolerant=0,
                        lcf_thres_tolerant=6,
-                       blacklisted_genomes=[],
+                       avoided_genomes=[],
                        cover_groupings_separately=False):
         input = []
         for tg in [g for genomes_from_group in target_genomes
@@ -156,7 +156,7 @@ class TestSetCoverFilter(unittest.TestCase):
             lcf_thres_tolerant=lcf_thres_tolerant,
             cover_extension=cover_extension,
             identify=identify,
-            blacklisted_genomes=blacklisted_genomes,
+            avoided_genomes=avoided_genomes,
             cover_groupings_separately=cover_groupings_separately)
         return f, output
 
@@ -361,7 +361,7 @@ class TestSetCoverFilter(unittest.TestCase):
         self.assertEqual(set(probes), {probe.Probe.from_str('MNOPQR'),
                                            probe.Probe.from_str('ATATAT')})
 
-    def test_blacklist_one_genome1(self):
+    def test_avoid_one_genome1(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a\n")
         bl_file.write("AAAAAAAAAAAAAAAAAAAAA\n")
@@ -373,13 +373,13 @@ class TestSetCoverFilter(unittest.TestCase):
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=6,
                                         identify=False,
-                                        blacklisted_genomes=[bl_file.name])
-        # No candidate probe is blacklisted
+                                        avoided_genomes=[bl_file.name])
+        # No candidate probe is avoided
         self.assertEqual(set(probes), {probe.Probe.from_str('ABCDEF')})
 
         bl_file.close()
 
-    def test_blacklist_one_genome2(self):
+    def test_avoid_one_genome2(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a\n")
         bl_file.write("AAAAAAAAATCGGGAAAAAAAA\n")
@@ -391,13 +391,13 @@ class TestSetCoverFilter(unittest.TestCase):
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=6,
                                         identify=False,
-                                        blacklisted_genomes=[bl_file.name])
-        # ABCDEF is blacklisted, so go for the second most common probe
+                                        avoided_genomes=[bl_file.name])
+        # ABCDEF is avoided, so go for the second most common probe
         self.assertEqual(set(probes), {probe.Probe.from_str('MNOPQR')})
 
         bl_file.close()
 
-    def test_blacklist_one_genome_reverse_complement(self):
+    def test_avoid_one_genome_reverse_complement(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a\n")
         bl_file.write("AAAAAAAACCCGATAAAAAA\n")
@@ -409,13 +409,13 @@ class TestSetCoverFilter(unittest.TestCase):
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=6,
                                         identify=False,
-                                        blacklisted_genomes=[bl_file.name])
-        # ATCGGG is blacklisted, so go for the second most common probe
+                                        avoided_genomes=[bl_file.name])
+        # ATCGGG is avoided, so go for the second most common probe
         self.assertEqual(set(probes), {probe.Probe.from_str('MNOPQR')})
 
         bl_file.close()
 
-    def test_blacklist_one_genome_tolerant(self):
+    def test_avoid_one_genome_tolerant(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a\n")
         bl_file.write("AAAAAAAATCCGCAAAAAAAA\n")
@@ -429,13 +429,13 @@ class TestSetCoverFilter(unittest.TestCase):
                                         identify=False,
                                         mismatches_tolerant=1,
                                         lcf_thres_tolerant=5,
-                                        blacklisted_genomes=[bl_file.name])
-        # ATCGGG is blacklisted, so go for the second most common probe
+                                        avoided_genomes=[bl_file.name])
+        # ATCGGG is avoided, so go for the second most common probe
         self.assertEqual(set(probes), {probe.Probe.from_str('MNOPQR')})
 
         bl_file.close()
 
-    def test_blacklist_two_genomes_one_file(self):
+    def test_avoid_two_genomes_one_file(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a 1\n")
         bl_file.write("AAAAAAAAATCGGGAAAAAAAA\n")
@@ -449,13 +449,13 @@ class TestSetCoverFilter(unittest.TestCase):
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=6,
                                         identify=False,
-                                        blacklisted_genomes=[bl_file.name])
+                                        avoided_genomes=[bl_file.name])
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
         self.assertNotIn(probe.Probe.from_str('GGGGGG'), probes)
 
         bl_file.close()
 
-    def test_blacklist_two_genomes_two_files(self):
+    def test_avoid_two_genomes_two_files(self):
         bl_file1 = tempfile.NamedTemporaryFile(mode='w')
         bl_file1.write(">n/a 1\n")
         bl_file1.write("AAAAAAAAATCGGGAAAAAAAA\n")
@@ -472,14 +472,14 @@ class TestSetCoverFilter(unittest.TestCase):
             target_genomes,
             cover=6,
             identify=False,
-            blacklisted_genomes=[bl_file1.name, bl_file2.name])
+            avoided_genomes=[bl_file1.name, bl_file2.name])
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
         self.assertNotIn(probe.Probe.from_str('GGGGGG'), probes)
 
         bl_file1.close()
         bl_file2.close()
 
-    def test_blacklist_one_genome_forced_pick(self):
+    def test_avoid_one_genome_forced_pick(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a\n")
         bl_file.write("AAAAAAAAAAATCGGGAAAAA\n")
@@ -490,7 +490,7 @@ class TestSetCoverFilter(unittest.TestCase):
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=1.0,
                                         identify=False,
-                                        blacklisted_genomes=[bl_file.name])
+                                        avoided_genomes=[bl_file.name])
         # Should choose ABCDEF
         self.assertIn(probe.Probe.from_str('ABCDEF'), probes)
         # Forced to choose ATCGGG at end to ensure full coverage
@@ -501,7 +501,7 @@ class TestSetCoverFilter(unittest.TestCase):
 
         bl_file.close()
 
-    def test_identify_and_blacklist(self):
+    def test_identify_and_avoid(self):
         bl_file = tempfile.NamedTemporaryFile(mode='w')
         bl_file.write(">n/a\n")
         bl_file.write("AAAAAAAAAAATCGGGATCGGGAAAAA\n")
@@ -514,14 +514,14 @@ class TestSetCoverFilter(unittest.TestCase):
         f, probes = self.get_6bp_probes(target_genomes,
                                         cover=12,
                                         identify=True,
-                                        blacklisted_genomes=[bl_file.name])
+                                        avoided_genomes=[bl_file.name])
         # Should pick GGGGGG and CCCCCC for the first genome
         # Note there are just 5 G's and 5 C's in the last genome
         self.assertIn(probe.Probe.from_str('GGGGGG'), probes)
         self.assertIn(probe.Probe.from_str('CCCCCC'), probes)
         # Should avoid ABCDEF because it hits two groups
         self.assertNotIn(probe.Probe.from_str('ABCDEF'), probes)
-        # Should avoid ATCGGG because it's blacklisted
+        # Should avoid ATCGGG because it's avoided
         self.assertNotIn(probe.Probe.from_str('ATCGGG'), probes)
         self.verify_target_genome_coverage(probes, target_genomes, f, 12)
 
