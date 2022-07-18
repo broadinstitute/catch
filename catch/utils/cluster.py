@@ -63,18 +63,21 @@ def _jaccard_dist_from_mash_dist(mash_dist, k):
     return 1.0 - 1.0/(2.0*np.exp(k*mash_dist) - 1)
 
 
-def set_max_num_processes_for_creating_distance_matrix(max_num_processes=8):
-    """Set the maximum number of processes to use for creating distance matrix.
+def set_max_num_processes_for_computing_distances(max_num_processes=8):
+    """Set the maximum number of processes to use for computing distances.
+
+    This can be used for computing a distance matrix or just individual
+    pairwise distances.
 
     Args:
         max_num_processes: an int (>= 1) specifying the maximum number of
-            processes to use in a multiprocessing.Pool when filling in the
-            condensed distance matrix; it uses min(the number of CPUs in the
-            system, max_num_processes) processes
+            processes to use in a multiprocessing.Pool when computing
+            pairwise distances in parallel; it uses min(the number of CPUs
+            in the system, max_num_processes) processes
     """
     global _cdm_max_num_processes
     _cdm_max_num_processes = max_num_processes
-set_max_num_processes_for_creating_distance_matrix()
+set_max_num_processes_for_computing_distances()
 
 
 # Define variables and functions to use in a multiprocessing Pool for
@@ -89,6 +92,13 @@ def _fill_in_for_j_range(args):
             idx = int((-1 * i*i)/2 + i*n - 3*i/2 + j - 1)
             # Fill in _dist_matrix_shared at idx
             _dist_matrix_shared[idx] = _dist_fn(i, j)
+
+# Define an outer function similar to the one above for filling in a
+# distance matrix, but instead to use for only computing pairwise
+# distances; this must be top-level in the module in order to be
+# pickled
+def _dist_fn_outer(i, j):
+    return _dist_fn(i, j)
 
 def create_condensed_dist_matrix(n, dist_fn, num_processes=None):
     """Construct a 1d condensed distance matrix for scipy.
@@ -248,6 +258,15 @@ def find_connected_components(n, dist_fn, threshold,
         in the i'th connected component/cluster, and c is in sorted order by
         decreasing cluster size
     """
+    # Setup a multiprocessing Pool, which will speed calculations of
+    #   pairwise distances
+    global _dist_fn
+    _dist_fn = dist_fn
+    global _cdm_max_num_processes
+    num_processes = min(multiprocessing.cpu_count(),
+                        _cdm_max_num_processes)
+    pool = multiprocessing.Pool(num_processes)
+
     # Instead of considering all indices {0..n-1} during each DFS,
     #   only consider ones not previously found to be a part of a connected
     #   component
@@ -256,6 +275,8 @@ def find_connected_components(n, dist_fn, threshold,
     def dfs(i):
         # Perform a depth-first search starting at vertex i; return all
         #   indices encountered
+
+        logger.debug(("Running depth-first search for index %d of %d"), i, n)
 
         visited_indices = set()
         indices_to_visit = [i]  # to be used as a stack
@@ -272,11 +293,17 @@ def find_connected_components(n, dist_fn, threshold,
             # There is no point in considering indices that have been or
             #   will be visited, so subtract
             #   indices_to_visit_or_already_visited
-            for k in indices_to_consider - indices_to_visit_or_already_visited:
+            # Parallelize this because the distance computations are expensive
+            possible_neighborhood = list(indices_to_consider -
+                    indices_to_visit_or_already_visited)
+            pool_args = [(j, k) for k in possible_neighborhood]
+            dists_per_chunk = max(1, int(len(pool_args) / num_processes))
+            dists = pool.starmap(_dist_fn_outer, pool_args,
+                    chunksize=dists_per_chunk)
+            for k, dist in zip(possible_neighborhood, dists):
                 # Note that k will not be in visited_indices because
                 #   visited_indices is a subset of
                 #   indices_to_visit_or_already_visited
-                dist = dist_fn(j, k)
                 if dist <= threshold:
                     # j and k are adjacent
                     if dist <= early_stop_threshold:
@@ -309,6 +336,8 @@ def find_connected_components(n, dist_fn, threshold,
 
     # Reverse sort by size of each connected component
     connected_components.sort(key=len, reverse=True)
+
+    pool.close()
 
     return connected_components
 

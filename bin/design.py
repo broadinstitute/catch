@@ -163,7 +163,7 @@ def main(args):
     if args.max_num_processes:
         probe.set_max_num_processes_for_probe_finding_pools(
             args.max_num_processes)
-        cluster.set_max_num_processes_for_creating_distance_matrix(
+        cluster.set_max_num_processes_for_computing_distances(
             args.max_num_processes)
 
     # Raise exceptions or warn based on use of adapter arguments
