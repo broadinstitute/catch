@@ -29,7 +29,7 @@ class NearDuplicateFilter(BaseFilter):
     duplicate filter should *not* be run before this.
     """
 
-    def __init__(self, k, reporting_prob=0.95):
+    def __init__(self, k, reporting_prob=0.80):
         """
         Args:
             k: number of hash functions to draw from a family of
