@@ -71,6 +71,7 @@ class TestNearDuplicateFilterWithHammingDistance(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithHammingDistance(2, 10)
         f.k = 3
+        f.reporting_prob = 0.90
         output_probes = f.filter(input_probes)
         self.assertEqual(len(output_probes), 2)
         self.assertTrue((output_probes[0].seq_str in cluster1 and
@@ -93,6 +94,7 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
+        f.reporting_prob = 0.90
         output_probes = f.filter(input_probes)
         self.assertEqual(len(output_probes), 1)
         self.assertIn(output_probes[0], input_probes)
@@ -104,6 +106,7 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
+        f.reporting_prob = 0.90
         output_probes = f.filter(input_probes)
         self.assertEqual(len(output_probes), 1)
         # The first probe in input_probes is the most common, so this
@@ -116,6 +119,7 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0, 3)
         f.k = 3
+        f.reporting_prob = 0.90
         output_probes = f.filter(input_probes)
         self.assertCountEqual(output_probes, input_probes)
 
@@ -125,6 +129,7 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
+        f.reporting_prob = 0.90
         output_probes = f.filter(input_probes)
         self.assertEqual(len(output_probes), 2)
         # The last probe in input_probes is far from the others
@@ -139,6 +144,7 @@ class TestNearDuplicateFilterWithMinHash(unittest.TestCase):
 
         f = ndf.NearDuplicateFilterWithMinHash(0.8, 3)
         f.k = 3
+        f.reporting_prob = 0.90
         output_probes = f.filter(input_probes)
         self.assertEqual(len(output_probes), 2)
         self.assertTrue((output_probes[0].seq_str in cluster1 and
