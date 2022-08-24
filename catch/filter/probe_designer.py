@@ -90,9 +90,9 @@ class ProbeDesigner:
         """
         if len(self.genomes) > 1:
             logger.warning(("There are >1 groups of genomes in the input, but "
-                "clustering these will result in just one group; differential "
+                "clustering these will override those groupings; differential "
                 "identification or other tasks that rely on group separation "
-                "will no longer work"))
+                "may no longer work as intended"))
 
         # Create a dict of sequences across all groupings and genomes, for
         # input to clustering
