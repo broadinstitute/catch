@@ -30,7 +30,8 @@ class TestSetCoverFilter(unittest.TestCase):
                               lcf_thres_tolerant=-1,
                               cover_extension=0,
                               identify=False,
-                              avoided_genomes=[]):
+                              avoided_genomes=[],
+                              force_num_processes=None):
         input_probes_grouped = []
         for input_group in input:
             i = [probe.Probe.from_str(s) for s in input_group]
@@ -46,6 +47,8 @@ class TestSetCoverFilter(unittest.TestCase):
             identify=identify,
             avoided_genomes=avoided_genomes,
             kmer_probe_map_k=3)
+        if force_num_processes is not None:
+            f._force_num_processes = force_num_processes
         output_probes = f.filter(input_probes_grouped, target_genomes_grouped,
                 input_is_grouped=True)
         # Flatten output_probes across groupings
@@ -88,7 +91,8 @@ class TestSetCoverFilter(unittest.TestCase):
         probe.close_probe_finding_pool()
 
     def run_full_coverage_check_for_target_genomes(self,
-            target_genomes_grouped, check_must_have=True):
+            target_genomes_grouped, check_must_have=True,
+            force_num_processes=None):
         input = []
         for genomes_from_group in target_genomes_grouped:
             input_group = []
@@ -97,7 +101,8 @@ class TestSetCoverFilter(unittest.TestCase):
                     input_group += [seq[i:(i + 6)] for i in range(len(seq) - 6 + 1)]
             input += [input_group]
         f, output = self.get_filter_and_output(
-            6, 0, target_genomes_grouped, input, 1.0)
+            6, 0, target_genomes_grouped, input, 1.0,
+            force_num_processes=force_num_processes)
         # output must have probes in must_have_output
         if check_must_have:
             must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
@@ -130,8 +135,10 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                            'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        # Test with one grouping of two sequences
-        self.run_full_coverage_check_for_target_genomes(target_genomes)
+        for np in [None, 1, 2, 4]:
+            # Test with one grouping of two sequences
+            self.run_full_coverage_check_for_target_genomes(target_genomes,
+                    force_num_processes=np)
 
     def get_6bp_probes(self, target_genomes_grouped,
                        cover=1.0,
@@ -154,6 +161,18 @@ class TestSetCoverFilter(unittest.TestCase):
             cover_extension=cover_extension,
             identify=identify,
             avoided_genomes=avoided_genomes)
+        # Test that the output is the same even when particular numbers of
+        # processes are set
+        for np in [1, 2, 4]:
+            _, o = self.get_filter_and_output(
+                6, 0, target_genomes_grouped, input, cover,
+                mismatches_tolerant=mismatches_tolerant,
+                lcf_thres_tolerant=lcf_thres_tolerant,
+                cover_extension=cover_extension,
+                identify=identify,
+                avoided_genomes=avoided_genomes,
+                force_num_processes=np)
+            self.assertEqual(output, o)
         return f, output
 
     def test_same_output_with_duplicated_species(self):
@@ -527,11 +546,12 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
                           ['ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        # Do not check for the 'must have' probes because the targets will
-        #   be covered separately, and thus probes may not reflect the
-        #   most conserved sites
-        self.run_full_coverage_check_for_target_genomes(target_genomes,
-                check_must_have=False)
+        for np in [None, 1, 2, 4]:
+            # Do not check for the 'must have' probes because the targets will
+            #   be covered separately, and thus probes may not reflect the
+            #   most conserved sites
+            self.run_full_coverage_check_for_target_genomes(target_genomes,
+                    check_must_have=False, force_num_processes=np)
 
     def test_custom_cover_range_fn(self):
         custom_path = os.path.join(os.path.dirname(__file__),

@@ -165,6 +165,8 @@ def main(args):
             args.max_num_processes)
         cluster.set_max_num_processes_for_computing_distances(
             args.max_num_processes)
+        set_cover_filter.set_max_num_processes_for_set_cover_instances(
+            args.max_num_processes)
 
     # Raise exceptions or warn based on use of adapter arguments
     if args.add_adapters:

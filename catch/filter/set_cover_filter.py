@@ -45,7 +45,11 @@ mismatches between a sequence and a probe.
 from collections import defaultdict
 import gc
 import logging
+import multiprocessing
+import os
+import pickle
 import re
+import tempfile
 
 from catch.filter.base_filter import BaseFilter
 from catch import probe
@@ -57,6 +61,130 @@ from catch.utils import set_cover
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 logger = logging.getLogger(__name__)
+
+
+def set_max_num_processes_for_set_cover_instances(max_num_processes=8):
+    """Set the maximum number of processes to use for parallelizing set
+    cover instances.
+
+    Args:
+        max_num_processes: an int (>= 1) specifying the maximum number of
+            processes to use in a multiprocessing.Pool when parallelizing
+            set cover instances, i.e., the maximum number of target groupings
+            to solve in parallel; it uses min(the number of CPUs
+            in the system, max_num_processes) processes
+    """
+    global _sc_max_num_processes
+    _sc_max_num_processes = max_num_processes
+set_max_num_processes_for_set_cover_instances()
+
+
+def _pickle_set_cover_input(sets, costs, universe_p, ranks):
+    """Save input to a set cover instance to a temporary file.
+
+    Args:
+        sets: sets input to set_cover.approx_multiuniverse for a full
+            instance of set cover (i.e., covering target genomes across
+            all groupings)
+        costs: costs input to set_cover.approx_multiuniverse for a full
+            instance of set cover (i.e., contains costs for probes that
+            come from all target genomes across all groupings)
+        universe_p: universe_p input to set_cover.approx_multiuniverse for
+            a full instance of set cover (i.e., give universe_p coverage
+            value for every universe corresponding each target genome)
+        ranks: ranks input to set_cover.approx_multiuniverse for a full
+            instance of set cover (i.e., contains ranks for probes that
+            come from all target genomes across all groupings)
+
+    Returns:
+        path to named temporary file
+    """
+    d = {'sets': sets,
+            'costs': costs,
+            'universe_p': universe_p,
+            'ranks': ranks}
+    tf_name = None
+    with tempfile.NamedTemporaryFile(delete=False) as tf:
+        pickle.dump(d, tf)
+        tf.flush()
+        tf_name = tf.name
+    return tf_name
+
+
+def _compute_set_cover(sets, costs, universe_p, ranks):
+    """Compute set cover approximation(s) for one or more instances.
+
+    Args:
+        sets: sets input to set_cover.approx_multiuniverse for a full
+            instance of set cover (i.e., covering target genomes across
+            all groupings)
+        costs: costs input to set_cover.approx_multiuniverse for a full
+            instance of set cover (i.e., contains costs for probes that
+            come from all target genomes across all groupings)
+        universe_p: universe_p input to set_cover.approx_multiuniverse for
+            a full instance of set cover (i.e., give universe_p coverage
+            value for every universe corresponding each target genome)
+        ranks: ranks input to set_cover.approx_multiuniverse for a full
+            instance of set cover (i.e., contains ranks for probes that
+            come from all target genomes across all groupings)
+
+    Returns:
+        set ids (corresponding to indices in the sets input) that give
+        the probes selected to be in the set cover
+    """
+    set_ids_in_cover = set_cover.approx_multiuniverse(
+        sets,
+        costs=costs,
+        universe_p=universe_p,
+        ranks=ranks,
+        use_intervalsets=True)
+    return set_ids_in_cover
+
+
+def _compute_set_cover_from_saved_input(tf_name, group_i):
+    """Read input to set cover instance, solve it, and delete the input.
+
+    This removes the temporary file passed as tf_name.
+
+    Args:
+        tf_name: path to temporary file containing input to a set cover
+            instance, as saved by _pickle_set_cover_input()
+        group_i: index (0-based) of grouping of genomes
+
+    Returns:
+        set ids (corresponding to indices in the sets input) that give
+        the probes selected to be in the set cover
+    """
+    logger.info(("Group %d: approximating the solution to a set cover "
+                 "instance across a grouping of genomes"),
+                 group_i+1)
+
+    # Read input data and delete the file
+    with open(tf_name, 'rb') as tf:
+        d = pickle.load(tf)
+    os.remove(tf_name)
+
+    # Solve instance
+    set_ids_in_cover = _compute_set_cover(
+            d['sets'], d['costs'], d['universe_p'], d['ranks'])
+
+    # Warn when less-than-ideal probes are chosen (i.e., probes
+    # whose ranks exceed 0)
+    num_bad_probes = sum([True for set_id in set_ids_in_cover
+        if d['ranks'][set_id] > 0])
+    if num_bad_probes > 0:
+        logger.warning(("Group %d: forced to choose %d less-than-ideal probe%s "
+                        "(i.e., probes that 'hit' more than one "
+                        "grouping during identification or probes that "
+                        "cover an avoided genome)"), group_i+1, num_bad_probes,
+                       ('' if num_bad_probes == 1 else 's'))
+
+    # d could be large and is no longer needed, so make sure it gets
+    # garbage collected
+    del d
+    gc.collect()
+
+    return set_ids_in_cover
 
 
 class SetCoverFilter(BaseFilter):
@@ -218,6 +346,10 @@ class SetCoverFilter(BaseFilter):
         # Mark that probes can must be grouped by their
         #   target genome groupings
         self.requires_probe_groupings = True
+
+        # Allow unit tests to override the number of processes (not just
+        # the maximum)
+        self._force_num_processes = None
 
     def _make_sets(self, candidate_probes, target_genomes):
         """Return a collection of sets to use in set cover.
@@ -647,34 +779,113 @@ class SetCoverFilter(BaseFilter):
                 universe_p[(j)] = float(desired_coverage) / gnm.size()
         return universe_p
 
-    def _compute_set_cover(self, sets, costs, universe_p, ranks):
-        """Compute set cover approximation(s) for one or more instances.
+    def _construct_and_pickle_set_cover_input(self, possible_probes_grouped,
+            target_genomes_grouped):
+        """Construct inputs to set cover instances (one per grouping).
+
+        Note that the computationally intensive parts (e.g., finding covers
+        in self._make_sets()) are already parallelized, so we do not need
+        to parallelize this function across the groupings.
 
         Args:
-            sets: sets input to set_cover.approx_multiuniverse for a full
-                instance of set cover (i.e., covering target genomes across
-                all groupings)
-            costs: costs input to set_cover.approx_multiuniverse for a full
-                instance of set cover (i.e., contains costs for probes that
-                come from all target genomes across all groupings)
-            universe_p: universe_p input to set_cover.approxmultiuniverse for
-                a full instance of set cover (i.e., give universe_p coverage
-                value for every universe corresponding each target genome)
-            ranks: ranks input to set_cover.approxmultiuniverse for a full
-                instance of set cover (i.e., contains ranks for probes that
-                come from all target genomes across all groupings)
+            possible_probes_grouped: list [p_1, p_2, ..., p_m] of m groupings 
+                of genomes, where each p_i is a collection of probes for
+                group i
+            target_genomes_grouped: list [g_1, g_2, ..., g_m] of m groupings of
+                genomes, where each g_i is a list of genome.Genomes belonging
+                to group i. For example, a group may be a species and each g_i
+                would be a list of the target genomes of species i.
 
         Returns:
-            set ids (corresponding to indices in the sets input) that give
-            the probes selected to be in the set cover
+            list [(tf_i, group_i)] where tf_i is a path to a temporary file
+            containing the input for a set cover instance and group_i is a
+            0-based index for the grouping
         """
-        set_ids_in_cover = set_cover.approx_multiuniverse(
-            sets,
-            costs=costs,
-            universe_p=universe_p,
-            ranks=ranks,
-            use_intervalsets=True)
-        return set_ids_in_cover
+        paths = []
+        for group_i, (possible_probes, target_genomes) in enumerate(zip(
+                possible_probes_grouped, target_genomes_grouped)):
+            # Ensure that the input is a list
+            possible_probes = list(possible_probes)
+
+            logger.info("Building set cover sets input (group %d of %d)",
+                    group_i+1, len(possible_probes_grouped))
+            sets = self._make_sets(possible_probes, target_genomes)
+            logger.info("Building set cover ranks input (group %d of %d)",
+                    group_i+1, len(possible_probes_grouped))
+            ranks = self._make_ranks(possible_probes, target_genomes_grouped)
+            logger.info("Building set cover costs input (group %d of %d)",
+                    group_i+1, len(possible_probes_grouped))
+            costs = self._make_costs(possible_probes)
+            logger.info("Building set cover universe_p input (group %d of %d)",
+                    group_i+1, len(possible_probes_grouped))
+            universe_p = self._make_universe_p(target_genomes)
+
+            # Pickle the input
+            tf_name = _pickle_set_cover_input(sets, costs, universe_p, ranks)
+
+            # Since the input can be large, make sure it is garbage collected
+            del sets
+            del ranks
+            del costs
+            del universe_p
+            gc.collect()
+
+            paths += [(tf_name, group_i)]
+        return paths
+
+    def _parallelize_compute_set_cover(self, input_paths,
+            possible_probes_grouped, num_processes=None):
+        """
+        Parallelize solving set cover instances across groupings.
+
+        Args:
+            input_paths: list [(tf_i, group_i)] where tf_i is a path to a
+                temporary file containing the input for a set cover instance
+                and group_i is a 0-based index for the grouping
+            possible_probes_grouped: list [p_1, p_2, ..., p_m] of m groupings 
+                of genomes, where each p_i is a collection of probes for
+                group i
+            num_processes: number of processes to use for the multiprocessing
+                Pool; if not set, this determines a number
+
+        Returns:
+            dict {group_i: set_ids_in_cover} where set_ids_in_cover give the
+            set ids (corresponding to indices in the probes/sets input) that
+            give the probes selected to be in the set cover
+        """
+        if self._force_num_processes is not None:
+            num_processes = self._force_num_processes
+        global _sc_max_num_processes
+        if num_processes is None:
+            num_processes = min(multiprocessing.cpu_count(),
+                                _sc_max_num_processes)
+        pool = multiprocessing.Pool(num_processes)
+
+        # Order groupings (instances to be solved) in descending order by
+        #   the number of possible probes in the group. The number is an
+        #   indication of how long the instance may take to solve, and we
+        #   want to start the slower instances first in the pool.
+        group_i_with_num_probes = []
+        tf_name_for_group = {}
+        for tf_name, group_i in input_paths:
+            group_i_with_num_probes += [(group_i,
+                len(possible_probes_grouped[group_i]))]
+            tf_name_for_group[group_i] = tf_name
+        groups_ordered = [x[0] for x in sorted(group_i_with_num_probes,
+            key=lambda y: y[1], reverse=True)]
+
+        # Construct args to _compute_set_cover_from_saved_input()
+        pool_args = [(tf_name_for_group[i], i) for i in groups_ordered]
+
+        # Run the pool, giving 1 instance (chunksize=1) at a time
+        pool_out = pool.starmap(_compute_set_cover_from_saved_input, pool_args,
+                chunksize=1)
+        pool.close()
+
+        solutions_for_group = {}
+        for group_i, set_ids_in_cover in zip(groups_ordered, pool_out):
+            solutions_for_group[group_i] = set_ids_in_cover
+        return solutions_for_group
 
     def _filter(self, input, target_genomes_grouped):
         """Return a subset of the input probes.
@@ -685,50 +896,23 @@ class SetCoverFilter(BaseFilter):
         the ones in target_genomes_grouped[i-1]. This is because
         self.requires_probe_groupings is True.
         """
-        num_bad_probes = 0
+        # Construct and save set cover input; functions within this are
+        #   already parallelized
+        logger.info("Building set cover inputs for %d groups", len(input))
+        input_paths = self._construct_and_pickle_set_cover_input(
+                input, target_genomes_grouped)
+
+        # Parallelize solving set cover instances across groupings
+        logger.info("Solving set cover instances across %d groups", len(input))
+        solutions_for_group = self._parallelize_compute_set_cover(input_paths,
+                input)
+
+        # Determine which probes were selected for each grouping
         selected_probes = []
-
-        # Iterate over each grouping of genomes and the corresponding
-        #   probes from which to select
-        for group_i, (possible_probes, target_genomes) in enumerate(zip(input,
-                target_genomes_grouped)):
-            # Ensure that the input is a list
-            possible_probes = list(possible_probes)
-
-            logger.info("Building set cover sets input (group %d of %d)",
-                    group_i+1, len(input))
-            sets = self._make_sets(possible_probes, target_genomes)
-            logger.info("Building set cover ranks input (group %d of %d)",
-                    group_i+1, len(input))
-            ranks = self._make_ranks(possible_probes, target_genomes_grouped)
-            logger.info("Building set cover costs input (group %d of %d)",
-                    group_i+1, len(input))
-            costs = self._make_costs(possible_probes)
-            logger.info("Building set cover universe_p input (group %d of %d)",
-                    group_i+1, len(input))
-            universe_p = self._make_universe_p(target_genomes)
-
-            # Run the set cover approximation algorithm
-            logger.info(("Approximating the solution to a set cover "
-                         "instance across a grouping of genomes "
-                         "(group %d of %d)"), group_i+1, len(input))
-            set_ids_in_cover = self._compute_set_cover(sets,
-                                                       costs,
-                                                       universe_p,
-                                                       ranks)
-            selected_probes += \
-                    [[possible_probes[id] for id in set_ids_in_cover]]
-
-            num_bad_probes += sum([True for set_id in set_ids_in_cover
-                                  if ranks[set_id] > 0])
-
-        # Warn when less-than-ideal probes are chosen (i.e., probes
-        # whose ranks exceed 0)
-        if num_bad_probes > 0:
-            logger.warning(("Forced to choose %d less-than-ideal probe%s "
-                            "(i.e., probes that 'hit' more than one "
-                            "grouping during identification or probes that "
-                            "cover an avoided genome)"), num_bad_probes,
-                           ('' if num_bad_probes == 1 else 's'))
+        for group_i, possible_probes in enumerate(input):
+            set_ids_in_cover = solutions_for_group[group_i]
+            selected_probes_for_group = [possible_probes[id]
+                    for id in set_ids_in_cover]
+            selected_probes += [selected_probes_for_group]
 
         return selected_probes
