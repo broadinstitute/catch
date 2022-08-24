@@ -27,12 +27,12 @@ only chosen if absolutely necessary to achieve the desired coverage.
 When identification is enabled, the specified coverage to achieve
 should typically be small.
 
-There is a 'blacklist' of genomes, whose sequences we do not want to
+There is an 'avoid' of genomes, whose sequences we do not want to
 cover (e.g., human DNA when we are interested in extracting viral
 sequences). Probes that cover a portion of these genomes are
 penalized in finding the set cover solution. That is, this filter
 tries to choose candidate probes that do NOT cover a portion of
-the blacklisted genomes, and will only choose candidate probes that
+the avoided genomes, and will only choose candidate probes that
 DO cover a portion of these genomes if doing so is absolutely
 necessary to achieve the desired coverage.
 
@@ -73,7 +73,7 @@ class SetCoverFilter(BaseFilter):
                  custom_cover_range_fn=None,
                  custom_cover_range_tolerant_fn=None,
                  identify=False,
-                 blacklisted_genomes=[],
+                 avoided_genomes=[],
                  coverage=1.0,
                  cover_extension=0,
                  kmer_probe_map_k=20,
@@ -94,7 +94,7 @@ class SetCoverFilter(BaseFilter):
                 determining the overlap that a candidate probe has with
                 different groupings when the identification option is enabled.
                 They are also used when determining the coverage of each
-                candidate probe with the blacklisted genomes. They are meant
+                candidate probe with the avoided genomes. They are meant
                 to capture more potential hybridizations (i.e., be more
                 sensitive). When not set, they are by default equal to
                 'mismatches' and 'lcf_thres'.
@@ -119,8 +119,8 @@ class SetCoverFilter(BaseFilter):
                 _tolerant parameters are ignored when this is set.
             identify: when True, indicates that probes should be designed
                 with the identification option enabled (default is False)
-            blacklisted_genomes: list of paths to FASTA files of genomes
-                that should be blacklisted (i.e., probes are penalized by the
+            avoided_genomes: list of paths to FASTA files of genomes
+                that should be avoided (i.e., probes are penalized by the
                 amount they cover these genomes).
             coverage: either a float in [0,1] or an int > 1. When it is a
                 float in [0,1], it determines the fraction of each of the
@@ -146,7 +146,7 @@ class SetCoverFilter(BaseFilter):
             kmer_probe_map_k: in calls to probe.construct_kmer_probe_map...,
                 uses this value as min_k and k
             kmer_probe_map_use_native_dict: when finding probe covers
-                for identification or blacklisting, use the native
+                for identification or avoiding genomes, use the native
                 Python dict of SharedKmerProbeMap rather than its primitive
                 types that are more suited for sharing across processes;
                 depending on the input this can result in considerably
@@ -209,7 +209,7 @@ class SetCoverFilter(BaseFilter):
                                 "be small when performing identification"))
 
         self.identify = identify
-        self.blacklisted_genomes = blacklisted_genomes
+        self.avoided_genomes = avoided_genomes
         self.coverage = coverage
         self.cover_extension = cover_extension
         self.kmer_probe_map_k = kmer_probe_map_k
@@ -433,32 +433,32 @@ class SetCoverFilter(BaseFilter):
 
         return num_groupings_hit
 
-    def _count_blacklisted_bp_covered(self, candidate_probes):
-        """Compute number of blacklisted genome bp covered by each probe.
+    def _count_avoided_bp_covered(self, candidate_probes):
+        """Compute number of avoided genome bp covered by each probe.
 
         This decides whether a candidate probe captures a portion of a
-        blacklisted genome in a tolerant way (i.e., using
+        avoided genome in a tolerant way (i.e., using
         self.cover_range_tolerant_fn) so that more potential hybridizations
         are counted. Also, the total number of bp includes bases of
-        the reverse complement of each blacklisted genome that are covered
-        by a probe, so that both a blacklisted genome and its reverse
-        complement are blacklisted.
+        the reverse complement of each avoided genome that are covered
+        by a probe, so that both an avoided genome and its reverse
+        complement are avoided.
 
         Args:
             candidate_probes: list of candidate probes
 
         Returns:
             dict mapping each candidate probe to the total number of bp
-            it covers in the blacklisted genomes and their reverse
+            it covers in the avoided genomes and their reverse
             complements
         """
         total_num_bp = {p: 0 for p in candidate_probes}
-        for fasta_path in self.blacklisted_genomes:
+        for fasta_path in self.avoided_genomes:
             # Use a generator to read the FASTA to avoid loading too much
             # into memory (e.g., only store one chromosome of the human
             # genome at a time)
             for sequence in seq_io.iterate_fasta(fasta_path):
-                logger.info(("Computing coverage across a blacklisted "
+                logger.info(("Computing coverage across an avoided "
                              "sequence"))
                 # Blacklist both sequence and its reverse complement
                 num_bp = self._compute_tolerant_bp_covered_within_sequence(
@@ -478,36 +478,36 @@ class SetCoverFilter(BaseFilter):
           - When identification is turned on (i.e., self.identify is True),
             the number of species that a probe "hits". Fewer hit species
             yields a smaller rank.
-          - The number of bases in blacklisted genomes that the probe
+          - The number of bases in avoided genomes that the probe
             covers. Fewer covered bases yields a smaller rank.
-        A probe that covers any part of a blacklisted genome will always
+        A probe that covers any part of an avoided genome will always
         receive a higher rank than a probe that does not. (This is achieved
         by first computing ranks using tuples of the form (x,y) where x=0
-        for any probe that does not cover a blacklisted genome and x=1
+        for any probe that does not cover an avoided genome and x=1
         for a probe that does; y determines relative rank among those probes
         with the same x value. The tuple ranks are then converted into
         integer ranks by sorting the tuples.) When identification is
         enabled, a probe that hits more than one grouping (e.g., species)
         will always receive a higher rank than a probe that only hits one
-        grouping (and does not cover any blacklisted genomes).
+        grouping (and does not cover any avoided genomes).
 
         When identification is not turned on, weighted set cover
         effectively does the following: (1) Covers as much of the target
         genomes as possible while minimizing the number of probes, without
-        using any probe that covers any part of a blacklisted genome. (2)
+        using any probe that covers any part of an avoided genome. (2)
         Covers whatever portions of the target genomes remain to be covered
-        by using probes that cover parts of blacklisted genomes, while
-        first seeking probes that cover less of the blacklisted genomes
+        by using probes that cover parts of avoided genomes, while
+        first seeking probes that cover less of the avoided genomes
         (i.e., even if probe B covers much more of the target genomes
         than probe A, A will be chosen before B if B covers a tiny bit
-        more of the blacklisted genomes than A).
+        more of the avoided genomes than A).
         When identification is turned on, weighted set cover: (1) Covers
         as much of the target genomes as possible while minimizing the
         number of probes, only using probes that hit one grouping. (2)
         Covers whatever portions of the target genomes remain to be covered
         while minimizing the number of probes, only using probes that hit
         two groupings, etc. (3) Considers probes that cover parts of
-        blacklisted genomes, if there remains more of the target genomes to
+        avoided genomes, if there remains more of the target genomes to
         cover.
 
         The output is intended for input to set_cover.approx_multiuniverse
@@ -524,7 +524,7 @@ class SetCoverFilter(BaseFilter):
         """
         # Only open a probe finding pool if it will be needed
         need_probe_finding_pool = (self.identify or
-                                   len(self.blacklisted_genomes) > 0)
+                                   len(self.avoided_genomes) > 0)
         if need_probe_finding_pool:
             logger.info("Building map from k-mers to probes")
             kmer_probe_map = probe.SharedKmerProbeMap.construct(
@@ -559,15 +559,15 @@ class SetCoverFilter(BaseFilter):
             # Start each probe with the same rank
             rank_val = {p: (0, 0) for p in candidate_probes}
 
-        # Find probes that cover part of a blacklisted genome.
+        # Find probes that cover part of an avoided genome.
         # All of these get a higher rank than any probe that does not
-        # cover any part of a blacklisted genome (since the first element
+        # cover any part of an avoided genome (since the first element
         # of the tuple put into rank_val is 1, but 0 was the first
         # element of the tuple above) and the rank among these is based
         # on the number of bp they cover.
-        blacklisted_bp_covered = self._count_blacklisted_bp_covered(
+        avoided_bp_covered = self._count_avoided_bp_covered(
             candidate_probes)
-        for p, bp in blacklisted_bp_covered.items():
+        for p, bp in avoided_bp_covered.items():
             if bp > 0:
                 rank_val[p] = (1, bp)
 
@@ -728,7 +728,7 @@ class SetCoverFilter(BaseFilter):
             logger.warning(("Forced to choose %d less-than-ideal probe%s "
                             "(i.e., probes that 'hit' more than one "
                             "grouping during identification or probes that "
-                            "cover a blacklisted genome)"), num_bad_probes,
+                            "cover an avoided genome)"), num_bad_probes,
                            ('' if num_bad_probes == 1 else 's'))
 
         return selected_probes

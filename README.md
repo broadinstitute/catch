@@ -9,7 +9,7 @@ It designs oligo sequences that guarantee coverage of this diversity, enabling r
 It searches a space of probe sets, which may pool many species, to find an optimal design.
 This allows its designs to scale well with known genetic diversity, and also supports cost-effective applications.
 * **Flexibility**: CATCH supports applications beyond whole genome enrichment, such as differential identification of species.
-It allows blacklisting sequence from the design (e.g., background in microbial enrichment), supports customized models of hybridization, enables weighting the sensitivity for different species, and more.
+It allows avoiding sequence from the design (e.g., background in microbial enrichment), supports customized models of hybridization, enables weighting the sensitivity for different species, and more.
 <br/>
 
 ### Table of contents
@@ -170,7 +170,7 @@ Higher values lead to fewer probes.
 * `--identify`: Design probes to perform differential identification.
 This is typically used with small values of COVERAGE and &gt;1 specified `dataset`s.
 Probes are designed such that each `dataset` should be captured by probes that are unlikely to hybridize to other `dataset`s.
-* `--blacklist-genomes dataset [dataset ...]`: Design probes to be unlikely to hybridize to any of these datasets.
+* `--avoid-genomes dataset [dataset ...]`: Design probes to be unlikely to hybridize to any of these datasets.
 (Also, see `-mt/--mismatches-tolerant`, `-lt/--lcf-thres-tolerant`, and `--island-of-exact-match-tolerant` for this and for `--identify`.)
 * `--add-adapters`: Add PCR adapters to the ends of each probe sequence.
 This selects adapters to add to probe sequences so as to minimize overlap among probes that share an adapter, allowing probes with the same adapter to be amplified together.
