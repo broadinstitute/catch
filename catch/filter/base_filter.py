@@ -22,27 +22,72 @@ class BaseFilter:
     list of probes after processing from the given input list.
     """
 
-    def filter(self, input, target_genomes=None):
+    def filter(self, input, target_genomes=None, input_is_grouped=False):
         """Perform the filtering.
 
         Args:
-            input: list of candidate probes
-            target_genomes: list [g_1, g_2, g_m] of m groupings of genomes,
+            input: candidate probes from which to filter; see input_is_grouped
+                for details
+            target_genomes: list [g_1, g_2, ..., g_m] of m groupings of genomes,
                 where each g_i is a list of genome.Genomes belonging to group
                 i, that should be targeted by the probes; for example a
                 group may be a species and each g_i would be a list of the
                 target genomes of species i
+            input_is_grouped: if True, input is list [p_1, p_2, ..., p_m] of
+                m groupings of genomes, where each p_i is a list of candidate
+                probes for group i; if False, input is a single list of
+                candidate probes (ungrouped)
 
         Returns:
-            list of probes after applying a filter to the input
+            if input_is_grouped is True:
+                list [q_1, q_2, q_m] where each q_i is a list of probes after
+                applying a filter to the corresponding input
+            else:
+                list of probes after applying a filter to the input
         """
         _filter_params = inspect.signature(self._filter).parameters
-        if len(_filter_params) == 2:
-            # _filter() should accept both probes and target genomes
-            return self._filter(input, target_genomes)
+
+        # Determine whether self._filter() requires probes being
+        #   split into groupings, or whether each group must be passed
+        #   separately
+        if (hasattr(self, 'requires_probe_groupings') and
+                self.requires_probe_groupings is True):
+            pass_groupings = True
         else:
-            # _filter() may not need target genomes, and does not accept it
-            return self._filter(input)
+            pass_groupings = False
+
+        if pass_groupings:
+            # Input must already be grouped
+            assert input_is_grouped is True
+
+            if len(_filter_params) == 2:
+                # self._filter() should accept both probes and target genomes
+                return self._filter(input, target_genomes)
+            else:
+                # self._filter() may not need target genomes, and does not
+                # accept it
+                return self._filter(input)
+        else:
+            if input_is_grouped:
+                # Call _filter() separately for each group
+
+                if len(_filter_params) == 2:
+                    # self._filter() should accept both probes and target genomes
+                    return [self._filter(i, target_genomes) for i in input]
+                else:
+                    # self._filter() may not need target genomes, and does not
+                    # accept it
+                    return [self._filter(i) for i in input]
+            else:
+                # Input is not grouped and there is no need to pass it grouped
+
+                if len(_filter_params) == 2:
+                    # self._filter() should accept both probes and target genomes
+                    return self._filter(input, target_genomes)
+                else:
+                    # self._filter() may not need target genomes, and does not
+                    # accept it
+                    return self._filter(input)
 
     def _filter(self, input):
         raise Exception(("A subclass of BaseFilter must implement "

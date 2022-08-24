@@ -1,6 +1,7 @@
 """Designs probes with a filtering approach.
 """
 
+import itertools
 import logging
 
 from catch.filter import candidate_probes
@@ -139,22 +140,45 @@ class ProbeDesigner:
         """Pass candidate probes through a list of filters.
 
         Args:
-            probes: collection of probes to filter
-            genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
-                each g_i is a list of genome.Genomes belonging to group i.
-                For example, a group may be a species and each g_i would be
-                a list of the target genomes of species i.
+            probes: list [p_1, p_2, ..., p_m] of m groupings or clusters of
+                genomes, where each p_i is a collection of probes for group i
+            genomes: list [g_1, g_2, ..., g_m] of m groupings or clusters of
+                genomes, where each g_i is a list of genome.Genomes belonging
+                to group i. For example, a group may be a species and each g_i
+                would be a list of the target genomes of species i.
             filters: an (ordered) list of filters, each of which should be
                 an instance of a subclass of BaseFilter
 
         Returns:
-            subset of probes, after passing through the filters
+            length-m list of subsets of probes, after passing through the
+            filters
+        """
+        assert len(probes) == len(genomes)
+        for f in filters:
+            logger.info("Starting filter %s", f.__class__.__name__)
+            probes = f.filter(probes, genomes, input_is_grouped=True)
+        return probes
+
+    def _pass_through_filters_ungrouped(self, probes, genomes, filters):
+        """Pass candidate probes through a list of filters, where probes are
+           not grouped.
+
+        Args:
+            probes: list of probes
+            genomes: list [g_1, g_2, ..., g_m] of m groupings or clusters of
+                genomes, where each g_i is a list of genome.Genomes belonging
+                to group i. For example, a group may be a species and each g_i
+                would be a list of the target genomes of species i.
+            filters: an (ordered) list of filters, each of which should be
+                an instance of a subclass of BaseFilter
+
+        Returns:
+            list of subsets of probes, after passing through the filters
         """
         for f in filters:
             logger.info("Starting filter %s", f.__class__.__name__)
-            probes = f.filter(probes, genomes)
+            probes = f.filter(probes, genomes, input_is_grouped=False)
         return probes
-
 
     def _design_for_genomes(self, genomes, filters):
         """Design probes on a subset of genomes using a subset of filters.
@@ -163,38 +187,38 @@ class ProbeDesigner:
         filters.
 
         Args:
-            genomes: list [g_1, g_2, g_m] of m groupings of genomes, where
-                each g_i is a list of genome.Genomes belonging to group i.
-                For example, a group may be a species and each g_i would be
-                a list of the target genomes of species i.
+            genomes: list [g_1, g_2, ..., g_m] of m groupings or clusters of
+                genomes, where each g_i is a list of genome.Genomes belonging
+                to group i. For example, a group may be a species and each g_i
+                would be a list of the target genomes of species i.
             filters: an (ordered) list of filters, each of which should be
                 an instance of a subclass of BaseFilter
 
         Returns:
             tuple (candidate_probes, output_probes) where candidate_probes is a
             list of candidate probes and output_probes is the list of candidate
-            probes after passing through the provided filters
+            probes after passing through the provided filters (each is grouped)
         """
         logger.info("Building candidate probes from target sequences")
         candidates = []
         for genomes_from_group in genomes:
+            candidates_for_group = []
             for g in genomes_from_group:
-                candidates += candidate_probes.\
+                candidates_for_group += candidate_probes.\
                     make_candidate_probes_from_sequences(
                         g.seqs, probe_length=self.probe_length,
                         probe_stride=self.probe_stride,
                         allow_small_seqs=self.allow_small_seqs,
                         seq_length_to_skip=self.seq_length_to_skip)
-
-        if len(candidates) == 0:
-            # There are no candidate probes, possibly because all input
-            # sequences in genomes were skipped
-            logger.warning(("There are no candidate probes for a grouping of "
-                "genomes; it is possible that --small-seq-skip or "
-                "--small-seq-min are incompatible with the input sequence "
-                "lengths, especially if --cluster-and-design-separately is "
-                "set small. Skipping this grouping and returning no probes."))
-            return ([], [])
+            if len(candidates_for_group) == 0:
+                # There are no candidate probes, possibly because all input
+                # sequences in genomes were skipped
+                logger.warning(("There are no candidate probes for a grouping of "
+                    "genomes; it is possible that --small-seq-skip or "
+                    "--small-seq-min are incompatible with the input sequence "
+                    "lengths, especially if --cluster-and-design-separately is "
+                    "set small."))
+            candidates += [candidates_for_group]
 
         probes = self._pass_through_filters(candidates, genomes, filters)
         return (candidates, probes)
@@ -211,8 +235,10 @@ class ProbeDesigner:
             # Do not cluster sequences; just design on self.genomes as given
             candidates, probes = self._design_for_genomes(self.genomes,
                     self.filters)
-            self.candidate_probes = candidates
-            self.final_probes = probes
+
+            # Flatten each list; they are currently grouped
+            self.candidate_probes = list(itertools.chain(*candidates))
+            self.final_probes = list(set(itertools.chain(*probes)))
             return
 
         # Find filters before and after merging
@@ -224,19 +250,19 @@ class ProbeDesigner:
 
         # Cluster genomes and design probes on each cluster
         clustered_genomes = self._cluster_genomes()
-        candidates = []
-        probes = set()
-        for genomes in clustered_genomes:
-            candidates_for_cluster, probes_for_cluster = \
-                    self._design_for_genomes([genomes], filters_before_merge)
-            candidates += candidates_for_cluster
-            probes |= set(probes_for_cluster)
+        candidates_by_cluster, probes_by_cluster = \
+                self._design_for_genomes(clustered_genomes,
+                        filters_before_merge)
 
-        self.candidate_probes = candidates
+        # Flatten the candidate probes, which are grouped
+        self.candidate_probes = list(itertools.chain(*candidates_by_cluster))
+
+        # Flatten the probes, which are grouped
+        probes = list(set(itertools.chain(*probes_by_cluster)))
 
         # Run the remaining filters (filters_after_merge) on all the probes
         # after the merge
-        probes = list(probes)
-        probes = self._pass_through_filters(probes, self.genomes,
+        probes = self._pass_through_filters_ungrouped(probes, clustered_genomes,
                 filters_after_merge)
+
         self.final_probes = probes

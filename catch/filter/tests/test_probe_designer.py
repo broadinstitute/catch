@@ -41,8 +41,8 @@ class TestProbeDesigner(unittest.TestCase):
         pb = probe_designer.ProbeDesigner(seqs, [df], probe_length=100,
             probe_stride=50)
         pb.design()
-        self.assertEqual(pb.candidate_probes, desired_candidate_probes)
-        self.assertEqual(pb.final_probes, desired_final_probes)
+        self.assertCountEqual(pb.candidate_probes, desired_candidate_probes)
+        self.assertCountEqual(pb.final_probes, desired_final_probes)
 
     def test_one_filter2(self):
         """A basic test with a duplicate filter and one input sequence.
@@ -66,8 +66,8 @@ class TestProbeDesigner(unittest.TestCase):
         pb = probe_designer.ProbeDesigner(seqs, [df], probe_length=75,
             probe_stride=25)
         pb.design()
-        self.assertEqual(pb.candidate_probes, desired_candidate_probes)
-        self.assertEqual(pb.final_probes, desired_final_probes)
+        self.assertCountEqual(pb.candidate_probes, desired_candidate_probes)
+        self.assertCountEqual(pb.final_probes, desired_final_probes)
 
     def test_two_groupings(self):
         """Tests two groupings of input sequences in which the first
@@ -92,8 +92,8 @@ class TestProbeDesigner(unittest.TestCase):
         pb = probe_designer.ProbeDesigner(seqs, [df], probe_length=100,
             probe_stride=50)
         pb.design()
-        self.assertEqual(pb.candidate_probes, desired_candidate_probes)
-        self.assertEqual(pb.final_probes, desired_final_probes)
+        self.assertCountEqual(pb.candidate_probes, desired_candidate_probes)
+        self.assertCountEqual(pb.final_probes, desired_final_probes)
 
     def test_with_small_sequences(self):
         """A test with a duplicate filter and input sequences that are smaller
@@ -117,8 +117,8 @@ class TestProbeDesigner(unittest.TestCase):
                                           probe_stride=3,
                                           allow_small_seqs=5)
         pb.design()
-        self.assertEqual(pb.candidate_probes, desired_candidate_probes)
-        self.assertEqual(pb.final_probes, desired_final_probes)
+        self.assertCountEqual(pb.candidate_probes, desired_candidate_probes)
+        self.assertCountEqual(pb.final_probes, desired_final_probes)
 
     def tearDown(self):
         # Re-enable logging

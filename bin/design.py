@@ -280,7 +280,6 @@ def main(args):
         blacklisted_genomes=blacklisted_genomes_fasta,
         coverage=args.coverage,
         cover_extension=args.cover_extension,
-        cover_groupings_separately=args.cover_groupings_separately,
         kmer_probe_map_k=kmer_probe_map_k_scf,
         kmer_probe_map_use_native_dict=args.use_native_dict_when_finding_tolerant_coverage)
     filters += [scf]
@@ -772,13 +771,6 @@ if __name__ == "__main__":
               "significant memory and runtime for near-duplicate detection."))
 
     # Miscellaneous technical adjustments
-    parser.add_argument('--cover-groupings-separately',
-        dest="cover_groupings_separately",
-        action="store_true",
-        help=("Run a separate instance of set cover with the target genomes "
-              "from each grouping and pool (union) the resulting probes. "
-              "When set, the software will run faster than when not set, but "
-              "it may yield more probes than when it is not set."))
     parser.add_argument('--small-seq-skip',
         type=int,
         help=("(Optional) Do not create candidate probes from sequences "
