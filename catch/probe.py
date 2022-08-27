@@ -23,6 +23,17 @@ __author__ = 'Hayden Metsky <hayden@mit.edu>'
 logger = logging.getLogger(__name__)
 
 
+# Probe.__init__ needs to set
+#   self.kmers_rand_choices = defaultdict(lambda: defaultdict(set))
+# to have a defaultdict of defaultdicts. That is the easier
+# way to initialize the variable, but it cannot be pickled because
+# of the lambda function. Using:
+#   self.kmers_rand_choices = defaultdict(defaultdict_set)
+# instead will be able to be pickled.
+def defaultdict_set():
+    return defaultdict(set)
+
+
 class Probe:
     """Immutable sequence representing a probe/bait.
     """
@@ -38,7 +49,7 @@ class Probe:
         self.header = None
 
         self.kmers = defaultdict(set)
-        self.kmers_rand_choices = defaultdict(lambda: defaultdict(set))
+        self.kmers_rand_choices = defaultdict(defaultdict_set)
 
     def mismatches(self, other):
         """Count number of mismatches with other.

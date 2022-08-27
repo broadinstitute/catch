@@ -103,6 +103,11 @@ class NearDuplicateFilter(BaseFilter):
         return list(to_include)
 
 
+# Keep top-level in module so it can be pickled
+def hamming_dist(a, b):
+    # a and b are probe.Probe objects
+    return a.mismatches(b)
+
 class NearDuplicateFilterWithHammingDistance(NearDuplicateFilter):
     """Filter that removes near-duplicates according to Hamming distance.
     """
@@ -123,9 +128,6 @@ class NearDuplicateFilterWithHammingDistance(NearDuplicateFilter):
         self.lsh_family = lsh.HammingDistanceFamily(probe_length)
         self.dist_thres = dist_thres
 
-        def hamming_dist(a, b):
-            # a and b are probe.Probe objects
-            return a.mismatches(b)
         self.dist_fn = hamming_dist
 
     def _filter(self, input):
@@ -139,6 +141,20 @@ class NearDuplicateFilterWithHammingDistance(NearDuplicateFilter):
         """
         return NearDuplicateFilter._filter(self, input)
 
+
+# Keep top-level in module so it can be pickled
+# Since we cannot pickle nested functions, structure it as an object that
+#   can be called
+class jaccard_dist_fn(object):
+    def __init__(self, kmer_size):
+        self.kmer_size = kmer_size
+    def __call__(self, a, b):
+        a_kmers = [a[i:(i + self.kmer_size)] for i in range(len(a) - self.kmer_size + 1)]
+        b_kmers = [b[i:(i + self.kmer_size)] for i in range(len(b) - self.kmer_size + 1)]
+        a_kmers = set(a_kmers)
+        b_kmers = set(b_kmers)
+        jaccard_sim = float(len(a_kmers & b_kmers)) / len(a_kmers | b_kmers)
+        return 1.0 - jaccard_sim
 
 class NearDuplicateFilterWithMinHash(NearDuplicateFilter):
     """Filter that removes near-duplicates using MinHash.
@@ -160,14 +176,7 @@ class NearDuplicateFilterWithMinHash(NearDuplicateFilter):
                 use_fast_str_hash=True) # safe as long as not parallelized
         self.dist_thres = dist_thres
 
-        def jaccard_dist(a, b):
-            a_kmers = [a[i:(i + kmer_size)] for i in range(len(a) - kmer_size + 1)]
-            b_kmers = [b[i:(i + kmer_size)] for i in range(len(b) - kmer_size + 1)]
-            a_kmers = set(a_kmers)
-            b_kmers = set(b_kmers)
-            jaccard_sim = float(len(a_kmers & b_kmers)) / len(a_kmers | b_kmers)
-            return 1.0 - jaccard_sim
-        self.dist_fn = jaccard_dist
+        self.dist_fn = jaccard_dist_fn(kmer_size)
 
     def _filter(self, input):
         """Filter with LSH using MinHash family.

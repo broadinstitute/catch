@@ -13,6 +13,7 @@ import random
 from catch import coverage_analysis
 from catch import probe
 from catch.filter import adapter_filter
+from catch.filter import base_filter
 from catch.filter import duplicate_filter
 from catch.filter import fasta_filter
 from catch.filter import n_expansion_filter
@@ -166,6 +167,8 @@ def main(args):
         cluster.set_max_num_processes_for_computing_distances(
             args.max_num_processes)
         set_cover_filter.set_max_num_processes_for_set_cover_instances(
+            args.max_num_processes)
+        base_filter.set_max_num_processes_for_filter_over_groupings(
             args.max_num_processes)
 
     # Raise exceptions or warn based on use of adapter arguments
