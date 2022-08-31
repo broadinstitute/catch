@@ -7,8 +7,10 @@ This is the main executable of CATCH for probe design.
 import argparse
 import importlib
 import logging
+import multiprocessing
 import os
 import random
+import typing
 
 from catch import coverage_analysis
 from catch import probe
@@ -29,8 +31,30 @@ from catch.utils import seq_io, version, log
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
+# Define types for initializing arguments:
+#   'basic': most restrictive (0 mismatches, 0 cover extension, etc.) and
+#            without options that enhance runtime and memory usage for large,
+#            highly diverse input
+#   'large': less restrictive (reasonable number of mismatches and cover
+#            extension, etc.) and enabling, by default, options that lower
+#            runtime and memory usage for large, highly diverse input at the
+#            typical expense of a small increase in the number of output probes
+_ARGS_TYPES = typing.Literal['basic', 'large']
+
+
 def main(args):
+    # Setup logger
+    log.configure_logging(args.log_level)
     logger = logging.getLogger(__name__)
+
+    # If running design_large.py, warn that defaults for some arguments may
+    #   be undesired
+    if args.args_type == 'large':
+        logger.warning(("With design_large.py, the default values for some "
+            "arguments --- such as mismatches (-m) or cover extension (-e) "
+            "--- might be more relaxed than desired. Run 'design_large.py "
+            "--help' to see the default values; they can be overridden by "
+            "specifying the argument."))
 
     # Set NCBI API key
     if args.ncbi_api_key:
@@ -95,6 +119,31 @@ def main(args):
         k = args.limit_target_genomes_randomly_with_replacement
         genomes_grouped = [random.choices(genomes, k=k)
                            for genomes in genomes_grouped]
+
+    # Suggest design_large.py if not initialized by that program and its
+    #   settings may be appropriate (i.e., (multiple datasets and --identify
+    #   is not set) or large (>10 million nt) input size)
+    if args.args_type != 'large':
+        total_input_size = sum(sum(g.size() for g in genomes)
+                for genomes in genomes_grouped)
+        if ((len(args.dataset) > 1 and not args.identify) or
+                total_input_size > 10000000):
+            recommended_args = []
+            if (not args.filter_with_lsh_hamming and
+                    not args.filter_with_lsh_minhash):
+                recommended_args += ['--filter-with-lsh-minhash 0.6']
+            if not args.cluster_and_design_separately:
+                recommended_args += ['--cluster-and-design-separately 0.15']
+            if not args.cluster_from_fragments:
+                recommended_args += ['--cluster-from-fragments 50000']
+            recommended_args_str = ""
+            if len(recommended_args) > 0:
+                recommended_args_str = ("Recommended options include: " +
+                        ', '.join(["'" + x + "'" for x in recommended_args]))
+            logger.warning(("Consider using design_large.py or some of the "
+                "options it sets, which may be helpful in lowering runtime "
+                "and memory usage for this design. "
+                f"{recommended_args_str}"))
 
     # Store the FASTA paths of avoided genomes
     avoided_genomes_fasta = []
@@ -263,6 +312,12 @@ def main(args):
             args.filter_with_lsh_hamming, args.probe_length)
         filters += [ndf]
     elif args.filter_with_lsh_minhash is not None:
+        if args.mismatches < 3:
+            logger.warning(("MISMATCHES is set to %d; at low values of "
+                "MISMATCHES (0, 1, or 2), using --filter-with-lsh-minhash "
+                "(particularly with high values of FILTER_WITH_LSH_MINHASH) "
+                "may cause the probes to achieve less than the desired "
+                "coverage"), args.mismatches)
         ndf = near_duplicate_filter.NearDuplicateFilterWithMinHash(
             args.filter_with_lsh_minhash)
         filters += [ndf]
@@ -395,8 +450,23 @@ def main(args):
         print(len(pb.final_probes))
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+def init_and_parse_args(args_type : _ARGS_TYPES):
+    """Setup and parse command-line arguments.
+
+    Args:
+        args_type: whether to initialize arguments to be optimized for
+            large, highly diverse input ('large') or not ('basic')
+
+    Returns:
+        populated namespace of arguments
+    """
+    if args_type not in typing.get_args(_ARGS_TYPES):
+        raise ValueError((f"Argument type '{args_type}' is invalid; it must "
+            f"be one of {typing.get_args(_ARGS_TYPES)}"))
+
+    # Format --help messages to include default values
+    parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Input data
     parser.add_argument('dataset',
@@ -430,18 +500,19 @@ if __name__ == "__main__":
     parser.add_argument('-pl', '--probe-length',
         type=int,
         default=100,
-        help=("(Optional) Make probes be PROBE_LENGTH nt long"))
+        help=("Make probes be PROBE_LENGTH nt long"))
     parser.add_argument('-ps', '--probe-stride',
         type=int,
         default=50,
-        help=("(Optional) Generate candidate probes from the input "
+        help=("Generate candidate probes from the input "
               "that are separated by PROBE_STRIDE nt"))
 
     # Parameters governing probe hybridization
+    default_mismatches = {'basic': 0, 'large': 5}
     parser.add_argument('-m', '--mismatches',
         type=int,
-        default=0,
-        help=("(Optional) Allow for MISMATCHES mismatches when determining "
+        default=default_mismatches[args_type],
+        help=("Allow for MISMATCHES mismatches when determining "
               "whether a probe covers a sequence"))
     parser.add_argument('-l', '--lcf-thres',
         type=int,
@@ -518,9 +589,10 @@ if __name__ == "__main__":
               "selected probes"))
 
     # Amount of cover extension to assume
+    default_cover_extension = {'basic': 0, 'large': 50}
     parser.add_argument('-e', '--cover-extension',
         type=int,
-        default=0,
+        default=default_cover_extension[args_type],
         help=("Extend the coverage of each side of a probe by COVER_EXTENSION "
               "nt. That is, a probe covers a region that consists of the "
               "portion of a sequence it hybridizes to, as well as this "
@@ -690,8 +762,10 @@ if __name__ == "__main__":
         else:
             raise argparse.ArgumentTypeError(("%s is an invalid average "
                                               "nucleotide dissimilarity") % val)
+    default_cluster_and_design_separately = {'basic': None, 'large': 0.15}
     parser.add_argument('--cluster-and-design-separately',
         type=check_cluster_and_design_separately,
+        default=default_cluster_and_design_separately[args_type],
         help=("(Optional) If set, cluster all input sequences using their "
               "MinHash signatures, design probes separately on each cluster, "
               "and combine the resulting probes. This can significantly lower "
@@ -702,7 +776,7 @@ if __name__ == "__main__":
               "average nucleotide identity; see --cluster-and-design-"
               "separately-method for details); higher values "
               "result in fewer clusters, and thus longer runtime. Values "
-              "must be in (0,0.5], and generally should be around 0.1 or "
+              "must be in (0,0.5], and generally should be around 0.1 to "
               "0.2. When used, this creates a separate genome for each "
               "input sequence -- it collapses all sequences, across both "
               "groups and genomes, into one list of sequences in one group. "
@@ -720,14 +794,16 @@ if __name__ == "__main__":
               "clusters are determined by agglomerative hierarchical "
               "clustering and the the value CLUSTER_AND_DESIGN_SEPARATELY "
               "is the inter-cluster distance threshold to merge clusters."))
+    default_cluster_from_fragments = {'basic': None, 'large': 50000}
     parser.add_argument('--cluster-from-fragments',
         type=int,
+        default=default_cluster_from_fragments[args_type],
         help=("(Optional) If set, break all sequences into sequences of "
               "length CLUSTER_FROM_FRAGMENTS nt, and cluster these fragments. "
               "This can be useful for improving runtime on input with "
               "especially large genomes, in which probes for different "
               "fragments can be designed separately. Values should generally "
-              "be around 10,000. For this to be used, "
+              "be around 50,000. For this to be used, "
               "--cluster-and-design-separately must also be set."))
 
     # Filter candidate probes with LSH
@@ -745,9 +821,8 @@ if __name__ == "__main__":
               "relatively high values of FILTER_WITH_LSH_HAMMING, cause "
               "coverage obtained for each genome to be slightly less than "
               "the desired coverage (COVERAGE) when that desired coverage "
-              "is the complete genome; it is recommended to also use "
-              "--print-analysis or --write-analysis-to-tsv with this "
-              "to see the coverage that is obtained."))
+              "is the complete genome; using --print-analysis or "
+              "--write-analysis-to-tsv will provide the obtained coverage."))
     def check_filter_with_lsh_minhash(val):
         fval = float(val)
         if fval >= 0.0 and fval <= 1.0:
@@ -756,8 +831,10 @@ if __name__ == "__main__":
         else:
             raise argparse.ArgumentTypeError(("%s is an invalid Jaccard "
                                               "distance") % val)
+    default_filter_with_lsh_minhash = {'basic': None, 'large': 0.6}
     parser.add_argument('--filter-with-lsh-minhash',
         type=check_filter_with_lsh_minhash,
+        default=default_filter_with_lsh_minhash[args_type],
         help=("(Optional) If set, filter candidate probes for near-"
               "duplicates using LSH with a MinHash family. "
               "FILTER_WITH_LSH_MINHASH gives the maximum Jaccard distance "
@@ -767,13 +844,19 @@ if __name__ == "__main__":
               "commensurate with parameter values determining whether a probe "
               "hybridizes to a target sequence, but this can be difficult "
               "to measure compared to the input for --filter-with-lsh-hamming. "
-              "However, this allows more sensitivity in near-duplicate "
+              "This argument allows more sensitivity in near-duplicate "
               "detection than --filter-with-lsh-hamming (e.g., if near-"
               "duplicates should involve probes shifted relative to each "
-              "other). The same caveats mentioned in help for "
-              "--filter-with-lsh-hamming also apply here. Values of "
+              "other) and, therefore, greater improvement in runtime and "
+              "memory usage. Values should generally be around 0.5 to 0.7. "
+              "The same caveat mentioned in the help message for "
+              "--filter-with-lsh-hamming also applies here; namely, it can "
+              "cause the coverage obtained for each genome to be slightly "
+              "less than the desired coverage (COVERAGE), and especially so "
+              "with low values of MISMATCHES (~0, 1, or 2). Values of "
               "FILTER_WITH_LSH_MINHASH above ~0.7 may start to require "
-              "significant memory and runtime for near-duplicate detection."))
+              "significant memory and runtime for near-duplicate detection "
+              "and are usually not recommended."))
 
     # Miscellaneous technical adjustments
     parser.add_argument('--small-seq-skip',
@@ -806,8 +889,14 @@ if __name__ == "__main__":
         else:
             raise argparse.ArgumentTypeError(("MAX_NUM_PROCESSES must be "
                                               "an int >= 1"))
+    # For 'large' args_type, use all CPUs (by default, if unspecified, the
+    #   maxmimum number of processes is determined by each module that is
+    #   parallelized, in its set_max_num_processes_*() function)
+    default_max_num_processes = {'basic': None,
+            'large': multiprocessing.cpu_count()}
     parser.add_argument('--max-num-processes',
         type=check_max_num_processes,
+        default=default_max_num_processes[args_type],
         help=("(Optional) An int >= 1 that gives the maximum number of "
               "processes to use in multiprocessing pools; uses min(number "
               "of CPUs in the system, MAX_NUM_PROCESSES) processes"))
@@ -865,5 +954,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    log.configure_logging(args.log_level)
+    # Add on, to the namespace, the argument type used for initialization
+    args.args_type = args_type
+
+    return args
+
+
+if __name__ == "__main__":
+    args = init_and_parse_args(args_type='basic')
     main(args)

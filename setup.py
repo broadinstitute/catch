@@ -18,6 +18,7 @@ setup(name='catch',
       scripts=[
           'bin/analyze_probe_coverage.py',
           'bin/design.py',
+          'bin/design_large.py',
           'bin/design_naively.py',
           'bin/pool.py',
       ])
