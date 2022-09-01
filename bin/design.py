@@ -140,7 +140,8 @@ def main(args):
             if len(recommended_args) > 0:
                 recommended_args_str = ("Recommended options include: " +
                         ', '.join(["'" + x + "'" for x in recommended_args]))
-            logger.warning(("Consider using design_large.py or some of the "
+            logger.warning(("If runtime or memory usage are problematic, "
+                "consider using design_large.py or some of the "
                 "options it sets, which may be helpful in lowering runtime "
                 "and memory usage for this design. "
                 f"{recommended_args_str}"))
@@ -180,6 +181,11 @@ def main(args):
                         "PROBE_LENGTH (%d), which is usually undesirable "
                         "and may lead to undefined behavior"),
                         args.island_of_exact_match, args.probe_length)
+    if args.mismatches / args.probe_length > 0.15:
+        logger.warning(("MISMATCHES (%d) is higher relative to PROBE_LENGTH "
+                        "(%d) than typically provided, and may lead to "
+                        "slower runtime and lower enrichment in practice"),
+                        args.mismatches, args.probe_length)
 
     # Setup and verify parameters related to k-mer length in probe map
     if args.kmer_probe_map_k:
