@@ -2,6 +2,9 @@
 
 This includes computing a distance matrix using MinHash, and
 clustering that matrix.
+
+Many of the ideas implemented here are conceptually similar to,
+and based on, Mash (Ondov et al. 2016; https://doi.org/10.1186/s13059-016-0997-x).
 """
 
 import ctypes
