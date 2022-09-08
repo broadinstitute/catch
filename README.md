@@ -20,14 +20,14 @@ It allows avoiding sequence from the design (e.g., background in microbial enric
   * [Downloading and installing](#downloading-and-installing)
   * [Downloading viral sequence data](#downloading-viral-sequence-data)
   * [Testing](#testing)
-  * [Alternative approach: installing with conda](#alternative-approach-installing-with-conda)
+  * [Alternative installation approach: conda](#alternative-installation-approach-conda)
 * [Using CATCH](#using-catch)
   * [Cautious defaults and one setting of hybridization criteria](#option-1-cautious-defaults-and-one-setting-of-hybridization-criteria)
   * [Pragmatic defaults for large, diverse input and one setting of hybridization criteria](#option-2-pragmatic-defaults-for-large-diverse-input-and-one-setting-of-hybridization-criteria)
   * [Variable hybridization criteria across many taxa](#option-3-variable-hybridization-criteria-across-many-taxa)
 * [Examples](#examples)
   * [Example of running design.py](#example-of-running-designpy)
-  * [Example of running design_large.py](#example-of-running-designlargepy)
+  * [Example of running design_large.py](#example-of-running-design_largepy)
   * [Example of running pool.py](#example-of-running-poolpy)
 * [Contributing](#contributing)
 * [Citation](#citation)
@@ -47,7 +47,7 @@ CATCH may also work with older versions of Python, NumPy, and SciPy, but is only
 
 Installing CATCH with `pip` (or conda), as described below, will install NumPy and SciPy if they are not already installed.
 
-## Setting up a conda environment
+### Setting up a conda environment
 
 _Note: This section is optional, but may be useful to users who are new to Python._
 
@@ -74,7 +74,7 @@ Then, you can activate the `catch` environment:
 conda activate catch
 ```
 
-After the environment is created and activated, you can install CATCH as described below.
+After the environment is created and activated, you can install CATCH as described immediately below or by [using the conda package](#alternative-installation-approach-conda).
 You will need to activate the environment each time you use CATCH.
 
 ### Downloading and installing
@@ -166,9 +166,9 @@ The probe sequences are written to OUTPUT in FASTA format.
 
 **This program sets cautious hybridization criteria by default (e.g., tolerate no probe-target mismatches) and does not automatically enable options that, in practice, reduce runtime and memory usage.**
 **The program was built and described in our [publication](https://www.nature.com/articles/s41587-018-0006-x) as a subroutine of CATCH applied to one viral species at a time.**
-**Nevertheless, it can be applied to multiple taxa and to non-viral taxa with appropriate settings: if `dataset`s encompass multiple taxa and/or include large genomes, please (i) consider the arguments described below that reduce runtime and memory usage; or (ii) consider running CATCH as described in [Option #2](#option-2-pragmatic-defaults-for-large-diverse-input-and-one-setting-of-hybridization-criteria) or [Option #3](#option-3-variable-hybridization-criteria-across-many-taxa).**
+**Nevertheless, it can be applied to multiple taxa and to non-viral taxa with appropriate settings: if `dataset`s encompass multiple taxa and/or include large genomes, please (i) consider the arguments described [below](#arguments-that-often-lower-runtime-and-memory-usage) that reduce runtime and memory usage or (ii) consider running CATCH as described in [Option #2](#option-2-pragmatic-defaults-for-large-diverse-input-and-one-setting-of-hybridization-criteria) or [Option #3](#option-3-variable-hybridization-criteria-across-many-taxa).**
 
-Below are several important arguments to `design.py`:
+Below are several important arguments to [`design.py`](./bin/design.py):
 
 * `-pl/--probe-length PROBE_LENGTH`/`-ps/--probe-stride PROBE_STRIDE`: Design probes to be PROBE_LENGTH nt long, and generate candidate probes using a stride of PROBE_STRIDE nt.
 (Default: 100 and 50.)
@@ -192,11 +192,13 @@ Also, see `-mt/--mismatches-tolerant`, `-lt/--lcf-thres-tolerant`, and `--island
 Also, see `-mt/--mismatches-tolerant`, `-lt/--lcf-thres-tolerant`, and `--island-of-exact-match-tolerant`, as described by the output of `design.py --help`.
 * `--add-adapters`: Add PCR adapters to the ends of each probe sequence.
 This selects adapters to add to probe sequences so as to minimize overlap among probes that share an adapter, allowing probes with the same adapter to be amplified together.
-(See `--adapter-a` and `--adapter-b` too.)
+(See `--adapter-a` and `--adapter-b` too, as described by the output of `design.py --help`.)
 * `--custom-hybridization-fn PATH FN`: Specify a function, for CATCH to dynamically load, that implements a custom model of hybridization between a probe and target sequence.
 See `design.py --help` for details on the expected input and output of this function.
 If not set, CATCH uses its default model of hybridization based on `-m/--mismatches`, `-l/--lcf-thres`, and `--island-of-exact-match`.
 Relatedly, see `--custom-hybridization-fn-tolerant` as described by the output of `design.py --help`.
+
+#### Arguments that often lower runtime and memory usage
 
 Several arguments change the design process in a way that can considerably reduce the computational burden needed for design &mdash; especially for large and highly diverse inputs.
 The trade-off of these arguments is an increase in the number of output probes, but this increase is usually small (<10%).
@@ -207,10 +209,10 @@ See the output of `design.py --help` for detail on how this argument works and w
 FILTER_WITH_LSH_MINHASH should generally be around 0.5 to 0.7, and 0.6 is a reasonable starting place.
 One caveat: when specifying low values of MISMATCHES (~0, 1, or 2), using this argument can cause the coverage provided for each genome to be slightly less than desired with `--coverage` (e.g., 98% if COVERAGE is 100%).
 * `--filter-with-lsh-hamming FILTER_WITH_LSH_HAMMING`: Similar to `--filter-with-lsh-minhash`, except uses a different technique for locality-sensitive hashing.
-The improvement in runtime and memory usage is usually less than when using `--filter-with-lsh-minhash`, but the value to specify is more intuitive &mdash; namely, it filters near-duplicate probes, using FILTER_WITH_LSH_HAMMING as the maximum Hamming distance at which to call near-duplicates.
+The improvement in runtime and memory usage is usually less than when using `--filter-with-lsh-minhash`, and they cannot be used together, but the value to specify is more intuitive &mdash; namely, it filters near-duplicate probes, using FILTER_WITH_LSH_HAMMING as the maximum Hamming distance at which to call near-duplicates.
 FILTER_WITH_LSH_HAMMING should be commensurate with (but not greater than) MISMATCHES; for example, if MISMATCHES is 5, we recommend setting this value to 3 or 4.
 The same caveat regarding coverage noted for `--filter-with-lsh-minhash` also applies to this argument.
-* `--cluster-and-design-separately CLUSTER_AND_DESIGN_SEPARATELY`: Cluster input sequences prior to design by computing their MinHash signatures and comparing them.
+* `--cluster-and-design-separately CLUSTER_AND_DESIGN_SEPARATELY`: Cluster input sequences prior to design by computing their MinHash signatures and comparing them (i.e., the [Mash](https://doi.org/10.1186/s13059-016-0997-x) approach).
 Then, design probes separately on each cluster and merge the resulting probes.
 Like the above arguments, this is another option to improve runtime and memory requirements on large and diverse input.
 CLUSTER_AND_DESIGN_SEPARATELY gives the inter-cluster distance threshold for merging clusters, expressed as average nucleotide dissimilarity (1-ANI, where ANI is average nucleotide identity).
@@ -220,6 +222,9 @@ Also, see `--cluster-and-design-separately-method`, as described by the output o
 This option requires setting `--cluster-and-design-separately` as well, and proceeds as described for that argument.
 This option can be useful for large genomes (e.g., bacterial genomes) in which probes for different chunks can be designed independently.
 The fragment length should be around 50,000 nt and 50000 is a reasonable starting place for CLUSTER_FROM_FRAGMENTS.
+
+In general, a reasonable starting point for enabling these option is to try: `--filter-with-lsh-minhash 0.6 --cluster-and-design-separately 0.15 --cluster-from-fragments 50000`.
+Specific applications may benefit more with different values.
 
 Note that these arguments may slightly increase runtime for small inputs so, when also considering the trade-offs noted above, we do not recommend them for every application.
 Nevertheless, we recommend trying these arguments for large and diverse input (e.g., large genomes, many genomes, or highly divergent genomes), or in any case when runtime or memory usage presents an obstacle to running CATCH.
@@ -237,7 +242,7 @@ In particular, [`design_large.py`](./bin/design_large.py):
 * Turns on options to lower runtime and memory usage: `--filter-with-lsh-minhash 0.6 --cluster-and-design-separately 0.15 --cluster-from-fragments 50000`
 * Uses all available CPUs to parallelize computations
 
-The values of these arguments, as well as all of the arguments described [above](#option-1-cautious-defaults-and-one-setting-of-hybridization-criteria), can still be customized.
+The values of these arguments, as well as all of the arguments described [above](#option-1-cautious-defaults-and-one-setting-of-hybridization-criteria), can be overriden by specifying the argument.
 
 To see details on all of the arguments that the program accepts, including their default values, as well as more information about input and output, run:
 
@@ -282,6 +287,9 @@ This allows you to adjust how conservative each parameter is treated relative to
 This allows you to seek that probes in the pooled design be more sensitive for some taxa than others, for instance, if you believe you are more likely to encounter some taxa in a sample.
 (Default: 1 for all datasets.)
 
+When running [`design.py`](./bin/design.py), be sure to store the probes output for each choice of parameter values in the search grid.
+Then, combine the output FASTA files corresponding to the parameter values written to OUTPUT_TSV.
+
 Each run of [`pool.py`](./bin/pool.py) may yield a slightly different output based on the (random) initial guess.
 You could run it multiple times and select the output that has the smallest loss, which is written to standard output at the end of the program.
 
@@ -306,6 +314,8 @@ It will provide detailed output during runtime (`--verbose`) and yield about 600
 Note that using `-l 75` here (or, equivalently, leaving out `-l`) will run significantly faster, but result in more probes.
 Also, note that the input can be `zika` to use the `zika` dataset distributed with CATCH, or a path to any custom FASTA file.
 
+**For large input, please consider notes [above](#option-1-cautious-defaults-and-one-setting-of-hybridization-criteria) regarding [options](#arguments-that-often-lower-runtime-and-memory-usage) that lower runtime and memory usage.**
+
 ### Example of running [`design_large.py`](./bin/design_large.py)
 
 Below is an example of designing probes with larger and more diverse input than that provided in the above example:
@@ -315,18 +325,18 @@ design_large.py download:64320 download:12637 -o zika-and-dengue-probes.fasta --
 ```
 
 This will download whole genomes of Zika virus (NCBI taxonomy ID [64320](https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=64320)) and dengue virus (NCBI taxonomy ID [12637](https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=12637)).
-It will then design probes to enrich both species and save them to `zika-and-dengue-probes.fasta`.
+It will then design probes to enrich both species, and will save the probes to `zika-and-dengue-probes.fasta`.
 
 The command will provide detailed output during runtime (`--verbose`) and yield about 3,200 probes.
 It will take about 1 hour to run (with 8 CPUs).
 
-For hybridization criteria, [`design_large.py`](./bin/design_large.py) will use default values (available in the output of `design_large.py --help`), which can be overridden with custom values if desired.
+For hybridization criteria, [`design_large.py`](./bin/design_large.py) will use default values (listed in the output of `design_large.py --help`), which can be overridden with custom values if desired.
 
 ### Example of running [`pool.py`](./bin/pool.py)
 
 [Here](./catch/pool/tests/input/num-probes.V-WAfr.201506.tsv) is a table listing probe counts used in the design of the V-WAfr probe set (provided [here](./probe-designs) and described in our [publication](https://www.nature.com/articles/s41587-018-0006-x)).
 It provides counts for each dataset (species) and combination of two parameters (mismatches and cover extension) that were allowed to vary in CATCH's design; the table was produced by running [`design.py`](./bin/design.py) for each species over a grid of parameter values.
-Below is an example of designing the V-WAfr probe set using this table as input.
+Below is an example of designing the V-WAfr probe set using this table as input:
 
 ```bash
 pool.py num-probes.V-WAfr.201506.tsv 90000 params.V-Wafr.201506.tsv --round-params 1 10
@@ -334,7 +344,7 @@ pool.py num-probes.V-WAfr.201506.tsv 90000 params.V-Wafr.201506.tsv --round-para
 
 This will search for parameters that yield at most 90,000 probes across the species, and will output those to `params.V-Wafr.201506.tsv`.
 Because the search is over a continuous space, here we use `--round-params 1 10` to set each value of the mismatches parameter to an integer and each value of the cover extension parameter to a multiple of 10 while still meeting the constraint on probe count.
-The pooled design yields about 89,950 probes, depending on the initial guess.
+The pooled design yields about 89,950 probes.
 
 ## Contributing
 
