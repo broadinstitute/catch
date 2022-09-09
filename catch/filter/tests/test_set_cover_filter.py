@@ -23,17 +23,20 @@ class TestSetCoverFilter(unittest.TestCase):
         # Disable logging
         logging.disable(logging.WARNING)
 
-    def get_filter_and_output(self, lcf_thres, mismatches, target_genomes,
+    def get_filter_and_output(self, lcf_thres, mismatches,
+                              target_genomes_grouped,
                               input, coverage,
                               mismatches_tolerant=-1,
                               lcf_thres_tolerant=-1,
                               cover_extension=0,
                               identify=False,
                               avoided_genomes=[],
-                              cover_groupings_separately=False):
-        input_probes = [probe.Probe.from_str(s) for s in input]
-        # Remove duplicates
-        input_probes = list(OrderedDict.fromkeys(input_probes))
+                              force_num_processes=None):
+        input_probes_grouped = []
+        for input_group in input:
+            i = [probe.Probe.from_str(s) for s in input_group]
+            # Remove duplicates
+            input_probes_grouped += [list(OrderedDict.fromkeys(i))]
         f = scf.SetCoverFilter(
             mismatches=mismatches,
             lcf_thres=lcf_thres,
@@ -43,9 +46,13 @@ class TestSetCoverFilter(unittest.TestCase):
             lcf_thres_tolerant=lcf_thres_tolerant,
             identify=identify,
             avoided_genomes=avoided_genomes,
-            cover_groupings_separately=cover_groupings_separately,
             kmer_probe_map_k=3)
-        output_probes = f.filter(input_probes, target_genomes)
+        if force_num_processes is not None:
+            f._force_num_processes = force_num_processes
+        output_probes = f.filter(input_probes_grouped, target_genomes_grouped,
+                input_is_grouped=True)
+        # Flatten output_probes across groupings
+        output_probes = list(set(p for i in output_probes for p in i))
         return (f, output_probes)
 
     def verify_target_genome_coverage(self, selected_probes, target_genomes,
@@ -58,8 +65,8 @@ class TestSetCoverFilter(unittest.TestCase):
         )
         probe.open_probe_finding_pool(kmer_probe_map,
                                       filter.cover_range_fn)
-        for tg in [g for genomes_from_group in target_genomes
-                   for g in genomes_from_group]:
+        for tg in [tg for genomes_from_group in target_genomes for tg in
+                genomes_from_group]:
             num_bp_covered = 0
             for seq in tg.seqs:
                 probe_cover_ranges = probe.find_probe_covers_in_sequence(seq)
@@ -83,22 +90,26 @@ class TestSetCoverFilter(unittest.TestCase):
                                         desired_coverage_adjusted)
         probe.close_probe_finding_pool()
 
-    def run_full_coverage_check_for_target_genomes(
-            self, target_genomes, cover_groupings_separately=False):
+    def run_full_coverage_check_for_target_genomes(self,
+            target_genomes_grouped, check_must_have=True,
+            force_num_processes=None):
         input = []
-        for tg in [g for genomes_from_group in target_genomes
-                   for g in genomes_from_group]:
-            for seq in tg.seqs:
-                input += [seq[i:(i + 6)] for i in range(len(seq) - 6 + 1)]
-        must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
+        for genomes_from_group in target_genomes_grouped:
+            input_group = []
+            for tg in genomes_from_group:
+                for seq in tg.seqs:
+                    input_group += [seq[i:(i + 6)] for i in range(len(seq) - 6 + 1)]
+            input += [input_group]
         f, output = self.get_filter_and_output(
-            6, 0, target_genomes, input, 1.0,
-            cover_groupings_separately=cover_groupings_separately)
+            6, 0, target_genomes_grouped, input, 1.0,
+            force_num_processes=force_num_processes)
         # output must have probes in must_have_output
-        for o in must_have_output:
-            self.assertTrue(probe.Probe.from_str(o) in output)
+        if check_must_have:
+            must_have_output = ['OPQRST', 'UVWXYZ', 'FEDCBA', 'ABCDEF', 'ZYXWVF']
+            for o in must_have_output:
+                self.assertTrue(probe.Probe.from_str(o) in output)
         # verify that each of the target genomes is fully covered
-        self.verify_target_genome_coverage(output, target_genomes, f, 1.0)
+        self.verify_target_genome_coverage(output, target_genomes_grouped, f, 1.0)
 
     def convert_target_genomes(self, target_genomes):
         """Convert genomes to instances of genome.Genome.
@@ -120,44 +131,48 @@ class TestSetCoverFilter(unittest.TestCase):
             r += [rg]
         return r
 
-    def test_full_coverage(self):
+    def test_full_coverage_one_group(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF',
                            'ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        # Test with one grouping of two sequences
-        self.run_full_coverage_check_for_target_genomes(target_genomes)
-        # Test again with two groupings of one sequence each
-        target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
-                          ['ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
-        target_genomes = self.convert_target_genomes(target_genomes)
-        self.run_full_coverage_check_for_target_genomes(target_genomes)
+        for np in [None, 1, 2, 4]:
+            # Test with one grouping of two sequences
+            self.run_full_coverage_check_for_target_genomes(target_genomes,
+                    force_num_processes=np)
 
-    def get_6bp_probes(self, target_genomes,
+    def get_6bp_probes(self, target_genomes_grouped,
                        cover=1.0,
                        cover_extension=0,
                        identify=False,
                        mismatches_tolerant=0,
                        lcf_thres_tolerant=6,
-                       avoided_genomes=[],
-                       cover_groupings_separately=False):
+                       avoided_genomes=[]):
         input = []
-        for tg in [g for genomes_from_group in target_genomes
-                   for g in genomes_from_group]:
-            for seq in tg.seqs:
-                input += [seq[i:(i + 6)] for i in range(len(seq) - 6 + 1)]
-        # Use 100 kmers per probe to better avoid the very rare cases
-        # when scanning a genome does not find a probe cover and results
-        # in a test case failing. We could set a random seed, but using
-        # 100 for this parameter makes the probability of this
-        # happening incredibly small.
+        for genomes_from_group in target_genomes_grouped:
+            input_group = []
+            for tg in genomes_from_group:
+                for seq in tg.seqs:
+                    input_group += [seq[i:(i + 6)] for i in range(len(seq) - 6 + 1)]
+            input += [input_group]
         f, output = self.get_filter_and_output(
-            6, 0, target_genomes, input, cover,
+            6, 0, target_genomes_grouped, input, cover,
             mismatches_tolerant=mismatches_tolerant,
             lcf_thres_tolerant=lcf_thres_tolerant,
             cover_extension=cover_extension,
             identify=identify,
-            avoided_genomes=avoided_genomes,
-            cover_groupings_separately=cover_groupings_separately)
+            avoided_genomes=avoided_genomes)
+        # Test that the output is the same even when particular numbers of
+        # processes are set
+        for np in [1, 2, 4]:
+            _, o = self.get_filter_and_output(
+                6, 0, target_genomes_grouped, input, cover,
+                mismatches_tolerant=mismatches_tolerant,
+                lcf_thres_tolerant=lcf_thres_tolerant,
+                cover_extension=cover_extension,
+                identify=identify,
+                avoided_genomes=avoided_genomes,
+                force_num_processes=np)
+            self.assertEqual(output, o)
         return f, output
 
     def test_same_output_with_duplicated_species(self):
@@ -212,7 +227,7 @@ class TestSetCoverFilter(unittest.TestCase):
                            'ABCXE',
                            'CXEGH']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        candidate_probes = ['ABCDEF', 'DEFGHI', 'GHIJKLM', 'ABCXE', 'CXEGH']
+        candidate_probes = [['ABCDEF', 'DEFGHI', 'GHIJKLM', 'ABCXE', 'CXEGH']]
         f, probes = self.get_filter_and_output(
             5, 0, target_genomes, candidate_probes, 1.0)
         probes_str = [''.join(x.seq) for x in probes]
@@ -527,22 +542,16 @@ class TestSetCoverFilter(unittest.TestCase):
 
         bl_file.close()
 
-    def test_cover_separately_two_groupings(self):
+    def test_full_coverage_two_groups(self):
         target_genomes = [['ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
                           ['ZYXWVFGHIJWUTSOPQRSTFEDCBAZYXWVF']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        self.run_full_coverage_check_for_target_genomes(
-            target_genomes, cover_groupings_separately=True)
-
-    def test_cover_separately_identify_two_groups(self):
-        target_genomes = [['ABCDEFXXIJKXMNOPQRXTUXWXYXABCDEF',
-                           'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF'],
-                          ['ATATATABCDEFATATATATATATATATATAT']]
-        target_genomes = self.convert_target_genomes(target_genomes)
-        f, probes = self.get_6bp_probes(target_genomes, cover=6, identify=True,
-                                        cover_groupings_separately=True)
-        self.assertEqual(set(probes), {probe.Probe.from_str('MNOPQR'),
-                                           probe.Probe.from_str('ATATAT')})
+        for np in [None, 1, 2, 4]:
+            # Do not check for the 'must have' probes because the targets will
+            #   be covered separately, and thus probes may not reflect the
+            #   most conserved sites
+            self.run_full_coverage_check_for_target_genomes(target_genomes,
+                    check_must_have=False, force_num_processes=np)
 
     def test_custom_cover_range_fn(self):
         custom_path = os.path.join(os.path.dirname(__file__),
@@ -552,8 +561,8 @@ class TestSetCoverFilter(unittest.TestCase):
         target_genomes = [['AAAAAAAAABCBBBBBBBBBB',
                            'AAAAAAAAABCBBBBBBBBBB']]
         target_genomes = self.convert_target_genomes(target_genomes)
-        candidate_probes = [probe.Probe.from_str(p) for p in
-                            ['AAAAAA', 'AAABCB', 'BBBBBB', 'XXXXXX']]
+        candidate_probes= [[probe.Probe.from_str(p) for p in
+                            ['AAAAAA', 'AAABCB', 'BBBBBB', 'XXXXXX']]]
 
         # Only try to cover 3 bp; the only probe that will hybridize
         # by this toy cover_range_fn is the one with 'ABC'
@@ -561,7 +570,9 @@ class TestSetCoverFilter(unittest.TestCase):
                                coverage=3,
                                custom_cover_range_fn=custom_cover_range_fn,
                                kmer_probe_map_k=3)
-        output_probes = f.filter(candidate_probes, target_genomes)
+        output_probes = f.filter(candidate_probes, target_genomes,
+                input_is_grouped=True)
+        output_probes = list(set(p for i in output_probes for p in i)) # flatten
         self.assertEqual(set(output_probes), {probe.Probe.from_str('AAABCB')})
 
     def tearDown(self):
