@@ -10,7 +10,7 @@ manually specified in the variable RELEASE_VERSION.
 """
 
 # Manually specify a numbered release version to use as a fallback
-RELEASE_VERSION = 'v1.4.0'
+RELEASE_VERSION = 'v1.5.0'
 
 
 import subprocess
