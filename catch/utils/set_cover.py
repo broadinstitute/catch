@@ -149,7 +149,8 @@ def approx_multiuniverse(sets,
                          universe_p=None,
                          ranks=None,
                          use_arrays=False,
-                         use_intervalsets=False):
+                         use_intervalsets=False,
+                         logger_prefix=""):
     """Approximates the solution to a "multiuniverse" set problem.
 
     We define the "multiuniverse" set problem to be a version of the
@@ -218,6 +219,7 @@ def approx_multiuniverse(sets,
             has just one interval (i.e., the one specified by the tuple),
             which is useful for saving space, and the interval is converted
             into an instance of IntervalSet as needed.
+        logger_prefix: prefix to use before log messages
 
     Returns:
         a set consisting of the identifiers of the sets chosen to be
@@ -446,7 +448,8 @@ def approx_multiuniverse(sets,
     while [True for universe_id in universes.keys()
            if num_left_to_cover[universe_id] > 0]:
         if len(set_ids_in_cover) % 10 == 0:
-            logger.info(("Selected %d sets with a total of %d elements "
+            logger.info((f"{logger_prefix}Selected "
+                         "%d sets with a total of %d elements "
                          "remaining to be covered"), len(set_ids_in_cover),
                         sum(num_left_to_cover.values()))
 

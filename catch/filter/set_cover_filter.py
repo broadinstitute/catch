@@ -111,7 +111,7 @@ def _pickle_set_cover_input(sets, costs, universe_p, ranks):
     return tf_name
 
 
-def _compute_set_cover(sets, costs, universe_p, ranks):
+def _compute_set_cover(sets, costs, universe_p, ranks, logger_prefix=""):
     """Compute set cover approximation(s) for one or more instances.
 
     Args:
@@ -127,6 +127,7 @@ def _compute_set_cover(sets, costs, universe_p, ranks):
         ranks: ranks input to set_cover.approx_multiuniverse for a full
             instance of set cover (i.e., contains ranks for probes that
             come from all target genomes across all groupings)
+        logger_prefix: prefix to use before log messages
 
     Returns:
         set ids (corresponding to indices in the sets input) that give
@@ -137,7 +138,8 @@ def _compute_set_cover(sets, costs, universe_p, ranks):
         costs=costs,
         universe_p=universe_p,
         ranks=ranks,
-        use_intervalsets=True)
+        use_intervalsets=True,
+        logger_prefix=logger_prefix)
     return set_ids_in_cover
 
 
@@ -155,9 +157,11 @@ def _compute_set_cover_from_saved_input(tf_name, group_i):
         set ids (corresponding to indices in the sets input) that give
         the probes selected to be in the set cover
     """
-    logger.info(("Group %d: approximating the solution to a set cover "
-                 "instance across a grouping of genomes"),
-                 group_i+1)
+    group_i_1 = group_i + 1 # make 1-based
+    logger_prefix = f"Group {group_i_1}: "
+
+    logger.info((f"{logger_prefix}Approximating the solution to a set cover "
+                 f"instance across a grouping of genomes"))
 
     # Read input data and delete the file
     with open(tf_name, 'rb') as tf:
@@ -166,7 +170,8 @@ def _compute_set_cover_from_saved_input(tf_name, group_i):
 
     # Solve instance
     set_ids_in_cover = _compute_set_cover(
-            d['sets'], d['costs'], d['universe_p'], d['ranks'])
+            d['sets'], d['costs'], d['universe_p'], d['ranks'],
+            logger_prefix=logger_prefix)
 
     # Warn when less-than-ideal probes are chosen (i.e., probes
     # whose ranks exceed 0)
