@@ -145,7 +145,7 @@ class TestSetCoverApprox(unittest.TestCase):
     def test_no_elements(self):
         input = {}
         self.assertEqual(sc.approx(input), set([]))
-        inptut = {0: set([])}
+        input = {0: set([])}
         self.assertEqual(sc.approx(input), set([]))
 
     def test_one_element(self):
@@ -680,6 +680,16 @@ class TestSetCoverApproxMultiuniverse(unittest.TestCase):
         # (e.g., test that it's less than 0.01)
         self.assertLess(np.median(weight_fracs), 0.01)
         return outputs
+
+    def test_no_elements(self):
+        input = {}
+        self.assertEqual(sc.approx_multiuniverse(input), set())
+        input = {0: {0: set()}}
+        self.assertEqual(sc.approx_multiuniverse(input), set())
+
+    def test_one_element(self):
+        input = {0: {0: set([1])}}
+        self.assertEqual(sc.approx_multiuniverse(input), {0})
 
     def tearDown(self):
         # Re-enable logging

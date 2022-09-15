@@ -575,6 +575,15 @@ class TestSetCoverFilter(unittest.TestCase):
         output_probes = list(set(p for i in output_probes for p in i)) # flatten
         self.assertEqual(set(output_probes), {probe.Probe.from_str('AAABCB')})
 
+    def test_filter_empty_input(self):
+        target_genomes = [['ACGT']]
+        target_genomes = self.convert_target_genomes(target_genomes)
+        f = scf.SetCoverFilter(0, 0)
+        output_probes = f._filter([[]], target_genomes)
+        self.assertEqual(output_probes, [[]])
+        output_probes = f.filter([[]], target_genomes, input_is_grouped=True)
+        self.assertEqual(output_probes, [[]])
+
     def tearDown(self):
         # Re-enable logging
         logging.disable(logging.NOTSET)
