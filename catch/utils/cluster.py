@@ -204,6 +204,11 @@ def cluster_hierarchically_from_dist_matrix(dist_matrix, threshold):
         (whose pairwise distances are indexed in dist) in the i'th
         cluster, in sorted order by descending cluster size
     """
+    # An empty condensed distance matrix can occur when there is n=1
+    #   observation; in this case, just return a single cluster with it
+    if len(dist_matrix) == 0:
+        return [[0]]
+
     linkage = hierarchy.linkage(dist_matrix, method='average')
     clusters = hierarchy.fcluster(linkage, threshold, criterion='distance')
 

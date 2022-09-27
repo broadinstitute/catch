@@ -386,6 +386,13 @@ class SetCoverFilter(BaseFilter):
             of interval.IntervalSet -- to save space and it should be
             coverted to an interval.IntervalSet when needed.)
         """
+        # Check if there are no candidate probes; this could happen, e.g.,
+        #   if there is one short target sequence that has a string of Ns
+        # In this case, kmer_probe_map will be empty, leading to errors,
+        #   so avoid that by simply returning an empty dict
+        if len(candidate_probes) == 0:
+            return dict()
+
         logger.info("Building map from k-mers to probes")
         kmer_probe_map = probe.SharedKmerProbeMap.construct(
             probe.construct_kmer_probe_map_to_find_probe_covers(

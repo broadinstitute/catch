@@ -3,6 +3,7 @@
 
 import logging
 import unittest
+import warnings
 
 import numpy as np
 import scipy
@@ -87,6 +88,22 @@ class TestClusterFromMatrix(unittest.TestCase):
 
         clusters = cluster.cluster_hierarchically_from_dist_matrix(dist_matrix, 10)
         self.assertEqual(sorted(clusters), [[0], [1], [2]])
+
+    def test_cluster_hierarchically_from_dist_matrix_one_element(self):
+        # Have 1 element
+        n = 1
+        dists = {}
+        def dist_fn(i, j):
+            return dists[(i, j)]
+
+        # Ignore an expected warning when making a distance matrix from n=1
+        # observation
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=RuntimeWarning)
+            dist_matrix = self.create_condensed_dist_matrix(n, dist_fn)
+
+        clusters = cluster.cluster_hierarchically_from_dist_matrix(dist_matrix, 10)
+        self.assertEqual(sorted(clusters), [[0]])
 
     def tearDown(self):
         # Re-enable logging
