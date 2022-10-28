@@ -10,12 +10,12 @@ jobs:
       os: linux
       dist: focal
       python: 3.9
-    - name: "Python on macOS"
-      os: osx
-      language: generic # needed for Travis on macOS
-      osx_image: xcode13.4 # macOS 12.4
-      before_install:
-        - python3 --version
+#    - name: "Python on macOS"
+#      os: osx
+#      language: generic # needed for Travis on macOS
+#      osx_image: xcode13.4 # macOS 12.4
+#      before_install:
+#        - python3 --version
 
 cache:
  directories:
@@ -23,8 +23,8 @@ cache:
 
 install:
  - pip3 install --upgrade pip
- - pip3 install -r requirements.txt || sudo pip3 install -r requirements.txt # try sudo, if needed on macOS
- - pip3 install coveralls[yaml] nose-cov || sudo pip3 install coveralls[yaml] nose-cov
+ - pip3 install -r requirements.txt
+ - pip3 install coveralls[yaml] nose-cov 
  - python setup.py install --force || python3 setup.py install --force # try python, then python3
 
 script:
