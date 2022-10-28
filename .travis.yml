@@ -22,7 +22,7 @@ cache:
   - $HOME/virtualenv
 
 install:
- - pip3 install -r requirements.txt
+ - pip3 install -r requirements.txt || sudo pip3 install -r requirements.txt # try sudo, if needed on macOS
  - pip3 install coveralls[yaml] nose-cov
  - python setup.py install --force || python3 setup.py install --force # try python, then python3
 
