@@ -2,15 +2,20 @@ language: python
 
 jobs:
   include:
-    - os: linux
+    - name: "Python 3.8 on Focal Linux"
+      os: linux
       dist: focal
       python: 3.8
-    - os: linux
+    - name: "Python 3.9 on Focal Linux"
+      os: linux
       dist: focal
       python: 3.9
-    - os: osx
+    - name: "Python on macOS"
+      os: osx
       language: generic # needed for Travis on macOS
       osx_image: xcode13.4 # macOS 12.4
+      before_install:
+        - python3 --version
 
 cache:
  directories:
@@ -19,7 +24,7 @@ cache:
 install:
  - pip3 install -r requirements.txt
  - pip3 install coveralls[yaml] nose-cov
- - python setup.py install --force
+ - python setup.py install --force || python3 setup.py install --force # try python, then python3
 
 script:
  - nosetests -v --with-xunit --with-coverage --cover-inclusive --cover-branches --cover-package catch
