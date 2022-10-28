@@ -9,8 +9,8 @@ jobs:
       dist: focal
       python: 3.9
     - os: osx
-      language: generic
-      env: TOXENV=py38
+      language: generic # needed for Travis on macOS
+      osx_image: xcode13.4 # macOS 12.4
 
 cache:
  directories:
