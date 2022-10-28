@@ -8,9 +8,6 @@ jobs:
     - os: linux
       dist: focal
       python: 3.9
-    - os: linux
-      dist: focal
-      python: "3.10"
 
 cache:
  directories:
