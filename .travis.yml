@@ -10,7 +10,7 @@ jobs:
       python: 3.9
     - os: osx
       language: generic
-      python: 3.8
+      env: TOXENV=py38
 
 cache:
  directories:
