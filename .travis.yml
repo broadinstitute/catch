@@ -1,9 +1,16 @@
 language: python
 
-python:
- - 3.8
- - 3.9
- - "3.10"
+jobs:
+  include:
+    - os: linux
+      dist: focal
+      python: 3.8
+    - os: linux
+      dist: focal
+      python: 3.9
+    - os: linux
+      dist: focal
+      python: "3.10"
 
 cache:
  directories:
