@@ -17,8 +17,8 @@ cache:
   - $HOME/virtualenv
 
 install:
- - pip install -r requirements.txt
- - pip install coveralls[yaml] nose-cov
+ - pip3 install -r requirements.txt
+ - pip3 install coveralls[yaml] nose-cov
  - python setup.py install --force
 
 script:
