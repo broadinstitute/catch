@@ -809,7 +809,7 @@ def init_and_parse_args(args_type : _ARGS_TYPES):
               "input and sequences will not be grouped by genome, and "
               "differential identification is not supported"))
     parser.add_argument('--cluster-and-design-separately-method',
-        choices=['simple', 'hierarchical'], default='simple',
+        choices=['choose', 'simple', 'hierarchical'], default='choose',
         help=("(Optional) Method for clustering input sequences, which is "
               "only used if --cluster-and-design-separately is set. If "
               "'simple', clusters are connected components of a graph in "
@@ -818,7 +818,12 @@ def init_and_parse_args(args_type : _ARGS_TYPES):
               "the value CLUSTER_AND_DESIGN_SEPARATELY. If 'hierarchical', "
               "clusters are determined by agglomerative hierarchical "
               "clustering and the the value CLUSTER_AND_DESIGN_SEPARATELY "
-              "is the inter-cluster distance threshold to merge clusters."))
+              "is the inter-cluster distance threshold to merge clusters. "
+              "If 'choose', use a heuristic to decide among 'simple' and "
+              "'hierarchical' based on the input. This option can affect "
+              "performance and the heuristic does not always make the right "
+              "choice, so trying both choices 'simple' and 'hierarchical' "
+              "can sometimes be helpful if needed."))
     default_cluster_from_fragments = {'basic': None, 'large': 50000}
     parser.add_argument('--cluster-from-fragments',
         type=int,

@@ -57,7 +57,8 @@ class ProbeDesigner:
                 determining clusters based on connected components decided
                 based on a distance threshold (relative less resource
                 intensive); 'hierarchical' for agglomerative hierarchical
-                clustering (more resource intensive); must be set if
+                clustering (more resource intensive); 'choose' to choose among
+                simple and hierarchical based on a heuristic; must be set if
                 cluster_threshold is set
             cluster_fragment_length: if set, break genomes into fragments of
                 this length and cluster these fragments rather than the whole
@@ -117,12 +118,58 @@ class ProbeDesigner:
                     seqs[seq_idx] = s
                     seq_idx += 1
 
+        if self.cluster_method == 'choose':
+            # Apply a crude heuristic to decide which clustering method to
+            #   use
+            # 'simple', which finds connected components, is often faster and
+            #   uses less memory than 'hierarchical'. But it sometimes runs into
+            #   a problem. The best example of that problem is when the input
+            #   contains multiple (>1) long genomes, like bacterial genomes, and
+            #   when self.cluster_fragment_length is also set. The genomes are
+            #   divided into fragments, and those fragments can end up chaining
+            #   together to wind up in the same cluster. Say a genome has
+            #   fragments ABC...Z (say that A is self.cluster_fragment_length
+            #   long, as are B, etc.). A in one input genome will likely
+            #   have some overlap with B in another --- perhaps a lot. So
+            #   A and B are put in the same cluster. Then C in some genome has a
+            #   lot of overlap with B, so C and A also go together, ..., until
+            #   Z and A are in the same cluster even though they are not at all
+            #   alike. Almost all fragments (and, hence, almost all sequences)
+            #   end up in the same cluster: one very large cluster. This happens
+            #   because of the approach of finding connected components. The
+            #   clustering method 'hierarchical' avoids this issue because the
+            #   clusters are produced by average linkage, so everything in a
+            #   cluster should have some similarity to each other.
+            # As a way to decide which to use, for the above example, is if
+            #   the sequences are being fragmented and there is more than 1
+            #   input sequence and the average sequence length of the input
+            #   sequences exceeds the fragment length, then use the
+            #   'hierarchical' method to above problem. Otherwise, use the
+            #   'simple' clustering method.
+            if self.cluster_fragment_length is not None:
+                num_sequences = 0
+                total_seq_len = 0
+                for genomes_from_group in self.genomes:
+                    for g in genomes_from_group:
+                        num_sequences += len(g.seqs)
+                        total_seq_len += g.size()
+                average_seq_len = total_seq_len / num_sequences
+                if (num_sequences > 1 and average_seq_len >
+                        self.cluster_fragment_length):
+                    cluster_method_to_use = 'hierarchical'
+                else:
+                    cluster_method_to_use = 'simple'
+            else:
+                cluster_method_to_use = 'simple'
+        else:
+            cluster_method_to_use = self.cluster_method
+
         logger.info(("Clustering %d sequences using MinHash signatures, at an "
             "average nucleotide dissimilarity threshold of %f"),
                 seq_idx, self.cluster_threshold)
         clusters = cluster.cluster_with_minhash_signatures(seqs,
                 threshold=self.cluster_threshold,
-                cluster_method=self.cluster_method)
+                cluster_method=cluster_method_to_use)
 
         logger.info(("Found %d clusters with sizes: %s"), len(clusters),
                 [len(clust) for clust in clusters])
