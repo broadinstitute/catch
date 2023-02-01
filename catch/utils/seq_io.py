@@ -6,6 +6,7 @@ from collections import OrderedDict
 import gzip
 import logging
 import re
+import warnings
 
 import numpy as np
 
@@ -19,12 +20,18 @@ logger = logging.getLogger(__name__)
 def read_dataset_genomes(dataset):
     """Read genomes of the given dataset.
 
+    Note: deprecated after the removal of datasets.
+
     Args:
         dataset: instance of datasets.GenomesDataset
 
     Returns:
         list of genome.Genome
     """
+    warnings.warn(("catch.utils.seq_io.read_dataset_genomes() is "
+        "deprecated after the removal of datasets from catch"),
+        DeprecationWarning)
+
     genomes = []
 
     if dataset.is_multi_chr():
