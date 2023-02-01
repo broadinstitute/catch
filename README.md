@@ -18,7 +18,6 @@ It allows avoiding sequence from the design (e.g., background in microbial enric
   * [Python dependencies](#python-dependencies)
   * [Setting up a conda environment](#setting-up-a-conda-environment)
   * [Downloading and installing](#downloading-and-installing)
-  * [Downloading viral sequence data](#downloading-viral-sequence-data)
   * [Testing](#testing)
   * [Alternative installation approach: conda](#alternative-installation-approach-conda)
 * [Using CATCH](#using-catch)
@@ -89,33 +88,11 @@ pip install -e .
 
 If you do not have write permissions in the installation directory, you may need to supply `--user` to `pip install`.
 
-### Downloading viral sequence data
-
-_Note: This section is optional and not required for using CATCH._
-
-CATCH's repository contains viral sequence data that can be used as input, but downloading this data is not necessary for using CATCH.
-Instead, you can now [automatically download](#example-of-running-designpy) the latest genomes to use as input, so this data is no longer kept up-to-date and will eventually be removed.
-Nevertheless, the data may still be helpful for some users and is still needed for some [unit tests](#testing).
-
-We use [Git LFS](https://git-lfs.github.com) to version and store this data.
-If you wish to use this data, you'll need to install [Git LFS](https://git-lfs.github.com).
-After installing it, you can download the viral sequence data by running:
-
-```bash
-git lfs install
-git lfs pull
-```
-
-from inside the `catch` project directory.
-
-Depending on your setup, providing `-e` to `pip` during [installation](#downloading-and-installing) may be necessary for CATCH to access this data.
-
 ### Testing
 
 _Note: This section is optional and not required for using CATCH._
 
 CATCH uses Python's `unittest` framework.
-Some of these tests, in order to pass, require you to have [downloaded](#downloading-viral-sequence-data) viral sequence data.
 To execute all tests, run:
 
 ```bash
@@ -153,14 +130,12 @@ design.py --help
 design.py [dataset] [dataset ...] -o OUTPUT
 ```
 
-Each `dataset` can be one of several input formats:
+Each `dataset` can be one of two input formats:
 * A path to a FASTA file.
 * An NCBI taxonomy ID, for which sequences will be automatically downloaded.
 This is specified as `download:TAXID` where TAXID is the taxonomy ID.
 CATCH will fetch all accessions (representing whole genomes) for this taxonomy and download the sequences.
 For viruses, NCBI taxonomy IDs can be found via the [Taxonomy Browser](https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Undef&id=10239).
-* If you [downloaded](#downloading-viral-sequence-data) viral sequence data, a label for one of [550+ viral datasets](./catch/datasets/README.md) (e.g., `human_immunodeficiency_virus_1` or `zika`) distributed as part of this package.
-Each of these datasets includes all available whole genomes (genome neighbors) in [NCBI's viral genome data](https://www.ncbi.nlm.nih.gov/genome/viruses/) for a species that has human as a host, as of Oct. 2018.
 
 The probe sequences are written to OUTPUT in FASTA format.
 
@@ -312,7 +287,7 @@ and will save them to `zika-probes.fasta`.
 
 It will provide detailed output during runtime (`--verbose`) and yield about 600 probes.
 Note that using `-l 75` here (or, equivalently, leaving out `-l`) will run significantly faster, but result in more probes.
-Also, note that the input can be `zika` to use the `zika` dataset distributed with CATCH, or a path to any custom FASTA file.
+Also, note that the input can be a path to any custom FASTA file.
 
 **For large input, please consider notes [above](#option-1-cautious-defaults-and-one-setting-of-hybridization-criteria) regarding [options](#arguments-that-often-lower-runtime-and-memory-usage) that lower runtime and memory usage.**
 
