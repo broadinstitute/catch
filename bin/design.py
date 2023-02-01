@@ -66,16 +66,9 @@ def main(args):
     for ds in args.dataset:
         if ds.startswith('collection:'):
             # Process a collection of datasets
-            collection_name = ds[len('collection:'):]
-            try:
-                collection = importlib.import_module(
-                    'catch.datasets.collections.' + collection_name)
-            except ImportError:
-                raise ValueError("Unknown dataset collection %s" %
-                                 collection_name)
-            for name, dataset in collection.import_all():
-                genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
-                genomes_grouped_names += [name]
+            raise ValueError(("A collection of datasets (via 'collection:') "
+                "is no longer allowed as input. Please specify only NCBI "
+                "taxonomy IDs to download or FASTA files."))
         elif ds.startswith('download:'):
             # Download a FASTA for an NCBI taxonomic ID
             taxid = ds[len('download:'):]
@@ -99,13 +92,11 @@ def main(args):
             genomes_grouped_names += [os.path.basename(ds)]
         else:
             # Process an individual dataset
-            try:
-                dataset = importlib.import_module(
-                            'catch.datasets.' + ds)
-            except ImportError:
-                raise ValueError("Unknown file or dataset '%s'" % ds)
-            genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
-            genomes_grouped_names += [ds]
+            raise ValueError(("Dataset labels are no longer allowed as "
+                "input. Please specify only NCBI taxonomy IDs to download "
+                "(via 'download:taxid') or FASTA files. If you already "
+                "specified a FASTA file, please check that the path to "
+                f"'{ds}' is valid."))
 
     if (args.limit_target_genomes and
             args.limit_target_genomes_randomly_with_replacement):
@@ -155,13 +146,11 @@ def main(args):
                 avoided_genomes_fasta += [ag]
             else:
                 # Process an individual dataset
-                try:
-                    dataset = importlib.import_module(
-                        'catch.datasets.' + ag)
-                except ImportError:
-                    raise ValueError("Unknown file or dataset '%s'" % ag)
-                for fp in dataset.fasta_paths:
-                    avoided_genomes_fasta += [fp]
+                raise ValueError(("Dataset labels are no longer allowed as "
+                    "input. Please specify only NCBI taxonomy IDs to download "
+                    "(via 'download:taxid') or FASTA files. If you already "
+                    "specified a FASTA file, please check that the path to "
+                    f"'{ag}' is valid."))
 
     # Setup and verify parameters related to probe length
     if not args.lcf_thres:
@@ -497,16 +486,12 @@ def init_and_parse_args(args_type : _ARGS_TYPES):
     parser.add_argument('dataset',
         nargs='+',
         help=("One or more target datasets (e.g., one per species). Each "
-              "dataset can be specified in one of multiple ways. (a) If "
+              "dataset can be specified in one of two ways. (1) If "
               "dataset is in the format 'download:TAXID', then CATCH downloads "
               "from NCBI all whole genomes for the NCBI taxonomy with id "
-              "TAXID, and uses these sequences as input. (b) If dataset is "
+              "TAXID, and uses these sequences as input. (2) If dataset is "
               "a path to a FASTA file, then its sequences are read and used "
-              "as input. (c) Otherwise, it is assumed that this is a label "
-              "for a dataset included in this package (e.g., 'zika'). If "
-              "the label starts with 'collection:' (e.g., 'collection:viruses"
-              "_with_human_host'), then this reads from an available "
-              "collection of datasets. For segmented viruses, the format "
+              "as input. For segmented viruses, the format "
               "for NCBI downloads can also be 'download:TAXID-SEGMENT'."))
 
     # Outputting probes
@@ -639,11 +624,8 @@ def init_and_parse_args(args_type : _ARGS_TYPES):
     parser.add_argument('--avoid-genomes',
         nargs='+',
         help=("One or more genomes to avoid; penalize probes based "
-              "on how much of each of these genomes they cover. If "
-              "the value is a path to a file, then that file is treated "
-              "as a FASTA file and its sequences are read. Otherwise, "
-              "it is assumed that this is a label for a dataset included "
-              "in this package (e.g., 'zika')."))
+              "on how much of each of these genomes they cover. "
+              "The value is a path to a FASTA file."))
     parser.add_argument('-mt', '--mismatches-tolerant',
         type=int,
         help=("(Optional) A more tolerant value for 'mismatches'; "

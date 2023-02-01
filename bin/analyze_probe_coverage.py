@@ -32,12 +32,11 @@ def main(args):
             genomes_grouped_names += [os.path.basename(ds)]
         else:
             # Process an individual dataset
-            try:
-                dataset = importlib.import_module('catch.datasets.' + ds)
-            except ImportError:
-                raise ValueError("Unknown dataset %s" % ds)
-            genomes_grouped += [seq_io.read_dataset_genomes(dataset)]
-            genomes_grouped_names += [ds]
+            raise ValueError(("Dataset labels are no longer allowed as "
+                "input. Please specify only NCBI taxonomy IDs to download "
+                "(via 'download:taxid') or FASTA files. If you already "
+                "specified a FASTA file, please check that the path to "
+                f"'{ds}' is valid."))
 
     if args.limit_target_genomes:
         genomes_grouped = [genomes[:args.limit_target_genomes]
@@ -101,8 +100,8 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dataset',
         nargs='+',
         required=True,
-        help=("Labels for one or more target datasets; each can be a "
-              "FASTA file, taxonomy ID to download, or dataset. The "
+        help=("One or more target datasets; each can be a "
+              "FASTA file or taxonomy ID to download. The "
               "format is as specified for --dataset in design.py."))
     parser.add_argument('-f', '--probes-fasta',
         required=True,
