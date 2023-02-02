@@ -31,9 +31,9 @@ def main(args):
             # Process a custom fasta file with sequences
             seqs = [seq_io.read_genomes_from_fasta(ds)]
         else:
-            dataset = importlib.import_module(
-                'catch.datasets.' + ds)
-            seqs = [seq_io.read_dataset_genomes(dataset)]
+            raise ValueError(("Datasets labels are no longer allowed as input. "
+                "Please specify a FASTA file or, if you already did, check "
+                "that the file path is correct."))
     except ImportError:
         raise ValueError("Unknown file or dataset '%s'" % ds)
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     # Input data
     parser.add_argument('dataset',
-        help="Label for the target dataset")
+        help="Path to fasta file")
 
     # Probe parameters
     parser.add_argument('-pl', '--probe-length',

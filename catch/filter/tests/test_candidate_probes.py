@@ -2,14 +2,17 @@
 """
 
 import logging
+import pathlib
 import unittest
 
-from catch.datasets import zaire_ebolavirus
 from catch.filter import candidate_probes
 from catch.utils import seq_io
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
+
+ZAIRE_EBOLAVIRUS_PATH = str(pathlib.Path(__file__).parent.joinpath(
+        '../../utils/tests/data/zaire_ebolavirus.fasta.gz'))
 
 class TestCandidateProbesOnContrivedInput(unittest.TestCase):
     """Tests explicitly the generated candidate probes from contrived input.
@@ -140,8 +143,7 @@ class TestCandidateProbesOnEbolaZaire(unittest.TestCase):
         # Disable logging
         logging.disable(logging.WARNING)
 
-        seqs = [gnm.seqs[0]
-                for gnm in seq_io.read_dataset_genomes(zaire_ebolavirus)]
+        seqs = list(seq_io.read_fasta(ZAIRE_EBOLAVIRUS_PATH).values())
         seqs = seqs[:100]
         self.probes_100 = candidate_probes.make_candidate_probes_from_sequences(
             seqs,
