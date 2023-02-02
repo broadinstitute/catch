@@ -14,6 +14,7 @@ from multiprocessing import sharedctypes
 
 import numpy as np
 
+from catch.utils import fix_spawn_behavior
 from catch.utils import interval
 from catch.utils import longest_common_substring
 from catch.utils import timeout
@@ -835,6 +836,8 @@ def open_probe_finding_pool(kmer_probe_map,
             raise RuntimeError("Probe finding pool is already open")
     except NameError:
         pass
+
+    fix_spawn_behavior.fix_spawn_behavior()
 
     if num_processes is None:
         num_processes = min(multiprocessing.cpu_count(),

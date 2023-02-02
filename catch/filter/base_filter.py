@@ -4,6 +4,8 @@
 import inspect
 import multiprocessing
 
+from catch.utils import fix_spawn_behavior
+
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
 
 
@@ -109,6 +111,8 @@ class BaseFilter:
             if input_is_grouped:
                 # Call _filter() separately for each group, and parallelize
                 # calls across groupings
+
+                fix_spawn_behavior.fix_spawn_behavior()
 
                 global _fg_max_num_processes
                 if num_processes is None:
