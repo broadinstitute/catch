@@ -6,20 +6,21 @@ name: build
 on:
   push:
     branches:
-    - '**'
+    - '**' # build for all branches
   pull_request:
     branches:
-    - 'master'
+    - 'master' # build for pull requests into master
 
 jobs:
   build:
 
+    # build on all combinations of OS and Python version
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ["3.8", "3.9"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v3
@@ -45,7 +46,7 @@ jobs:
         # run pytest and save coverage report for codecov
         pytest --cov=./ --cov-report=xml
     - name: Upload coverage to Codecov
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ runner.os == 'Linux' && matrix.python-version == '3.8' }} # only upload for Python 3.8 on Linux
       uses: codecov/codecov-action@v3
       with:
         env_vars: OS,PYTHON
