@@ -17,6 +17,7 @@ import operator
 import numpy as np
 from scipy.cluster import hierarchy
 
+from catch.utils import fix_spawn_behavior
 from catch.utils import lsh
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -125,6 +126,8 @@ def create_condensed_dist_matrix(n, dist_fn, num_processes=None):
     Returns:
         condensed 1d distance matrix for input to scipy functions
     """
+    fix_spawn_behavior.fix_spawn_behavior()
+
     global _cdm_max_num_processes
     if num_processes is None:
         num_processes = min(multiprocessing.cpu_count(),
@@ -266,6 +269,8 @@ def find_connected_components(n, dist_fn, threshold,
         in the i'th connected component/cluster, and c is in sorted order by
         decreasing cluster size
     """
+    fix_spawn_behavior.fix_spawn_behavior()
+
     # Setup a multiprocessing Pool, which will speed calculations of
     #   pairwise distances
     global _dist_fn

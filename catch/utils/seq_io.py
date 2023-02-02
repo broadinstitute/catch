@@ -202,7 +202,7 @@ def iterate_fasta(fn, data_type='str', replace_degenerate=True):
         elif data_type == 'np':
             return np.fromiter(seq, dtype='U1')
         else:
-            raise ValueError("Unknown data_type " + data_tyoe)
+            raise ValueError("Unknown data_type " + data_type)
 
     def process(f):
         curr_seq = ''

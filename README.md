@@ -1,4 +1,4 @@
-# CATCH &nbsp;&middot;&nbsp; [![Build Status](https://app.travis-ci.com/broadinstitute/catch.svg?branch=master)](https://app.travis-ci.com/broadinstitute/catch) [![Coverage Status](https://coveralls.io/repos/broadinstitute/catch/badge.svg?branch=master)](https://coveralls.io/github/broadinstitute/catch?branch=master) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/broadinstitute/catch/pulls) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+# CATCH &nbsp;&middot;&nbsp; [![Build Status](https://github.com/broadinstitute/catch/actions/workflows/build-test.yml/badge.svg?branch=master)](https://github.com/broadinstitute/catch/actions) [![codecov](https://codecov.io/github/broadinstitute/catch/branch/master/graph/badge.svg?token=qo3RUXuTb6)](https://codecov.io/github/broadinstitute/catch) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/broadinstitute/catch/pulls) [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 #### Compact Aggregation of Targets for Comprehensive Hybridization
 
 CATCH is a Python package for designing probe sets to use for nucleic acid capture of diverse sequence.
@@ -42,7 +42,8 @@ CATCH requires:
 * [NumPy](http://www.numpy.org) &gt;= 1.22
 * [SciPy](https://www.scipy.org) &gt;= 1.8.0
 
-CATCH may also work with older versions of Python, NumPy, and SciPy, but is only tested with the above versions.
+CATCH is tested with Python 3.8, 3.9, and 3.10 on Linux (Ubuntu) and macOS, with the above NumPy and SciPy versions.
+CATCH may also work with older versions of Python, NumPy, and SciPy, as well as with other operating systems, but is not tested with them.
 
 Installing CATCH with `pip` (or conda), as described below, will install NumPy and SciPy if they are not already installed.
 
