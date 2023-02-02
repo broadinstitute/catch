@@ -42,7 +42,8 @@ CATCH requires:
 * [NumPy](http://www.numpy.org) &gt;= 1.22
 * [SciPy](https://www.scipy.org) &gt;= 1.8.0
 
-CATCH may also work with older versions of Python, NumPy, and SciPy, but is only tested with the above versions.
+CATCH is tested with Python 3.8, 3.9, and 3.10 on Linux (Ubuntu) and macOS, with the above NumPy and SciPy versions.
+CATCH may also work with older versions of Python, NumPy, and SciPy, as well as with other operating systems, but is not tested with them.
 
 Installing CATCH with `pip` (or conda), as described below, will install NumPy and SciPy if they are not already installed.
 
