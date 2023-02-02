@@ -327,15 +327,6 @@ class Probe:
         return isinstance(other, Probe) and \
             np.array_equal(self.seq, other.seq)
 
-    def __cmp__(self, other):
-        c = np.where(self.seq != other.seq)[0]
-        if len(c) == 0:
-            return 0
-        else:
-            # c[0] holds the first index where a char in self.seq does
-            # not equal the corresponding char in other.seq
-            return cmp(self.seq[c[0]], other.seq[c[0]])
-
     def __len__(self):
         return len(self.seq)
 

@@ -30,6 +30,7 @@ from collections import defaultdict
 import logging
 
 from catch.filter.base_filter import BaseFilter
+from catch.filter import naive_redundant_filter
 from catch.utils import set_cover
 
 __author__ = 'Hayden Metsky <hayden@mit.edu>'
@@ -52,9 +53,10 @@ class DominatingSetFilter(BaseFilter):
             # parameters ensuring that two probes are deemed redundant
             # iff they are identical (i.e., no shift with no mismatches
             # between the two)
-            are_redundant_fn = redundant_shift_and_mismatch_count(
-                shift=0,
-                mismatch_thres=0)
+            are_redundant_fn = \
+                    naive_redundant_filter.redundant_shift_and_mismatch_count(
+                        shift=0,
+                        mismatch_thres=0)
         self.are_redundant_fn = are_redundant_fn
 
     def _filter(self, input):
