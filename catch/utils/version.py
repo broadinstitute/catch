@@ -10,7 +10,7 @@ manually specified in the variable RELEASE_VERSION.
 """
 
 # Manually specify a numbered release version to use as a fallback
-RELEASE_VERSION = 'v1.5.1'
+RELEASE_VERSION = '1.5.1'
 
 
 import subprocess
@@ -57,6 +57,12 @@ def get_version_from_git_describe():
         if not isinstance(out, str):
             out = out.decode('utf-8')
         ver = out.strip()
+        if ver.startswith("v"):
+            ver = ver[1:]
+        if "-" in ver:
+            ver_release, ver_local = ver.split("-", 1)
+            ver_local = ver_local.replace("-", ".")
+            ver = ver_release + "+" + ver_local
     except Exception:
         ver = None
     os.chdir(cwd)
