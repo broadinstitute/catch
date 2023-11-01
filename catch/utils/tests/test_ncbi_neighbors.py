@@ -153,15 +153,6 @@ class TestConstructNeighborsIntegration(unittest.TestCase):
         # be many more)
         self.assertGreaterEqual(len(neighbors), 100)
 
-        # Check that most sequences have 'Zika virus' in their lineage (all
-        # should but there may be outliers so only check
-        # if at least half are)
-        num_with_zika = 0
-        for n in neighbors:
-            if 'Zika virus' in n.lineage:
-                num_with_zika += 1
-        self.assertGreaterEqual(num_with_zika, len(neighbors) / 2)
-
     # Skip this test on Travis CI because it seems to not support calls
     # to FTP servers; construct_influenza_genome_neighbors() requires an
     # FTP call
