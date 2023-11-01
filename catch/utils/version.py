@@ -46,13 +46,13 @@ def get_version_from_git_describe():
     This calls `git describe`, if git is available.
 
     Returns:
-        version from `git describe --tags --always --dirty` if git is
+        version from `git describe --tags --dirty` if git is
         available; otherwise, None
     """
     cwd = os.getcwd()
     try:
         os.chdir(get_project_path())
-        cmd = ['git', 'describe', '--tags', '--always', '--dirty']
+        cmd = ['git', 'describe', '--tags', '--dirty']
         out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
         if not isinstance(out, str):
             out = out.decode('utf-8')
