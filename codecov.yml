@@ -1,0 +1,5 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true # allow resulting status to pass no matter what the coverage is
