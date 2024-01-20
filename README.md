@@ -158,7 +158,8 @@ Higher values lead to more probes.
 (Default: 1.0 &mdash; i.e., whole genome.)
 * `-e/--cover-extension COVER_EXTENSION`: Assume that a probe will capture both the region of the sequence to which it hybridizes, as well as COVER_EXTENSION nt on each side of that.
 This parameter is reasonable because library fragments are generally longer than the capture probes, and its value may depend on the library fragment length.
-Higher values lead to fewer probes.
+Higher values lead to fewer probes, whereas lower values are more stringent in modeling capture.
+Values of around 50 are commonly used and work well in practice.
 (Default: 0.)
 * `-i/--identify`: Design probes to perform differential identification.
 This is typically used with small values of COVERAGE and &gt;1 specified `dataset`s.
