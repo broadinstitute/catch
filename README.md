@@ -158,7 +158,8 @@ Higher values lead to more probes.
 (Default: 1.0 &mdash; i.e., whole genome.)
 * `-e/--cover-extension COVER_EXTENSION`: Assume that a probe will capture both the region of the sequence to which it hybridizes, as well as COVER_EXTENSION nt on each side of that.
 This parameter is reasonable because library fragments are generally longer than the capture probes, and its value may depend on the library fragment length.
-Higher values lead to fewer probes.
+Higher values lead to fewer probes, whereas lower values are more stringent in modeling capture.
+Values of around 50 are commonly used and work well in practice.
 (Default: 0.)
 * `-i/--identify`: Design probes to perform differential identification.
 This is typically used with small values of COVERAGE and &gt;1 specified `dataset`s.
@@ -179,31 +180,43 @@ Relatedly, see `--custom-hybridization-fn-tolerant` as described by the output o
 Several arguments change the design process in a way that can considerably reduce the computational burden needed for design &mdash; especially for large and highly diverse inputs.
 The trade-off of these arguments is an increase in the number of output probes, but this increase is usually small (<10%).
 The arguments are:
-* `--filter-with-lsh-minhash FILTER_WITH_LSH_MINHASH`: Use locality-sensitive hashing to reduce the space of candidate probes by filtering near-duplicate probes.
+* `--filter-with-lsh-minhash FILTER_WITH_LSH_MINHASH`: Use locality-sensitive hashing (LSH) to reduce the space of candidate probes that are considered by detecting and filtering near-duplicate candidate probes.
 This can significantly improve runtime and memory requirements when the input is especially large and diverse.
-See the output of `design.py --help` for detail on how this argument works and what its value means.
-FILTER_WITH_LSH_MINHASH should generally be around 0.5 to 0.7, and 0.6 is a reasonable starting place.
-One caveat: when specifying low values of MISMATCHES (~0, 1, or 2), using this argument can cause the coverage provided for each genome to be slightly less than desired with `--coverage` (e.g., 98% if COVERAGE is 100%).
+FILTER_WITH_LSH_MINHASH should generally be around 0.5 to 0.7; 0.6 is a reasonable choice based on probe-target divergences that are typically desired in practice.
+In particular, the argument tells CATCH to use LSH with a MinHash family to detect near-duplicates within the set of candidate probes, and LSH_WITH_LSH_MINHASH gives the maximum Jaccard distance (1 minus Jaccard similarity) at which to call, and subsequently filter, near-duplicates; the similarity between two probes is computed by treating each probe as a set of 10-mers and measuring the Jaccard similarity between the two sets.
+Its value should be accordingly commensurate with parameter values for determining whether a probe hybridizes to a target sequence (i.e., with CATCH's default hybridization model using `-m MISMATCHES` and letting the probe-target divergence D be MISMATCHES divided by PROBE_LENGTH, then the value should be, at most, roughly 1 - 1/(2\*e^(10\*D) - 1); see [Ondov et al. 2016](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0997-x#Equ4) and solve Eq. 4 for 1-j with k=10).
+One caveat: when requiring low probe-target divergences (e.g., MISMATCHES of ~0, 1, or 2), using this argument may cause the coverage provided for each genome to be less than desired with `--coverage` because too many candidate probes are filtered, so the argument should be used with caution or avoided in this case; `--print-analysis` or `--write-analysis-to-tsv` provides the resulting coverage.
+Values of FILTER_WITH_LSH_MINHASH above ~0.7 can require significant memory and runtime that offset the benefits of using this argument, but such values should not be needed in practice.
 * `--filter-with-lsh-hamming FILTER_WITH_LSH_HAMMING`: Similar to `--filter-with-lsh-minhash`, except uses a different technique for locality-sensitive hashing.
-The improvement in runtime and memory usage is usually less than when using `--filter-with-lsh-minhash`, and they cannot be used together, but the value to specify is more intuitive &mdash; namely, it filters near-duplicate probes, using FILTER_WITH_LSH_HAMMING as the maximum Hamming distance at which to call near-duplicates.
-FILTER_WITH_LSH_HAMMING should be commensurate with (but not greater than) MISMATCHES; for example, if MISMATCHES is 5, we recommend setting this value to 3 or 4.
+Namely, the argument tells CATCH to filter near-duplicate candidate probes using LSH with a Hamming distance family.
+FILTER_WITH_LSH_HAMMING is the maximum Hamming distance between two probes at which to call those probes near-duplicates.
+With CATCH's default hybridization model using `-m MISMATCHES`, FILTER_WITH_LSH_HAMING should be commensurate with, but not greater than, MISMATCHES.
+We recommend setting the value to MISMATCHES - 1 or MISMATCHES - 2; for example, if MISMATCHES is 5, we recommend setting this value to 3 or 4.
+It can be more intuitive to determine an appropriate value for this argument than for `--filter-with-lsh-minhash`.
+However, the improvement in runtime and memory usage is usually less with this argument than with `--filter-with-lsh-minhash` because the method for near-duplicate detection used by `--filter-with-lsh-minhash` is more sensitive; thus, in general, we recommend using `--filter-with-lsh-minhash` for most use cases.
 The same caveat regarding coverage noted for `--filter-with-lsh-minhash` also applies to this argument.
-* `--cluster-and-design-separately CLUSTER_AND_DESIGN_SEPARATELY`: Cluster input sequences prior to design by computing their MinHash signatures and comparing them (i.e., the [Mash](https://doi.org/10.1186/s13059-016-0997-x) approach).
-Then, design probes separately on each cluster and merge the resulting probes.
+* `--cluster-and-design-separately CLUSTER_AND_DESIGN_SEPARATELY`: Cluster input sequences prior to design and design probes separately on each cluster, merging the resulting probes to produce the final output; input sequence comparisons are performed rapidly, and in an alignment-free manner, using locality-sensitive hashing.
 Like the above arguments, this is another option to improve runtime and memory requirements on large and diverse input.
-CLUSTER_AND_DESIGN_SEPARATELY gives the inter-cluster distance threshold for merging clusters, expressed as average nucleotide dissimilarity (1-ANI, where ANI is average nucleotide identity).
-Values must be in (0.1, 0.5] and generally should be around 0.1 to 0.2; we recommend 0.15 as a starting place (i.e., cluster at 15% nucleotide dissimilarity).
-Also, see `--cluster-and-design-separately-method`, as described by the output of `design.py --help`, for more control over this argument and details on how clustering works.
-* `--cluster-from-fragments CLUSTER_FROM_FRAGMENTS`: Break input sequences into fragments of length CLUSTER_FROM_FRAGMENTS nt, and cluster these fragments rather than whole input sequences.
-This option requires setting `--cluster-and-design-separately` as well, and proceeds as described for that argument.
+CLUSTER_AND_DESIGN_SEPARATELY gives the nucleotide dissimilarity at which to cluster input sequences (i.e., 1-ANI, where ANI is the average nucleotide identity between two sequences).
+Values must be in (0, 0.5] and generally should be around 0.1 to 0.2 because, for probe-target divergences typically desired in practice, it is reasonable to design probes independently on clusters of sequences determined at this threshold; in general, we recommend using 0.15 (i.e., cluster at 15% nucleotide dissimilarity).
+In particular, this argument tells CATCH to (1) compute a MinHash signature for each input sequence; (2) cluster the input sequences by comparing their signatures (i.e., the [Mash](https://doi.org/10.1186/s13059-016-0997-x) approach); (3) design probes, as usual, separately on each cluster; and (4) merge the resulting probes.
+The particular clustering method (step (2)) is set by `--cluster-and-design-separately-method [choose|simple|hierarchical]` (see `design.py --help` for details on this argument) and the default value, `choose`, uses a heuristic to decide among them.
+With the `simple` clustering method, clusters correspond to connected components of a graph in which each vertex is a sequence and two sequences are connected if and only if their nucleotide dissimilarity (estimated by MinHash signatures), is within CLUSTER_AND_DESIGN_SEPARATELY.
+With the `hierarchical` clustering method, clusters are computed by agglomerative hierarchical clustering and CLUSTER_AND_DESIGN_SEPARATELY is the maximum inter-cluster distance at which to merge clusters.
+With both clustering methods, higher values of CLUSTER_AND_DESIGN_SEPARATELY result in fewer, larger clusters of input sequences; consequently, higher values may result in better solutions (i.e., when using CATCH with fixed hybridization criteria, fewer probes for the same coverage) at the expense of more computational requirements.
+* `--cluster-from-fragments CLUSTER_FROM_FRAGMENTS`: Break input sequences into fragments of length CLUSTER_FROM_FRAGMENTS nt, and proceed with clustering as described for `--cluster-and-design-separately`, except cluster these fragments rather than whole input sequences.
+When using this argument, you must also set `--cluster-and-design-separately` because this argument tells CATCH to cluster from fragments of the input sequences rather than whole input sequences; see the information on `--cluster-and-design-separately`, above, for information about clustering.
 This option can be useful for large genomes (e.g., bacterial genomes) in which probes for different chunks can be designed independently.
-The fragment length should be around 50,000 nt and 50000 is a reasonable starting place for CLUSTER_FROM_FRAGMENTS.
+The fragment length must balance a trade-off between (a) yielding too many fragments (owing to a short fragment length), which would slow clustering and potentially lead to outputs that are suboptimal in terms of the number of probes; and (b) yielding too few fragments (owing to a long fragment length), which negates the benefit of this argument in speeding design on large genomes.
+In practice, we have found that a fragment length of around 50,000 nt achieves a reasonable balance, i.e., setting CLUSTER_FROM_FRAGMENTS to 50000 is our recommendation in general.
 
 In general, a reasonable starting point for enabling these option is to try: `--filter-with-lsh-minhash 0.6 --cluster-and-design-separately 0.15 --cluster-from-fragments 50000`.
-Specific applications may benefit more with different values.
+Specific applications may benefit from different values.
 
 Note that these arguments may slightly increase runtime for small inputs so, when also considering the trade-offs noted above, we do not recommend them for every application.
 Nevertheless, we recommend trying these arguments for large and diverse input (e.g., large genomes, many genomes, or highly divergent genomes), or in any case when runtime or memory usage presents an obstacle to running CATCH.
+
+See the output of `design.py --help` for additional details on arguments.
 
 [`design.py`](./bin/design.py) accepts many other arguments that can be useful for particular design applications, to improve resource requirements, or for debugging; `design.py --help` describes all of them.
 
